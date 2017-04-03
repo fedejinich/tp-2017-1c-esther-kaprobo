@@ -10,7 +10,7 @@
 
 #include "Consola.h"
 
-
+//prueba de commit
 
 int main(int argc, char **argv) {
 	cargarConfiguracion(argv[0]);
