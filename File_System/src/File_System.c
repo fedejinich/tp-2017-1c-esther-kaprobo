@@ -13,10 +13,18 @@ int main(int argc, char **argv) {
 
 void cargarConfiguracion() {
 
+	printf("Cargando archivo de configuracion 'file_system.config'\n\n");
 	t_config* config = config_create("file_system.config");
 	puerto = config_get_string_value(config, "PUERTO");
-	printf("Puerto: %s \n",puerto);
 	puntoMontaje = config_get_string_value(config, "PUNTO_MONTAJE");
-	printf("Punto Montaje: %s \n",puntoMontaje);
+
+	if(config_has_property(config,"PUERTO"))
+		printf("Puerto: %s \n",puerto);
+	else
+		printf("No esta setteado el PUERTO");
+	if(config_has_property(config,"PUNTO_MONTAJE"))
+		printf("Punto Montaje: %s \n",puntoMontaje);
+	else
+		printf("No esta setteado el PUNTO_MONTAJE");
 
 }
