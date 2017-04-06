@@ -8,25 +8,25 @@
  ============================================================================
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <commons/config.h>
-
-int puerto_kernel;
-char* ip_kernel;
+#include "consola.h"
 
 int main(int argc, char **argv) {
 
 	iniciarConsola();
-	cargarConfiguracion();
+	cargarConfiguracion(argv[0]);
+	return 0;
 }
+
 void iniciarConsola(){
-	printf("%s", "\n\n====== INICIO ======\n\n");
+	printf("%s", "\n\n====== INICIO CONSOLA ======\n\n");
+
 }
-void cargarConfiguracion(){
-	t_config* config = config_create("consola.config");
-	ip_kernel = config_get_string_value(config, "IP_KERNEL");
-	printf("Ip Kernel: %s \n",ip_kernel);
+void cargarConfiguracion(char* pathconf){
+
+	t_config* config = config_create(getenv("archivo_configuracion"));
 	puerto_kernel = config_get_int_value(config, "PUERTO_KERNEL");
-	printf("Puerto Kernel: %i \n",puerto_kernel);
+	ip_kernel = config_get_string_value(config, "IP_KERNEL");
+	printf("IP KERNEL: %s \n", ip_kernel);
+	printf("PUERTO_KERNEL: %i \n", puerto_kernel);
+	printf("El archivo de configuracion fue cargado con exito\n");
 }
