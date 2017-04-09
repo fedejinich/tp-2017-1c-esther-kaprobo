@@ -21,5 +21,5 @@ int retardo_memoria;
  * */
 
 //Funciones de configuracion
-void iniciarConsola();
+void iniciarMemoria();
 void cargarConfiguracion(char* pathconf);
