@@ -1,4 +1,5 @@
-
+#ifndef CONSOLA_H_
+#define CONSOLA_H_
 
 
 #include <stdio.h>
@@ -6,11 +7,11 @@
 #include <commons/config.h>
 
 
-
-
-int puerto_kernel;
 char* ip_kernel;
+int puerto_kernel;
 
-//int loadConfig(char* configFile, t_config* config);
-void cargarConfiguracion(t_config* config, char * pathconf);
 
+void iniciarConsola();
+void cargarConfiguracion(char* pathconf);
+
+#endif
