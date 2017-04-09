@@ -5,16 +5,21 @@
 
 int main(int argc, char **argv) {
 
-	cargarConfiguracion();
+	iniciarFileSystem();
+	cargarConfiguracion(argv[0]);
 
 	return EXIT_SUCCESS;
 }
 
 
-void cargarConfiguracion() {
+void iniciarFileSystem() {
+	printf("%s", "\n\n====== INICIO FILE SYSTEM ======\n\n");
+}
+
+void cargarConfiguracion(char* pathconf) {
 
 	printf("Cargando archivo de configuracion 'file_system.config'...\n\n");
-	t_config* config = config_create("file_system.config");
+	t_config* config = config_create(getenv("archivo_configuracion"));
 	puerto = config_get_int_value(config, "PUERTO");
 	puntoMontaje = config_get_string_value(config, "PUNTO_MONTAJE");
 
