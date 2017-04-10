@@ -36,7 +36,7 @@ void cargarConfiguracion(char* pathconf){
 int conectarConElKernel(){
 	printf("Inicio de conexion con Kernel\n");
 	// funcion deSockets
-	//kernel = conectar_a(ip_kernel,puerto_kernel);
+	kernel = conectar_a(ip_kernel,puerto_kernel);
 
 	if (kernel==0){
 		printf("CONSOLA: No se pudo conectar con el Kernel\n");
