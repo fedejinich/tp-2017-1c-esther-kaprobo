@@ -48,8 +48,19 @@ int conectarConElKernel(){
 		printf("CONSOLA: No se pudo conectar con el Kernel\n");
 		exit (EXIT_FAILURE);
 	}
+	printf("CONSOLA: Kernel recibio nuestro pedido de conexion\n");
 
-	printf("CONSOLA: Conectado con kernel\n");
-	return kernel;
+	printf("CONSOLA: Iniciando Handshake\n");
+	bool resultado = realizar_handshake(kernel);
+	if (resultado){
+		printf("Handshake exitoso! Conexion establecida\n");
+		return kernel;
+	}
+	else{
+		printf("Fallo en el handshake, se aborta conexion\n");
+		exit (EXIT_FAILURE);
+	}
+
+
 
 }
