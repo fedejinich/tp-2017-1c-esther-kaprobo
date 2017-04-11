@@ -7,8 +7,8 @@ int main(int argc, char **argv) {
 
 	iniciarFileSystem();
 	cargarConfiguracion(argv[0]);
-
-	return EXIT_SUCCESS;
+	//kernel = conectarseConElKernel();
+	return 0;
 }
 
 
@@ -32,4 +32,21 @@ void cargarConfiguracion(char* pathconf) {
 	else
 		printf("No esta setteado el PUNTO_MONTAJE");
 
+}
+
+//funcion que conecta Consola con Kernel utilizando sockets
+int conectarConElKernel(){
+	/*printf("Inicio de conexion con Kernel\n");
+	// funcion deSockets
+	//kernel = conectar_a(ip_kernel,puerto_kernel);
+
+	if (kernel==0){
+		printf("CONSOLA: No se pudo conectar con el Kernel\n");
+		exit (EXIT_FAILURE);
+	}
+
+	printf("CONSOLA: Conectado con kernel\n");
+	return kernel;*/
+
+	return 0;
 }
