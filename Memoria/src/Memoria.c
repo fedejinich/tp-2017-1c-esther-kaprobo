@@ -14,13 +14,13 @@
 
 int main(int argc, char **argv){
 
-	iniciarConsola();
+	iniciarMemoria();
 	cargarConfiguracion(argv[0]);
 	return EXIT_SUCCESS;
 
 }
 
-void iniciarConsola(){
+void iniciarMemoria(){
 
 	printf("%s", "\n\n====== INICIO MEMORIA ======\n\n");
 

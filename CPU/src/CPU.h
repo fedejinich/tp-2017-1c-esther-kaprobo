@@ -1,20 +1,18 @@
-#ifndef CONSOLA_H_
-#define CONSOLA_H_
+#ifndef CPU_H_
+#define CPU_H_
 
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/config.h>
-#include "src/Sockets_Kaprobo.h"
 
 
 char* ip_kernel;
 int puerto_kernel;
-signed int kernel;
+int nucleos;
 
 
-void iniciarConsola();
+void iniciarCPU();
 void cargarConfiguracion(char* pathconf);
-int conectarConElKernel();
 
 #endif

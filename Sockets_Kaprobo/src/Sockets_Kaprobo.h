@@ -1,5 +1,5 @@
-#ifndef SRC_SOCKETS_H_
-#define SRC_SOCKETS_H_
+#ifndef SRC_SOCKETS_KAPROBO_H_
+#define SRC_SOCKETS_KAPROBO_H_
 
 #include <stdlib.h>
 #include <sys/types.h>

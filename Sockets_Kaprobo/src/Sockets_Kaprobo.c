@@ -8,7 +8,7 @@
  ============================================================================
  */
 
-#include "Sockets.h"
+#include "Sockets_Kaprobo.h"
 
 /**  @NAME: _configurar_addrinfo
  *	 @DESC: Retorna un puntero a una addrInfo totalmente lista para usar,
@@ -36,6 +36,7 @@ struct addrinfo* _configurar_addrinfo(char *IP, char* Port) {
 }
 
 un_socket conectar_a(char *IP, char* Port) {
+	printf("Inicio de conectar_a\n");
 	struct addrinfo* serverInfo = _configurar_addrinfo(IP, Port);
 	if (serverInfo == NULL) {
 		exit(EXIT_FAILURE);

@@ -1,4 +1,7 @@
 eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.exe.debug.243526640/LD_LIBRARY_PATH/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.exe.debug.243526640/LD_LIBRARY_PATH/operation=append
+environment/project/cdt.managedbuild.config.gnu.exe.debug.243526640/LD_LIBRARY_PATH/value=/home/utnso/Escritorio/tp-2017-1c-Kaprobo/Sockets_Kaprobo/Debug
 environment/project/cdt.managedbuild.config.gnu.exe.debug.243526640/append=true
 environment/project/cdt.managedbuild.config.gnu.exe.debug.243526640/appendContributed=true
 environment/project/cdt.managedbuild.config.gnu.exe.debug.243526640/archivo_configuracion/delimiter=\:
