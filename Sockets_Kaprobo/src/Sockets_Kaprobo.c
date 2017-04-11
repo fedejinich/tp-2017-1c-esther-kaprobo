@@ -36,8 +36,23 @@ struct addrinfo* _configurar_addrinfo(char *IP, char* Port) {
 }
 
 un_socket conectar_a(char *IP, char* Port) {
-	printf("Inicio de conectar_a\n");
-	struct addrinfo* serverInfo = _configurar_addrinfo(IP, Port);
+
+	struct sockaddr_in direccionServidor;
+	direccionServidor.sin_family = AF_INET;
+	direccionServidor.sin_addr.s_addr = inet_addr(IP);
+	direccionServidor.sin_port = htons(Port);
+
+	int socketCliente = socket(AF_INET, SOCK_STREAM, 0);
+
+	if (connect(socketCliente, (void*) &direccionServidor, sizeof(direccionServidor)) !=0){
+		perror("No se pudo conectar");
+		exit(EXIT_FAILURE);
+	}
+
+	return socketCliente;
+
+
+	/*struct addrinfo* serverInfo = _configurar_addrinfo(IP, Port);
 	if (serverInfo == NULL) {
 		exit(EXIT_FAILURE);
 	}
@@ -58,29 +73,32 @@ un_socket conectar_a(char *IP, char* Port) {
 		exit(EXIT_FAILURE);
 	}
 	freeaddrinfo(serverInfo);
-	return serverSocket;
+	return serverSocket;*/
 }
 
 un_socket socket_escucha(char* IP, char* Port) {
 
-	struct addrinfo* serverInfo = _configurar_addrinfo(IP, Port);
+	struct sockaddr_in direccionServidor;
+	direccionServidor.sin_family = AF_INET;
+	direccionServidor.sin_addr.s_addr = inet_addr(IP);
+	direccionServidor.sin_port = htons(Port);
 
-	if (serverInfo == NULL) {
-		exit(EXIT_FAILURE);
-	}
+		int socketEscucha = socket(AF_INET, SOCK_STREAM, 0);
 
-	int socketEscucha;
+		int activado = 1;
+		setsockopt(socketEscucha, SOL_SOCKET, SO_REUSEADDR, &activado, sizeof(activado));
 
-	socketEscucha = socket(serverInfo->ai_family, serverInfo->ai_socktype,
-			serverInfo->ai_protocol);
-
-	int enable = 1;setsockopt(socketEscucha, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));//forzar la reutilizacion del socket
-	bind(socketEscucha, serverInfo->ai_addr, serverInfo->ai_addrlen);
-
-	freeaddrinfo(serverInfo);
+		if (bind(socketEscucha, (void*) &direccionServidor, sizeof(direccionServidor)) != 0) {
+			perror("Falló el bind");
+			return 1;
+		}
 
 	return socketEscucha;
 }
+
+
+
+
 
 void enviar(un_socket socket_para_enviar, int codigo_operacion, int tamanio,
 		void * data) {

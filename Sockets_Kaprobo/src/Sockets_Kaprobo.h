@@ -2,6 +2,8 @@
 #define SRC_SOCKETS_KAPROBO_H_
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
