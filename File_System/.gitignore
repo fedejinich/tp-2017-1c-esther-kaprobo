@@ -15,3 +15,6 @@
 *.lss
 *.map
 *.sym
+
+#custom
+/Debug
