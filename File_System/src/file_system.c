@@ -1,20 +1,18 @@
 
+#include "file_system.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "File_System.h"
 
 int main(int argc, char **argv) {
 
-	iniciarFileSystem();
+	printf("%s", "\n\n====== INICIO FILE SYSTEM ======\n\n");
 	cargarConfiguracion(argv[0]);
-	//kernel = conectarseConElKernel();
+	iniciarServidor(ipFileSystem,puerto);
+
 	return 0;
 }
 
-
-void iniciarFileSystem() {
-	printf("%s", "\n\n====== INICIO FILE SYSTEM ======\n\n");
-}
 
 void cargarConfiguracion(char* pathconf) {
 
@@ -34,19 +32,12 @@ void cargarConfiguracion(char* pathconf) {
 
 }
 
-//funcion que conecta Consola con Kernel utilizando sockets
-int conectarConElKernel(){
-	/*printf("Inicio de conexion con Kernel\n");
-	// funcion deSockets
-	//kernel = conectar_a(ip_kernel,puerto_kernel);
+void iniciarServidor(char* ip, char* port) {
 
-	if (kernel==0){
-		printf("CONSOLA: No se pudo conectar con el Kernel\n");
-		exit (EXIT_FAILURE);
-	}
+	printf("Iniciando file_system server\n");
+	fileSystemServer = socket_escucha(ip, port);
+	listen(fileSystemServer,100); //listen es el socket donde voy a escuchar y 100 es la cantidad maxima de conexiones en cola
+	printf("Esperando conexiones\n");
+	for(;;);
 
-	printf("CONSOLA: Conectado con kernel\n");
-	return kernel;*/
-
-	return 0;
 }
