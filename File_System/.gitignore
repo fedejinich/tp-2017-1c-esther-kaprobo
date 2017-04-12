@@ -1,22 +1,38 @@
-#Some of these are related to eclipse. So i keep them out of my repo
-.cproject
-.dep/
-.project
-.settings/
-/.settings
-
-#files being edited
-*~
-
-# make and build files
-*.lst
+# Object files
 *.o
-*.eep
-*.lss
-*.map
-*.sym
+*.ko
+*.obj
+*.elf
+# Precompiled Headers
+*.gch
+*.pch
 
-#custom
-/Debug
-/.cproject
-/.project
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+
+#Custom
+.project
+.cproject
+/Debug/
+/.settings
