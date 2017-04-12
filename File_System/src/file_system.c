@@ -8,8 +8,9 @@ int main(int argc, char **argv) {
 
 	printf("%s", "\n\n====== INICIO FILE SYSTEM ======\n\n");
 	cargarConfiguracion(argv[0]);
-	iniciarServidor(ipFileSystem,puerto);
-
+	fileSystemServer = iniciarFileSystemServer(ipFileSystem,puerto);
+	prepararFileSystemServerParaEscuchar();
+	atenderYCrearConexiones();
 	return 0;
 }
 
@@ -32,12 +33,24 @@ void cargarConfiguracion(char* pathconf) {
 
 }
 
-void iniciarServidor(char* ip, char* port) {
+un_socket iniciarFileSystemServer(char* ip, char* port) {
 
 	printf("Iniciando file_system server\n");
-	fileSystemServer = socket_escucha(ip, port);
+	int servidor = socket_escucha(ip, port);
 	listen(fileSystemServer,100); //listen es el socket donde voy a escuchar y 100 es la cantidad maxima de conexiones en cola
 	printf("Esperando conexiones\n");
-	for(;;);
+
+	return servidor;
+
+}
+
+void prepararFileSystemServerParaEscuchar() {
+
+	FD_ZERO(&fds_activos);
+	FD_SET(fileSystemServer, &fds_activos);
+
+}
+
+void atenderYCrearConexiones() {
 
 }
