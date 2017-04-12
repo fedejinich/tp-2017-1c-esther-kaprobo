@@ -10,30 +10,8 @@
 
 #include "Sockets_Kaprobo.h"
 
-/**  @NAME: _configurar_addrinfo
- *	 @DESC: Retorna un puntero a una addrInfo totalmente lista para usar,
- *	 dado una IP y un Host cualesquiera.
- *	 SOLO para uso interno.
- */
 
-struct addrinfo* _configurar_addrinfo(char *IP, char* Port) {
-	struct addrinfo hints;
-	struct addrinfo* serverInfo;
-	int16_t error;
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	if (!strcmp(IP, "localhost")) {
-		hints.ai_flags = AI_PASSIVE;
-		error = getaddrinfo(NULL, Port, &hints, &serverInfo);
-	} else
-		error = getaddrinfo(IP, Port, &hints, &serverInfo);
-	if (error) {
-		error_show("Problema con el getaddrinfo()!: %s\n", gai_strerror(error));
-		exit(EXIT_FAILURE);
-	}
-	return serverInfo;
-}
+
 
 un_socket conectar_a(char *IP, char* Port) {
 
@@ -51,29 +29,6 @@ un_socket conectar_a(char *IP, char* Port) {
 
 	return socketCliente;
 
-
-	/*struct addrinfo* serverInfo = _configurar_addrinfo(IP, Port);
-	if (serverInfo == NULL) {
-		exit(EXIT_FAILURE);
-	}
-	int serverSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype,
-			serverInfo->ai_protocol);
-	if (serverSocket == -1) {
-		error_show("\n No se pudo conectar\n",
-		errno);
-		exit(EXIT_FAILURE);
-	}
-	if (connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)
-			== -1) {
-		puts("\n");
-		error_show(
-				"No se pudo conectar con el proceso que hace de servidor, error: %d\n",
-				errno);
-		close(serverSocket);
-		exit(EXIT_FAILURE);
-	}
-	freeaddrinfo(serverInfo);
-	return serverSocket;*/
 }
 
 un_socket socket_escucha(char* IP, char* Port) {
@@ -123,10 +78,11 @@ t_paquete* recibir(un_socket socket_para_recibir) {
 	retorno = recv(socket_para_recibir, &paquete_recibido->codigo_operacion, sizeof(int),
 	MSG_WAITALL);
 
-	if(retorno==0){paquete_recibido->codigo_operacion=-1;
-	void * informacion_recibida = malloc(sizeof(int));
-	paquete_recibido->data = informacion_recibida;
-	return paquete_recibido;
+	if(retorno==0){
+		paquete_recibido->codigo_operacion=-1;
+		void * informacion_recibida = malloc(sizeof(int));
+		paquete_recibido->data = informacion_recibida;
+		return paquete_recibido;
 
 	}
 	recv(socket_para_recibir, &paquete_recibido->tamanio, sizeof(int),
