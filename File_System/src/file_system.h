@@ -6,13 +6,36 @@
 #include <commons/config.h>
 #include "src/Sockets_Kaprobo.h"
 
+/**
+ * Variables
+ */
 
-char* ipFileSystem = "127.0.0.2";
-int puerto;
-char* puntoMontaje;
-un_socket fileSystemServer; //socket que recibe conexiones (servidor)
+	//Configuracion
 
-void cargarConfiguracion(char* pathconf);
+	char* ipFileSystem = "127.0.0.2";
+	int puerto;
+	char* puntoMontaje;
 
+	//Sockets
+
+	un_socket fileSystemServer; //identificador del socket del file_system que recibe conexiones
+	fd_set fds_activos; //Almacena los sockets a ser monitoreados por el select
+	struct timeval timeout;
+
+
+/**
+ * Funciones
+ */
+
+	//Configuracion
+
+	void cargarConfiguracion(char* pathconf);
+
+	//Sockets
+
+	un_socket iniciarFileSystemServer(char* ip, char* port);
+	void prepararFileSystemServerParaEscuchar();
+	void atenderYCrearConexiones();
+	char* recibirMensajeCliente();
 
 #endif
