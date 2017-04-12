@@ -3,3 +3,9 @@
 /.settings
 
 /Debug/
+
+*.cproject
+*.project
+
+/.project
+/.cproject
