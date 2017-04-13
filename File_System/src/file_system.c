@@ -8,9 +8,10 @@ int main(int argc, char **argv) {
 
 	printf("%s", "\n\n====== INICIO FILE SYSTEM ======\n\n");
 	cargarConfiguracion(argv[0]);
-	fileSystemServer = iniciarFileSystemServer(ipFileSystem,puerto);
-	prepararFileSystemServerParaEscuchar();
-	atenderYCrearConexiones();
+
+	pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
+	pthread_join(servidorConexionesKernel, NULL);
+
 	return 0;
 }
 
@@ -33,24 +34,47 @@ void cargarConfiguracion(char* pathconf) {
 
 }
 
-un_socket iniciarFileSystemServer(char* ip, char* port) {
 
-	printf("Iniciando file_system server\n");
-	int servidor = socket_escucha(ip, port);
-	listen(fileSystemServer,100); //listen es el socket donde voy a escuchar y 100 es la cantidad maxima de conexiones en cola
-	printf("Esperando conexiones\n");
+void* hiloServidorKernel(void *arg) {
 
-	return servidor;
+	printf("------Hilo Servidor KERNEL------\n");
+	int socketCliente;
+	int* socketClienteTemp;
+	socketKernel = socket_escucha("127.0.0.1", puerto);
+	printf("Creacion socket servidor KERNEL exitosa\n\n");
+	listen(socketKernel, 1024);
+	while(1) {
+		socketCliente = aceptar_conexion(socketKernel);
+		printf("Iniciando Handshake con KERNEL\n");
+		bool resultado_hand = esperar_handshake(socketCliente);
+		if(resultado_hand)
+			printf("Conexión aceptada del KERNEL %d!!\n\n", socketCliente);
+		else {
+			printf("Handshake fallo, se aborta conexion\n\n");
+			exit (EXIT_FAILURE);
+		}
+		socketClienteTemp = malloc(sizeof(int));
+		*socketClienteTemp = socketCliente;
+		pthread_t conexionKernel;
+		pthread_create(&conexionKernel, NULL, hiloConexionKernel(socketClienteTemp), (void*)socketClienteTemp);
+		//pthread_join(conexionKernel,NULL);
+	}
 
 }
 
-void prepararFileSystemServerParaEscuchar() {
+void* hiloConexionKernel(un_socket socket) {
 
-	FD_ZERO(&fds_activos);
-	FD_SET(fileSystemServer, &fds_activos);
+	while(1) {
+		char* buffer = malloc(1000);
+		int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
+		if (bytesRecibidos <= 0) {
+			perror("El proceso se desconecto\n");
+			return 1;
+		}
+		buffer[bytesRecibidos] = '\0';
+		printf("Me llegaron %d bytes con %s, del KERNEL %d\n", bytesRecibidos, buffer,*(int*)socket);
+		free(buffer);
+	}
 
-}
-
-void atenderYCrearConexiones() {
-
+	return 0;
 }

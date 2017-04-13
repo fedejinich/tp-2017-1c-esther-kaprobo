@@ -13,6 +13,7 @@ int puerto_kernel;
 signed int kernel;
 
 
+
 void iniciarConsola();
 void cargarConfiguracion(char* pathconf);
 int conectarConElKernel();

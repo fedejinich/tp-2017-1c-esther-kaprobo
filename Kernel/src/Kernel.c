@@ -14,6 +14,8 @@ int main(int argc, char **argv) {
 	cargarConfiguracion();
 	mostrarConfiguracion();
 
+	pthread_create(&clienteConexionesFileSystem, NULL, hiloClienteFileSystem, NULL);
+
 	pthread_create(&servidorConexionesConsola, NULL, hiloServidorConsola, NULL);
 	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
 	pthread_join(servidorConexionesConsola, NULL);
@@ -35,7 +37,7 @@ void cargarConfiguracion() {
 	puerto_cpu = config_get_int_value(config, "PUERTO_CPU");
 	ip_memoria = config_get_int_value(config, "IP_MEMORIA");
 	puerto_memoria = config_get_int_value(config, "PUERTO_MEMORIA");
-	ip_fs = config_get_int_value(config, "IP_FS");
+	ip_fs = config_get_string_value(config, "IP_FS");
 	puerto_fs = config_get_int_value(config, "PUERTO_FS");
 	quantum = config_get_int_value(config, "QUANTUM");
 	quantum_sleep = config_get_int_value(config, "QUANTUM_SLEEP");
@@ -158,6 +160,46 @@ void *hiloConexionCPU(void *socket){
 
 }
 
+void* hiloClienteFileSystem(void* arg) {
+	printf("------Hilo File System------\n");
+	fileSystem = conectarConFileSystem();
+
+	//Conexion  file system
+	while (1){
+		char mensaje[1000];
+		scanf("%s", mensaje);
+		send(fileSystem,mensaje,strlen(mensaje),0);
+		char* buffer = malloc(1000);
+		int bytesRecibidos = recv(fileSystem, buffer, 1000, 0);
+		if (bytesRecibidos <= 0) {
+			perror("El proceso se desconecto\n");
+			return 1;
+		}
+		buffer[bytesRecibidos] = '\0';
+		printf("Me llegaron %d bytes con %s, de File System %d\n", bytesRecibidos, buffer,fileSystem);
+	}
+
+}
+
+un_socket conectarConFileSystem() {
+	printf("Inicio de conexion con File System\n");
+	// funcion deSockets
+	fileSystem = conectar_a(ip_fs,puerto_fs);
+	if (fileSystem == 0) {
+		printf("KERNEL: No se pudo conectar con File System\n");
+		exit (EXIT_FAILURE);
+	}
+	printf("KERNEL: File System recibio nuestro pedido de conexion\n");
+	printf("KERNEL: Iniciando Handshake\n");
+	bool resultado = realizar_handshake(fileSystem);
+		if (resultado){
+		printf("Handshake exitoso! Conexion establecida\n");
+		return fileSystem;
+	} else {
+		printf("Fallo en el handshake, se aborta conexion\n");
+		exit (EXIT_FAILURE);
+	}
+}
 
 
 

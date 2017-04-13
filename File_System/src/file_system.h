@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <commons/config.h>
 #include "src/Sockets_Kaprobo.h"
+#include <pthread.h>
+
 
 /**
  * Variables
@@ -19,9 +21,11 @@
 	//Sockets
 
 	un_socket fileSystemServer; //identificador del socket del file_system que recibe conexiones
-	fd_set fds_activos; //Almacena los sockets a ser monitoreados por el select
-	struct timeval timeout;
+	un_socket socketKernel;
 
+	//Hilos
+
+	pthread_t servidorConexionesKernel;
 
 /**
  * Funciones
@@ -36,5 +40,10 @@
 	un_socket iniciarFileSystemServer(char* ip, char* port);
 	void prepararFileSystemServerParaEscuchar();
 	void atenderYCrearConexiones();
+
+	//Hilos
+	void* hiloServidorKernel(void* arg);
+	void* hiloConexionKernel(un_socket socket);
+
 
 #endif

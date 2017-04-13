@@ -3,6 +3,7 @@
 	<name>Memoria</name>
 	<comment></comment>
 	<projects>
+		<project>Sockets_Kaprobo</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

@@ -14,7 +14,7 @@ int puerto_prog;
 int puerto_cpu;
 int ip_memoria;
 int puerto_memoria;
-int ip_fs;
+char* ip_fs;
 int puerto_fs;
 int quantum;
 int quantum_sleep;
@@ -22,10 +22,11 @@ char* algoritmo;
 int grado_multiprog;
 
 // Hilos
-pthread_t servidorConexionesConsola, servidorConexionesCPU;
+pthread_t servidorConexionesConsola, servidorConexionesCPU, clienteConexionesFileSystem;
 
 
 //Variables para Sockets
+un_socket fileSystem;
 int servidor; //Identificador del socket del servidor
 fd_set fds_activos; //Almacena los sockets a ser monitoreados por el select
 struct timeval timeout;
@@ -52,3 +53,4 @@ void *hiloServidorConsola(void *arg);
 void *hiloConexionConsola(void *socket);
 void *hiloServidorCPU(void *arg);
 void *hiloConexionCPU(void *socket);
+void* hiloClienteFileSystem(void* arg);
