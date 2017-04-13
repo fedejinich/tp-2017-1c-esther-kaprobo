@@ -36,6 +36,5 @@
 	un_socket iniciarFileSystemServer(char* ip, char* port);
 	void prepararFileSystemServerParaEscuchar();
 	void atenderYCrearConexiones();
-	char* recibirMensajeCliente();
 
 #endif
