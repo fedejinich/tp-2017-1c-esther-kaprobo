@@ -22,7 +22,7 @@ char* algoritmo;
 int grado_multiprog;
 
 // Hilos
-pthread_t servidorConexionesConsola, servidorConexionesCPU;
+pthread_t servidorConexionesConsola, servidorConexionesCPU, clienteConexionMemoria, clienteConexionFileSystem;
 
 
 //Variables para Sockets
@@ -52,3 +52,5 @@ void *hiloServidorConsola(void *arg);
 void *hiloConexionConsola(void *socket);
 void *hiloServidorCPU(void *arg);
 void *hiloConexionCPU(void *socket);
+void *hiloConexionMemoria(void *arg);
+void *hiloConexionFileSystem(void *arg);

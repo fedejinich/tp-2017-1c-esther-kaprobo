@@ -14,11 +14,18 @@ int main(int argc, char **argv) {
 	cargarConfiguracion();
 	mostrarConfiguracion();
 
+	//Creacion de hilos servidores
 	pthread_create(&servidorConexionesConsola, NULL, hiloServidorConsola, NULL);
 	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
+	//Creacion de hilos clientes
+	pthread_create(&clienteConexionMemoria, NULL, hiloConexionMemoria,NULL);
+	pthread_create(&clienteConexionFileSystem,NULL,hiloConexionFileSystem,NULL);
+
+	//bloqueo de hilos hasta que finalicen
 	pthread_join(servidorConexionesConsola, NULL);
 	pthread_join(servidorConexionesCPU, NULL);
-
+	pthread_join(clienteConexionMemoria,NULL);
+	pthread_join(clienteConexionFileSystem,NULL);
 
 	/*servidor = inicializarServidor();
 	prepararservidoretServidorParaEscuchar();
@@ -57,7 +64,7 @@ void mostrarConfiguracion(){
 	//Falta mostrar arrays
 }
 
-
+//Crea servidor para consola
 void *hiloServidorConsola(void *arg){
 	printf("------Hilo CONSOLA------\n");
 	int servidorSocket, socketCliente;
@@ -87,7 +94,7 @@ void *hiloServidorConsola(void *arg){
 	}
 
 }
-
+//Crea hilos para atender todas las solicitudes que lleguen desde Consola
 void *hiloConexionConsola(void *socket){
 
 	while(1){
@@ -108,7 +115,7 @@ void *hiloConexionConsola(void *socket){
 	return 0;
 
 }
-
+//Crea servidor para CPU
 void *hiloServidorCPU(void *arg){
 	printf("------Hilo CPU------\n");
 	int servidorSocket, socketCliente;
@@ -138,7 +145,7 @@ void *hiloServidorCPU(void *arg){
 	}
 
 }
-
+//Crea hilos para atender todas las solicitudes que lleguen desde CPU
 void *hiloConexionCPU(void *socket){
 
 	while(1){
@@ -158,6 +165,14 @@ void *hiloConexionCPU(void *socket){
 
 }
 
+void *hiloConexionMemoria(void *arg){
+printf("------Inicio conexion con Memoria------\n\n");
+return 0;
+}
+void *hiloConexionFileSystem(void *arg){
+printf("------Inicio conexion con File System------\n\n");
+return 0;
+}
 
 
 
