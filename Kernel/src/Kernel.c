@@ -13,16 +13,24 @@
 int main(int argc, char **argv) {
 	cargarConfiguracion();
 	mostrarConfiguracion();
-	servidor = inicializarServidor();
+
+	pthread_create(&servidorConexionesConsola, NULL, hiloServidorConsola, NULL);
+	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
+	pthread_join(servidorConexionesConsola, NULL);
+	pthread_join(servidorConexionesCPU, NULL);
+
+
+	/*servidor = inicializarServidor();
 	prepararservidoretServidorParaEscuchar();
 	atenderYCrearConexiones();
+	*/
 	return EXIT_SUCCESS;
 }
 
 void cargarConfiguracion() {
 
 	printf("Cargando archivo de configuracion 'kernel.config'\n\n");
-	t_config* config = config_create("kernel.config");
+	t_config* config = config_create(getenv("archivo_configuracion"));
 	puerto_prog = config_get_int_value(config, "PUERTO_PROG");
 	puerto_cpu = config_get_int_value(config, "PUERTO_CPU");
 	ip_memoria = config_get_int_value(config, "IP_MEMORIA");
@@ -48,6 +56,110 @@ void mostrarConfiguracion(){
 	printf("Grado Multiprogramacion: %i \n",grado_multiprog);
 	//Falta mostrar arrays
 }
+
+
+void *hiloServidorConsola(void *arg){
+	printf("------Hilo CONSOLA------\n");
+	int servidorSocket, socketCliente;
+	int *socketClienteTemp;
+	socketConsola = socket_escucha("127.0.0.1", puerto_prog);
+	printf("Creacion socket servidor consola exitosa\n\n");
+	listen(socketConsola, 1024);
+	while(1){
+
+		//printf("a: %d\n",a);
+		socketCliente = aceptar_conexion(socketConsola);
+		printf("Iniciando Handshake con CONSOLA\n");
+			bool resultado_hand = esperar_handshake(socketCliente);
+			if(resultado_hand){
+				printf("Conexión aceptada de la consola %d!!\n\n", socketCliente);
+
+
+			}else {
+				printf("Handshake fallo, se aborta conexion\n\n");
+				exit (EXIT_FAILURE);
+			};
+		socketClienteTemp=malloc(sizeof(int));
+		*socketClienteTemp = socketCliente;
+		pthread_t conexionConsola;
+		pthread_create(&conexionConsola, NULL, hiloConexionConsola, (void*)socketClienteTemp);
+
+	}
+
+}
+
+void *hiloConexionConsola(void *socket){
+
+	while(1){
+	char* buffer = malloc(1000);
+	int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
+	if (bytesRecibidos <= 0) {
+		perror("El proceso se desconecto\n");
+		return 1;
+	}
+
+	buffer[bytesRecibidos] = '\0';
+	printf("Me llegaron %d bytes con %s, de la consola %d\n", bytesRecibidos, buffer,*(int*)socket);
+	send(*(int*)socket,*buffer,strlen(buffer),0);
+	free(buffer);
+	}
+
+
+	return 0;
+
+}
+
+void *hiloServidorCPU(void *arg){
+	printf("------Hilo CPU------\n");
+	int servidorSocket, socketCliente;
+	int *socketClienteTemp;
+	socketCPU = socket_escucha("127.0.0.1", puerto_cpu);
+	printf("Creacion socket servidor CPU exitosa\n\n");
+	listen(socketCPU, 1024);
+	while(1){
+
+
+		socketCliente = aceptar_conexion(socketCPU);
+		printf("Iniciando Handshake con CPU\n");
+			bool resultado_hand = esperar_handshake(socketCliente);
+			if(resultado_hand){
+				printf("Conexión aceptada de la CPU %d!!\n\n", socketCliente);
+
+
+			}else {
+				printf("Handshake fallo, se aborta conexion\n\n");
+				exit (EXIT_FAILURE);
+			};
+		socketClienteTemp=malloc(sizeof(int));
+		*socketClienteTemp = socketCliente;
+		pthread_t conexionCPU;
+		pthread_create(&conexionCPU, NULL, hiloConexionCPU, (void*)socketClienteTemp);
+
+	}
+
+}
+
+void *hiloConexionCPU(void *socket){
+
+	while(1){
+	char* buffer = malloc(1000);
+	int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
+	if (bytesRecibidos <= 0) {
+		perror("El proceso se desconecto\n");
+		return 1;
+	}
+
+	buffer[bytesRecibidos] = '\0';
+	printf("Me llegaron %d bytes con %s, de la CPU %d\n", bytesRecibidos, buffer,*(int*)socket);
+	free(buffer);
+	}
+
+	return 0;
+
+}
+
+
+
 
 int inicializarServidor(){
 	struct sockaddr_in direccionServidor;
@@ -132,6 +244,7 @@ void atenderYCrearConexiones(){
 }
 
 char* recibirMensajeCliente(int un_socket){
+
 	char* payload;
 	recv(un_socket, &payload, 512, 0);
 
@@ -144,3 +257,5 @@ char* recibirMensajeCliente(int un_socket){
 
 	return payload;*/
 }
+
+

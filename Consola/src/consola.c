@@ -20,6 +20,15 @@ int main(int argc, char **argv) {
 		char mensaje[1000];
 		scanf("%s", mensaje);
 		send(kernel,mensaje,strlen(mensaje),0);
+		char* buffer = malloc(1000);
+			int bytesRecibidos = recv(kernel, buffer, 1000, 0);
+			if (bytesRecibidos <= 0) {
+				perror("El proceso se desconecto\n");
+				return 1;
+			}
+
+			buffer[bytesRecibidos] = '\0';
+			printf("Me llegaron %d bytes con %s, del kernel %d\n", bytesRecibidos, buffer,kernel);
 	}
 	return 0;
 }
