@@ -26,12 +26,13 @@ void cargarConfiguracion(char* pathconf) {
 	if(config_has_property(config,"PUERTO"))
 		printf("Puerto: %i \n",puerto);
 	else
-		printf("No esta setteado el PUERTO");
+		printf("No esta setteado el PUERTO\n");
 	if(config_has_property(config,"PUNTO_MONTAJE"))
 		printf("Punto Montaje: %s \n",puntoMontaje);
 	else
-		printf("No esta setteado el PUNTO_MONTAJE");
+		printf("No esta setteado el PUNTO_MONTAJE\n");
 
+	printf("\n");
 }
 
 

@@ -12,7 +12,7 @@
 //Variables de configuracion
 int puerto_prog;
 int puerto_cpu;
-int ip_memoria;
+char* ip_memoria;
 int puerto_memoria;
 char* ip_fs;
 int puerto_fs;
@@ -22,7 +22,7 @@ char* algoritmo;
 int grado_multiprog;
 
 // Hilos
-pthread_t servidorConexionesConsola, servidorConexionesCPU, clienteConexionesFileSystem;
+pthread_t servidorConexionesConsola, servidorConexionesCPU, clienteConexionMemoria, clienteConexionFileSystem;
 
 
 //Variables para Sockets
@@ -49,8 +49,11 @@ void atenderYCrearConexiones();
 char* recibirMensajeCliente();
 
 //Funciones de Hilos
-void *hiloServidorConsola(void *arg);
-void *hiloConexionConsola(void *socket);
-void *hiloServidorCPU(void *arg);
-void *hiloConexionCPU(void *socket);
+void* hiloServidorConsola(void *arg);
+void* hiloConexionConsola(void *socket);
+void* hiloServidorCPU(void *arg);
+void* hiloConexionCPU(void *socket);
 void* hiloClienteFileSystem(void* arg);
+void* hiloConexionFileSystem(void *arg);
+void* hiloConexionMemoria(void *arg);
+

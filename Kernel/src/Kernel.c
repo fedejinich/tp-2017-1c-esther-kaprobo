@@ -14,13 +14,19 @@ int main(int argc, char **argv) {
 	cargarConfiguracion();
 	mostrarConfiguracion();
 
-	pthread_create(&clienteConexionesFileSystem, NULL, hiloClienteFileSystem, NULL);
-
+	//Creacion de hilos servidores
 	pthread_create(&servidorConexionesConsola, NULL, hiloServidorConsola, NULL);
 	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
+
+	//Creacion de hilos clientes
+	pthread_create(&clienteConexionMemoria, NULL, hiloConexionMemoria,NULL);
+	pthread_create(&clienteConexionFileSystem,NULL,hiloConexionFileSystem,NULL);
+
+	//bloqueo de hilos hasta que finalicen
 	pthread_join(servidorConexionesConsola, NULL);
 	pthread_join(servidorConexionesCPU, NULL);
-
+	pthread_join(clienteConexionMemoria,NULL);
+	pthread_join(clienteConexionFileSystem,NULL);
 
 	/*servidor = inicializarServidor();
 	prepararservidoretServidorParaEscuchar();
@@ -35,7 +41,7 @@ void cargarConfiguracion() {
 	t_config* config = config_create(getenv("archivo_configuracion"));
 	puerto_prog = config_get_int_value(config, "PUERTO_PROG");
 	puerto_cpu = config_get_int_value(config, "PUERTO_CPU");
-	ip_memoria = config_get_int_value(config, "IP_MEMORIA");
+	ip_memoria = config_get_string_value(config, "IP_MEMORIA");
 	puerto_memoria = config_get_int_value(config, "PUERTO_MEMORIA");
 	ip_fs = config_get_string_value(config, "IP_FS");
 	puerto_fs = config_get_int_value(config, "PUERTO_FS");
@@ -48,9 +54,9 @@ void cargarConfiguracion() {
 void mostrarConfiguracion(){
 	printf("Puerto Prog: %i \n",puerto_prog);
 	printf("Puerto CPU: %i \n",puerto_cpu);
-	printf("IP Memoria: %i \n",ip_memoria);
+	printf("IP Memoria: %s \n",ip_memoria);
 	printf("Puerto Memoria: %i \n",puerto_memoria);
-	printf("IP File System: %i \n",ip_fs);
+	printf("IP File System: %s \n",ip_fs);
 	printf("Puerto File System: %i \n",puerto_fs);
 	printf("Quantum: %i \n",quantum);
 	printf("Quantum Sleep: %i \n",quantum_sleep);
@@ -59,7 +65,7 @@ void mostrarConfiguracion(){
 	//Falta mostrar arrays
 }
 
-
+//Crea servidor para consola
 void *hiloServidorConsola(void *arg){
 	printf("------Hilo CONSOLA------\n");
 	int servidorSocket, socketCliente;
@@ -89,7 +95,7 @@ void *hiloServidorConsola(void *arg){
 	}
 
 }
-
+//Crea hilos para atender todas las solicitudes que lleguen desde Consola
 void *hiloConexionConsola(void *socket){
 
 	while(1){
@@ -110,7 +116,7 @@ void *hiloConexionConsola(void *socket){
 	return 0;
 
 }
-
+//Crea servidor para CPU
 void *hiloServidorCPU(void *arg){
 	printf("------Hilo CPU------\n");
 	int servidorSocket, socketCliente;
@@ -141,6 +147,7 @@ void *hiloServidorCPU(void *arg){
 
 }
 
+//Crea hilos para atender todas las solicitudes que lleguen desde CPU
 void *hiloConexionCPU(void *socket){
 
 	while(1){
@@ -160,7 +167,7 @@ void *hiloConexionCPU(void *socket){
 
 }
 
-void* hiloClienteFileSystem(void* arg) {
+void* hiloConexionFileSystem(void* arg) {
 	printf("------Hilo File System------\n");
 	fileSystem = conectarConFileSystem();
 
@@ -184,22 +191,28 @@ void* hiloClienteFileSystem(void* arg) {
 un_socket conectarConFileSystem() {
 	printf("Inicio de conexion con File System\n");
 	// funcion deSockets
-	fileSystem = conectar_a(ip_fs,puerto_fs);
-	if (fileSystem == 0) {
+	int socketFileSystem = conectar_a(ip_fs,puerto_fs);
+	if (socketFileSystem == 0) {
 		printf("KERNEL: No se pudo conectar con File System\n");
 		exit (EXIT_FAILURE);
 	}
 	printf("KERNEL: File System recibio nuestro pedido de conexion\n");
 	printf("KERNEL: Iniciando Handshake\n");
-	bool resultado = realizar_handshake(fileSystem);
+	bool resultado = realizar_handshake(socketFileSystem);
 		if (resultado){
 		printf("Handshake exitoso! Conexion establecida\n");
-		return fileSystem;
+		return socketFileSystem;
 	} else {
 		printf("Fallo en el handshake, se aborta conexion\n");
 		exit (EXIT_FAILURE);
 	}
 }
+
+void *hiloConexionMemoria(void *arg){
+printf("------Inicio conexion con Memoria------\n\n");
+return 0;
+}
+
 
 
 
