@@ -6,11 +6,15 @@
 #include <commons/config.h>
 #include "src/Sockets_Kaprobo.h"
 #include <pthread.h>
+#include <commons/log.h>
 
 
 /**
  * Variables
  */
+
+	//Log
+	t_log* logger;
 
 	//Configuracion
 
