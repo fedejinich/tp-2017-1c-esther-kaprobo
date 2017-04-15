@@ -47,7 +47,7 @@
 
 	//Hilos
 	void* hiloServidorKernel(void* arg);
-	void* hiloConexionKernel(un_socket socket);
+	void* hiloConexionKernel(void* socket);
 
 
 #endif

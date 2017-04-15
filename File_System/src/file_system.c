@@ -60,12 +60,12 @@ void* hiloServidorKernel(void *arg) {
 		socketClienteTemp = malloc(sizeof(int));
 		*socketClienteTemp = socketCliente;
 		pthread_t conexionKernel;
-		pthread_create(&conexionKernel, NULL, hiloConexionKernel(socketClienteTemp), (void*)socketClienteTemp);
+		pthread_create(&conexionKernel, NULL, hiloConexionKernel, (void*)socketClienteTemp);
 	}
 
 }
 
-void* hiloConexionKernel(un_socket socket) {
+void* hiloConexionKernel(void* socket) {
 
 	//File system espera recibir mensajes de kernel
 
