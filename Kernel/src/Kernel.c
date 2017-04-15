@@ -11,6 +11,8 @@
 #include "Kernel.h"
 
 int main(int argc, char **argv) {
+	logger = log_create("kernel.log","Kernel",0,LOG_LEVEL_INFO);
+
 	cargarConfiguracion();
 	mostrarConfiguracion();
 
@@ -98,24 +100,31 @@ void *hiloServidorConsola(void *arg){
 //Crea hilos para atender todas las solicitudes que lleguen desde Consola
 void *hiloConexionConsola(void *socket){
 
-	while(1){
-	char* buffer = malloc(1000);
-	int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
-	if (bytesRecibidos <= 0) {
-		perror("El proceso se desconecto\n");
-		return 1;
-	}
+	while(1) {
+		char* buffer = malloc(1000);
+		int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
+		if (bytesRecibidos <= 0) {
+			perror("El proceso se desconecto\n");
+			return 1;
+		}
 
-	buffer[bytesRecibidos] = '\0';
-	printf("Me llegaron %d bytes con %s, de la consola %d\n", bytesRecibidos, buffer,*(int*)socket);
-	send(*(int*)socket,*buffer,strlen(buffer),0);
-	free(buffer);
+		buffer[bytesRecibidos] = '\0';
+		printf("Me llegaron %d bytes con %s, de la consola %d\n", bytesRecibidos, buffer,*(int*)socket);
+		send(*(int*)socket,*buffer,strlen(buffer),0);
+		replicarMensajeAFileSystemYMemoria(buffer);
+		free(buffer);
 	}
-
 
 	return 0;
 
 }
+
+void replicarMensajeAFileSystemYMemoria(char* mensaje) {
+
+	//send(*(int*)fileSystem,*mensaje,strlen(mensaje),0);
+
+}
+
 //Crea servidor para CPU
 void *hiloServidorCPU(void *arg){
 	printf("------Hilo CPU------\n");
@@ -176,14 +185,6 @@ void* hiloConexionFileSystem(void* arg) {
 		char mensaje[1000];
 		scanf("%s", mensaje);
 		send(fileSystem,mensaje,strlen(mensaje),0);
-		char* buffer = malloc(1000);
-		int bytesRecibidos = recv(fileSystem, buffer, 1000, 0);
-		if (bytesRecibidos <= 0) {
-			perror("El proceso se desconecto\n");
-			return 1;
-		}
-		buffer[bytesRecibidos] = '\0';
-		printf("Me llegaron %d bytes con %s, de File System %d\n", bytesRecibidos, buffer,fileSystem);
 	}
 
 }

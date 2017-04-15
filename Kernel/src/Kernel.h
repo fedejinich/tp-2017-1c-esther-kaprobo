@@ -4,10 +4,14 @@
 #include <commons/config.h>
 #include "src/Sockets_Kaprobo.h"
 #include <pthread.h>
+#include <commons/log.h>
 
 /*
  * VARIABLES
  * */
+
+//Logger
+t_log* logger;
 
 //Variables de configuracion
 int puerto_prog;
