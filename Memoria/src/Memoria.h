@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/config.h>
+#include <commons/log.h>
+#include <pthread.h>
+#include "src/Sockets_Kaprobo.h"
 
 /*
  * VARIABLES
@@ -16,10 +19,31 @@ int cache_x_proc;
 char* reemplazo_cache;
 int retardo_memoria;
 
+//Logger
+
+t_log* logger;
+
+//Variables de Hilos
+
+pthread_t servidorConexionesCPU;
+pthread_t servidorConexionesKernel;
+
+//Sockets
+un_socket socketCPU;
+un_socket socketKernel;
+
 /*
  * FUNCIONES
  * */
 
 //Funciones de configuracion
-void iniciarMemoria();
 void cargarConfiguracion(char* pathconf);
+
+
+//Funciones de hilos
+
+void* hiloServidorCPU(void* arg);
+void* hiloConexionCPU(void* socket);
+void* hiloServidorKernel(void* arg);
+void* hiloConexionKernel(void* socket);
+
