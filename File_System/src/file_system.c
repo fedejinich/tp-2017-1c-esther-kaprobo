@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 
 void cargarConfiguracion(char* pathconf) {
 
-	log_info(logger,"Cargando archivo de configuracion 'file_system.config'...\n\n");
+	log_info(logger,"Cargando archivo de configuracion 'file_system.config'...\n");
 	t_config* config = config_create(getenv("archivo_configuracion"));
 	puerto = config_get_int_value(config, "PUERTO");
 	puntoMontaje = config_get_string_value(config, "PUNTO_MONTAJE");
@@ -43,7 +43,7 @@ void* hiloServidorKernel(void *arg) {
 	int socketCliente;
 	int* socketClienteTemp;
 	socketKernel = socket_escucha("127.0.0.1", puerto);
-	log_info(logger,"Creacion socket servidor KERNEL exitosa\n\n");
+	log_info(logger,"Creacion socket servidor KERNEL exitosa\n");
 	listen(socketKernel, 1024);
 	while(1) {
 		socketCliente = aceptar_conexion(socketKernel);
@@ -54,7 +54,7 @@ void* hiloServidorKernel(void *arg) {
 			printf("Conexion aceptada del KERNEL %d, esperando mensajes \n",socketCliente);
 		}
 		else {
-			log_info(logger,"Handshake fallo, se aborta conexion\n\n");
+			log_info(logger,"Handshake fallo, se aborta conexion\n");
 			exit (EXIT_FAILURE);
 		}
 		socketClienteTemp = malloc(sizeof(int));
