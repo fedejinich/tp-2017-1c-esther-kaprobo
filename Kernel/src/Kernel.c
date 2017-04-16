@@ -238,26 +238,23 @@ int inicializarServidor(){
 	return servidor;
 }
 
-void prepararservidoretServidorParaEscuchar(){
+void prepararservidoretServidorParaEscuchar() {
 	FD_ZERO(&fds_activos);
 	FD_SET(servidor, &fds_activos);
 }
 
-void atenderYCrearConexiones(){
-	while (1)
-	{
+void atenderYCrearConexiones() {
+	while (1) {
 		/* Bloquea hasta que llegan modificaciones de uno o mas sockets. */
 		timeout.tv_sec = 10;
 		timeout.tv_usec = 500000;
 		int sockets_a_atender = select (FD_SETSIZE, &fds_activos, NULL, NULL, &timeout);
-		if (sockets_a_atender < 0)
-		{
+		if (sockets_a_atender < 0) {
 			perror ("Ocurrio un error en el select");
 			exit (EXIT_FAILURE);
 		}
 
-		if (sockets_a_atender == 0)
-		{
+		if (sockets_a_atender == 0)	{
 			perror ("Ocurrio un error de timeout");
 			exit (EXIT_FAILURE);
 		}
@@ -270,16 +267,13 @@ void atenderYCrearConexiones(){
 		//Recorro el listado de sockets para ver cuales fueron modificados.
 		for (un_socket = 0; un_socket < FD_SETSIZE; ++un_socket){
 			//Si un socket ISSET, significa que fue modificado, sino, no
-			if (FD_ISSET (un_socket, &fds_activos))
-			{
+			if (FD_ISSET (un_socket, &fds_activos))	{
 				//Si el socket modificado en cuestion es el servidor, significa que hay un pedido de nueva conexion
-				if (un_socket == servidor)
-				{
+				if (un_socket == servidor) {
 					int socket_nueva_conexion;
 					size = sizeof (cliente);
 					socket_nueva_conexion = accept (servidor, (struct servidoraddr *) &cliente, &size);
-					if (socket_nueva_conexion < 0)
-					{
+					if (socket_nueva_conexion < 0) {
 						perror ("Ocurrio un error en el accept");
 						exit (EXIT_FAILURE);
 					}
@@ -287,9 +281,7 @@ void atenderYCrearConexiones(){
 
 					//Agrego el socket de la nueva conexion al listado de sockets a monitorear
 					FD_SET (socket_nueva_conexion, &fds_activos);
-				}
-				else
-				{
+				} else {
 					//Es un socket que tiene informacion y hay que leerlo
 					char* mensaje = recibirMensajeCliente(un_socket);
 					printf("%s \n" , mensaje);

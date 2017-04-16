@@ -15,11 +15,12 @@ int main(int argc, char **argv) {
 	cargarConfiguracion(argv[0]);
 	kernel = conectarConElKernel();
 	while (1){
-			char mensaje[1000];
-			scanf("%s", mensaje);
-			send(kernel,mensaje,strlen(mensaje),0);
-		}
-		return 0;
+		char mensaje[1000];
+		scanf("%s", mensaje);
+		send(kernel,mensaje,strlen(mensaje),0);
+	}
+
+	return 0;
 }
 
 void iniciarCPU(){
