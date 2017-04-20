@@ -15,7 +15,7 @@ signed int kernel;
 
 
 void iniciarConsola();
-void cargarConfiguracion(char* pathconf);
+void cargarConfiguracion();
 int conectarConElKernel();
 
 #endif

@@ -28,7 +28,7 @@ void iniciarCPU(){
 
 }
 void cargarConfiguracion(char* pathconf){
-	t_config* config = config_create(getenv("archivo_configuracion"));
+	t_config* config = config_create(getenv("archivo_configuracion_CPU"));
 	puerto_kernel = config_get_int_value(config, "PUERTO_KERNEL");
 	ip_kernel = config_get_string_value(config, "IP_KERNEL");
 	puerto_memoria = config_get_int_value(config, "PUERTO_MEMORIA");

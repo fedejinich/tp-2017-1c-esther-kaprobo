@@ -18,7 +18,7 @@ int main(int argc, char **argv){
 
 	printf("%s", "\n\n====== INICIO MEMORIA ======\n\n");
 
-	cargarConfiguracion(argv[0]);
+	cargarConfiguracion();
 
 	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
 	pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
@@ -31,9 +31,9 @@ int main(int argc, char **argv){
 }
 
 
-void cargarConfiguracion(char* pathconf){
+void cargarConfiguracion(){
 
-	t_config* config = config_create(getenv("archivo_configuracion"));
+	t_config* config = config_create(getenv("archivo_configuracion_memoria"));
 	puerto = config_get_int_value(config, "PUERTO");
 	marcos = config_get_int_value(config, "MARCOS");
 	marco_size = config_get_int_value(config, "MARCO_SIZE");
@@ -56,7 +56,7 @@ void* hiloServidorCPU(void* arg) {
 	log_info(logger,"------Hilo CPU------\n");
 	int servidorSocket, socketCliente;
 	int *socketClienteTemp;
-	socketCPU = socket_escucha("127.0.0.1", puerto);
+	socketCPU = socket_escucha("127.0.0.2", puerto);
 	log_info(logger,"Creacion socket servidor CPU exitosa\n\n");
 	listen(socketCPU, 1024);
 	while(1) {

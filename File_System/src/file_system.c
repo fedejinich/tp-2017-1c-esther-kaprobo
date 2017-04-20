@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 void cargarConfiguracion(char* pathconf) {
 
 	log_info(logger,"Cargando archivo de configuracion 'file_system.config'...\n");
-	t_config* config = config_create(getenv("archivo_configuracion"));
+	t_config* config = config_create(getenv("archivo_configuracion_fs"));
 	puerto = config_get_int_value(config, "PUERTO");
 	puntoMontaje = config_get_string_value(config, "PUNTO_MONTAJE");
 

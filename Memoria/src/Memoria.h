@@ -37,7 +37,7 @@ un_socket socketKernel;
  * */
 
 //Funciones de configuracion
-void cargarConfiguracion(char* pathconf);
+void cargarConfiguracion();
 
 
 //Funciones de hilos

@@ -13,7 +13,7 @@
 int main(int argc, char **argv) {
 
 	iniciarConsola();
-	cargarConfiguracion(argv[0]);
+	cargarConfiguracion();
 	kernel = conectarConElKernel();
 
 	while (1){
@@ -29,9 +29,9 @@ void iniciarConsola(){
 	printf("%s", "\n\n====== INICIO CONSOLA ======\n\n");
 
 }
-void cargarConfiguracion(char* pathconf){
+void cargarConfiguracion(){
 
-	t_config* config = config_create(getenv("archivo_configuracion"));
+	t_config* config = config_create(getenv("archivo_configuracion_consola"));
 	puerto_kernel = config_get_int_value(config, "PUERTO_KERNEL");
 	ip_kernel = config_get_string_value(config, "IP_KERNEL");
 	printf("IP KERNEL: %s \n", ip_kernel);

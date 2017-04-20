@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 void cargarConfiguracion() {
 
 	printf("Cargando archivo de configuracion 'kernel.config'\n\n");
-	t_config* config = config_create(getenv("archivo_configuracion"));
+	t_config* config = config_create(getenv("archivo_configuracion_kernel"));
 	puerto_prog = config_get_int_value(config, "PUERTO_PROG");
 	puerto_cpu = config_get_int_value(config, "PUERTO_CPU");
 	ip_memoria = config_get_string_value(config, "IP_MEMORIA");
