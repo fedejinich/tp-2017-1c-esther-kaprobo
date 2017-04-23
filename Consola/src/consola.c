@@ -52,7 +52,7 @@ int conectarConElKernel(){
 	printf("CONSOLA: Kernel recibio nuestro pedido de conexion\n");
 
 	printf("CONSOLA: Iniciando Handshake\n");
-	bool resultado = realizar_handshake(kernel);
+	bool resultado = realizar_handshake(kernel, 11);
 	if (resultado){
 		printf("Handshake exitoso! Conexion establecida\n");
 		return kernel;

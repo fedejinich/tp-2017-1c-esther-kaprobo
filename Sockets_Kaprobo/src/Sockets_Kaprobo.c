@@ -10,9 +10,6 @@
 
 #include "Sockets_Kaprobo.h"
 
-
-
-
 un_socket conectar_a(char *IP, char* Port) {
 
 	struct sockaddr_in direccionServidor;
@@ -32,7 +29,6 @@ un_socket conectar_a(char *IP, char* Port) {
 }
 
 un_socket socket_escucha(char* IP, char* Port) {
-
 	struct sockaddr_in direccionServidor;
 	direccionServidor.sin_family = AF_INET;
 	direccionServidor.sin_addr.s_addr = inet_addr(IP);
@@ -50,10 +46,6 @@ un_socket socket_escucha(char* IP, char* Port) {
 
 	return socketEscucha;
 }
-
-
-
-
 
 void enviar(un_socket socket_para_enviar, int codigo_operacion, int tamanio,
 		void * data) {
@@ -117,12 +109,11 @@ void liberar_paquete(t_paquete * paquete) {
 	free(paquete);
 }
 
-bool realizar_handshake(un_socket socket_del_servidor) {
+bool realizar_handshake(un_socket socket_del_servidor,int codigo){
 
-	char * mensaje = malloc(18);
-	mensaje = "Inicio autenticacion";
-
-	enviar(socket_del_servidor, 1, 21, mensaje);
+	char* mensaje = malloc(21);
+	mensaje = "Inicio Autenticacion";
+	enviar(socket_del_servidor, codigo, 21, mensaje);
 
 	t_paquete * resultado_del_handhsake = recibir(socket_del_servidor);
 
@@ -135,14 +126,13 @@ bool realizar_handshake(un_socket socket_del_servidor) {
 
 }
 
-bool esperar_handshake(un_socket socket_del_cliente) {
+bool esperar_handshake(un_socket socket_del_cliente, int codigo) {
+	t_paquete * paquete= recibir(socket_del_cliente);
 
-	t_paquete * inicio_del_handhsake = recibir(socket_del_cliente);
+	bool resultado = (string_equals_ignore_case(
+			(char *) paquete->data, "Inicio autenticacion")&& paquete->codigo_operacion == codigo);
 
-	bool resultado = string_equals_ignore_case(
-			(char *) inicio_del_handhsake->data, "Inicio autenticacion");
-
-	liberar_paquete(inicio_del_handhsake);
+	liberar_paquete(paquete);
 
 	if (resultado) {
 

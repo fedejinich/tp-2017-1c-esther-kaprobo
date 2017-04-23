@@ -66,11 +66,11 @@ void liberar_paquete(t_paquete * paquete);
 /**	@NAME: realizar_handshake
  *
  */
-bool realizar_handshake(un_socket socket_del_servidor);
+bool realizar_handshake(un_socket socket_del_servidor, int codigo);
 
 /**	@NAME: esperar_handshake
  *
  */
-bool esperar_handshake(un_socket socket_del_cliente);
+bool esperar_handshake(un_socket socket_del_cliente, int codigo);
 
 #endif /* SRC_SOCKETLIBRARY_H_ */
