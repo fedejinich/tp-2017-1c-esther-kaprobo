@@ -27,7 +27,7 @@ void cargarConfiguracion(char* pathconf) {
 	puntoMontaje = config_get_string_value(config, "PUNTO_MONTAJE");
 
 	if(config_has_property(config,"PUERTO") && config_has_property(config,"PUNTO_MONTAJE"))
-		log_info(logger,"Archivo de configuracion cargado correctamente");
+		log_info(logger,"Archivo de configuracion cargado correctamente\n");
 	else {
 		log_error(logger,"Error al cargar archivo de configuracion");
 		if(!config_has_property(config,"PUERTO"))
