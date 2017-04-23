@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
 	iniciarCPU();
 	cargarConfiguracion(argv[0]);
 	kernel = conectarConElKernel();
+	memoria = conectarConMemoria();
 	while (1){
 		char mensaje[1000];
 		scanf("%s", mensaje);
@@ -57,6 +58,30 @@ int conectarConElKernel(){
 	if (resultado){
 		printf("Handshake exitoso! Conexion establecida\n");
 		return kernel;
+	}
+	else{
+		printf("Fallo en el handshake, se aborta conexion\n");
+		exit (EXIT_FAILURE);
+	}
+}
+
+//funcion que conecta CPU con Memoria utilizando sockets
+int conectarConMemoria(){
+	printf("Inicio de conexion con Memoria\n");
+	// funcion deSockets
+	memoria = conectar_a(ip_memoria,puerto_memoria);
+
+	if (memoria==0){
+		printf("CPU: No se pudo conectar con la Memoria\n");
+		exit (EXIT_FAILURE);
+	}
+	printf("CPU: Memoria recibio nuestro pedido de conexion\n");
+
+	printf("CPU: Iniciando Handshake\n");
+	bool resultado = realizar_handshake(memoria);
+	if (resultado){
+		printf("Handshake exitoso! Conexion establecida\n");
+		return memoria;
 	}
 	else{
 		printf("Fallo en el handshake, se aborta conexion\n");
