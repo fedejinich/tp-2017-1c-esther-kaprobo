@@ -6,6 +6,7 @@
 
 int main(int argc, char **argv) {
 
+	log_destroy(logger);
 	logger = log_create("file_system.log","File_System",0,LOG_LEVEL_INFO);
 
 	printf("%s", "\n\n====== INICIO FILE SYSTEM ======\n\n");
