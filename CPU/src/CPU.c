@@ -54,7 +54,7 @@ int conectarConElKernel(){
 	printf("CPU: Kernel recibio nuestro pedido de conexion\n");
 
 	printf("CPU: Iniciando Handshake\n");
-	bool resultado = realizar_handshake(kernel);
+	bool resultado = realizar_handshake(kernel,12);
 	if (resultado){
 		printf("Handshake exitoso! Conexion establecida\n");
 		return kernel;
@@ -78,7 +78,7 @@ int conectarConMemoria(){
 	printf("CPU: Memoria recibio nuestro pedido de conexion\n");
 
 	printf("CPU: Iniciando Handshake\n");
-	bool resultado = realizar_handshake(memoria);
+	bool resultado = realizar_handshake(memoria,15);
 	if (resultado){
 		printf("Handshake exitoso! Conexion establecida\n");
 		return memoria;
