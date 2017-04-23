@@ -4,10 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define KernelValidacion 11
+
 int main(int argc, char **argv) {
 
-	remove("file_system.log");
-	logger = log_create("file_system.log","File_System",0,LOG_LEVEL_INFO);
+	iniciarLog();
 
 	printf("%s", "\n\n====== INICIO FILE SYSTEM ======\n\n");
 	cargarConfiguracion(argv[0]);
@@ -16,6 +17,11 @@ int main(int argc, char **argv) {
 	pthread_join(servidorConexionesKernel, NULL);
 
 	return 0;
+}
+
+void iniciarLog() {
+	remove("file_system.log");
+	logger = log_create("file_system.log","File_System",0,LOG_LEVEL_INFO);
 }
 
 
@@ -49,7 +55,7 @@ void* hiloServidorKernel(void *arg) {
 	while(1) {
 		socketCliente = aceptar_conexion(socketKernel);
 		log_info(logger,"Iniciando Handshake con KERNEL\n");
-		bool resultado_hand = esperar_handshake(socketCliente,11);
+		bool resultado_hand = esperar_handshake(socketCliente,KernelValidacion);
 		if(resultado_hand) {
 			log_info(logger,"Conexión aceptada del KERNEL %d!!", socketCliente);
 			printf("Conexion aceptada del KERNEL %d, esperando mensajes \n",socketCliente);
