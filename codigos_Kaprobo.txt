@@ -1,0 +1,7 @@
+--Codigos de Hanshake
+
+	11 : Consola -> Kernel
+	12 : CPU -> Kernel
+	13 : Kernel -> Memoria
+	14 : Kernel -> File System
+	15 : CPU -> Memoria
