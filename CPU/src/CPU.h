@@ -7,6 +7,7 @@
 #include <commons/config.h>
 #include "src/Sockets_Kaprobo.h"
 #include <pthread.h>
+#include <parser/parser.h>
 
 
 char* ip_kernel;

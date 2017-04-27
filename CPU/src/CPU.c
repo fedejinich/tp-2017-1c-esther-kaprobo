@@ -18,7 +18,11 @@ int main(int argc, char **argv) {
 	while (1){
 		char mensaje[1000];
 		scanf("%s", mensaje);
-		send(kernel,mensaje,strlen(mensaje),0);
+		if(strcmp(mensaje,"help")){
+			printf("Funciones de ANSISOP: \n");
+		} else {
+			send(kernel,mensaje,strlen(mensaje),0);
+		}
 	}
 
 	return 0;
