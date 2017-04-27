@@ -12,21 +12,27 @@
 #include <stdlib.h>
 #include "Memoria.h"
 
+
 int main(int argc, char **argv){
 
-	logger = log_create("memoria.log","Memoria",0,LOG_LEVEL_INFO);
+	logger = iniciarLog("memoria.log","Memoria");
 
 	printf("%s", "\n\n====== INICIO MEMORIA ======\n\n");
 
+	//iniciarSeniales();
 	cargarConfiguracion();
+	grandMalloc();
+	//crearEstructurasAdministrativas();
+	esperarAlKernel();
+	iniciarServidor();
 
-	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
-	pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
 
-	pthread_join(servidorConexionesCPU, NULL);
-	pthread_join(servidorConexionesKernel, NULL);
 
 	return EXIT_SUCCESS;
+
+}
+
+void esperarAlKernel() {
 
 }
 
@@ -52,6 +58,25 @@ void cargarConfiguracion(){
 	log_info(logger,"El archivo de configuracion fue cargado con exito\n");
 }
 
+void grandMalloc() {
+	memoria = malloc(marcos * marco_size);
+
+	tablaDePaginas = list_create();
+
+	if (memoria == NULL) {
+		error_show("\x1b[31mNo se pudo otorgar la memoria solicitada.\n\x1b[0m");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void iniciarServidor() {
+	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
+	pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
+
+	pthread_join(servidorConexionesCPU, NULL);
+	pthread_join(servidorConexionesKernel, NULL);
+}
+
 void* hiloServidorCPU(void* arg) {
 	log_info(logger,"------Hilo CPU------\n");
 	int servidorSocket, socketCliente;
@@ -62,7 +87,7 @@ void* hiloServidorCPU(void* arg) {
 	while(1) {
 		socketCliente = aceptar_conexion(socketCPU);
 		log_info(logger,"Iniciando Handshake con CPU\n");
-		bool resultado_hand = esperar_handshake(socketCliente);
+		bool resultado_hand = esperar_handshake(socketCliente,15);
 		if(resultado_hand){
 			log_info(logger,"Conexión aceptada de la CPU %d!!\n", socketCliente);
 		} else {
@@ -100,7 +125,7 @@ void* hiloServidorKernel(void* arg) {
 	while(1) {
 		socketCliente = aceptar_conexion(socketKernel);
 		log_info(logger,"Iniciando Handshake con Kernel\n");
-		bool resultado_hand = esperar_handshake(socketCliente);
+		bool resultado_hand = esperar_handshake(socketCliente,13);
 		if(resultado_hand){
 			log_info(logger,"Conexión aceptada del Kernel %d!!\n", socketCliente);
 		} else {
@@ -114,8 +139,47 @@ void* hiloServidorKernel(void* arg) {
 	}
 }
 
+/*void* hiloConexionKernel(void* socketKernel) {
+	t_paquete * paquete_nuevo;
+
+	int pid, paginasRequeridas, tamanioCodigo;
+	char* codigo;
+
+	/*while (1) {
+
+		paquete_nuevo = recibir(socketKernel);
+		switch (paquete_nuevo->codigo_operacion) {
+			case INICIALIZAR:
+				memcpy(&pid, paquete_nuevo->data, sizeof(int));
+				memcpy(&paginasRequeridas, paquete_nuevo->data + sizeof(int),sizeof(int));
+				memcpy(&tamanioCodigo, paquete_nuevo->data + sizeof(int) * 2,sizeof(int));
+				memcpy(codigo, paquete_nuevo->data + sizeof(int) * 3,tamanioCodigo);
+
+				log_info(logger,"Llega un nuevo proceso, las paginas requeridas son %d.\n",paginasRequeridas);
+
+				codigo = malloc(tamanioCodigo);
+
+				if (puede_iniciar_proceso(pid, paginasRequeridas, codigo)) {
+					inicializar_programa(pid, paginasRequeridas);
+					log_info(logger,"Se pudo inicializar el proceso con el pid %d.\n",pid);
+					enviar(socketKernel, EXITO, sizeof(int), &pid);
+				} else {
+					log_info(logger,"No se pudo inicializar el proceso con el pid %d.\n",pid);
+					enviar(socketKernel, FRACASO, sizeof(int), &pid);
+				}
+				free(codigo);
+			break;
+			default:
+				break;
+		}
+
+	}
+}*/
+
 void* hiloConexionKernel(void* socket) {
 	while(1){
+
+//		AHORA TENGO QUE ESPERAR A RECIBIR UN ARCHIVO, CON SU RESPECTIVO RETARDO
 		char* buffer = malloc(1000);
 		int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
 		if (bytesRecibidos <= 0) {

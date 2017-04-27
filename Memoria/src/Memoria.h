@@ -5,6 +5,11 @@
 #include <commons/log.h>
 #include <pthread.h>
 #include "src/Sockets_Kaprobo.h"
+#include "commons_kaprobo/commons_kaprobo.h"
+#include <signal.h>
+#include <commons/collections/list.h>
+
+
 
 /*
  * VARIABLES
@@ -18,6 +23,10 @@ int entradas_cache;
 int cache_x_proc;
 char* reemplazo_cache;
 int retardo_memoria;
+
+//Memoria
+void* memoria;
+t_list* tablaDePaginas;
 
 //Logger
 
@@ -37,7 +46,13 @@ un_socket socketKernel;
  * */
 
 //Funciones de configuracion
+void grandMalloc();
 void cargarConfiguracion();
+
+
+//Funciones
+void iniciarSeniales();
+void iniciarServidor();
 
 
 //Funciones de hilos
