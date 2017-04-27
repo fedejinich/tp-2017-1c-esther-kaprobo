@@ -16,7 +16,14 @@
 #include <commons/log.h>
 
 
-void iniciarLog(char* nombreDelArchivoLog);
+
+
+/**
+ * @NAME: iniciarLog
+ * @DESC: Crea el .log del proceso, borrando el log anterior.
+ * @RETURN: un logger
+ */
+t_log* iniciarLog(char* nombreDelArchivoLog, char* nombreDelProceso);
 
 
 
