@@ -1,9 +1,4 @@
-
-
-
-.cproject
 .project
-/.settings
-
+.cproject
 /Debug/
-
+*.log
