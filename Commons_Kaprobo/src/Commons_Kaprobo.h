@@ -1,5 +1,5 @@
-#ifndef SRC_SOCKETS_KAPROBO_H_
-#define SRC_SOCKETS_KAPROBO_H_
+#ifndef COMMONS_KAPROBO_COMMONS_KAPROBO_H_
+#define COMMONS_KAPROBO_COMMONS_KAPROBO_H_
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,6 +13,18 @@
 #include <string.h>
 #include <commons/string.h>
 #include <commons/error.h>
+#include <commons/log.h>
+#include <commons/config.h>
+
+
+
+/**
+ * @NAME: iniciarLog
+ * @DESC: Crea el .log del proceso, borrando el log anterior.
+ * @RETURN: un logger
+ */
+t_log* iniciarLog(char* nombreDelArchivoLog, char* nombreDelProceso);
+
 
 typedef int un_socket;
 typedef struct {
@@ -73,4 +85,8 @@ bool realizar_handshake(un_socket socket_del_servidor, int codigo);
  */
 bool esperar_handshake(un_socket socket_del_cliente, int codigo);
 
-#endif /* SRC_SOCKETLIBRARY_H_ */
+
+
+
+
+#endif /* COMMONS_KAPROBO_H_ */

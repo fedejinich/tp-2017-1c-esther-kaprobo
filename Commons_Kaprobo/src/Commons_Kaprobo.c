@@ -1,14 +1,14 @@
-/*
- ============================================================================
- Name        : Sockets.c
- Author      : 
- Version     :
- Copyright   : Your copyright notice
- Description : Hello World in C, Ansi-style
- ============================================================================
- */
+#include "Commons_Kaprobo.h"
 
-#include "Sockets_Kaprobo.h"
+//LOG
+t_log* iniciarLog(char* nombreDelLog,char* nombreDelProceso) {
+	remove(nombreDelLog);
+	return log_create(nombreDelLog,nombreDelProceso,0,LOG_LEVEL_INFO);
+}
+
+
+//SOCKETS
+
 
 un_socket conectar_a(char *IP, char* Port) {
 

@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv) {
 
-	iniciarLog();
+	logger= iniciarLog("file_system.log", "File_System");
 
 	printf("%s", "\n\n====== INICIO FILE SYSTEM ======\n\n");
 	cargarConfiguracion(argv[0]);
@@ -19,10 +19,6 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-void iniciarLog() {
-	remove("file_system.log");
-	logger = log_create("file_system.log","File_System",0,LOG_LEVEL_INFO);
-}
 
 
 void cargarConfiguracion(char* pathconf) {

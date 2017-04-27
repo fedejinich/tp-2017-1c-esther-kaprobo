@@ -4,8 +4,8 @@
 #include <commons/config.h>
 #include <commons/log.h>
 #include <pthread.h>
-#include "src/Sockets_Kaprobo.h"
-#include "commons_kaprobo/commons_kaprobo.h"
+
+#include "src/Commons_Kaprobo.h"
 #include <signal.h>
 #include <commons/collections/list.h>
 
