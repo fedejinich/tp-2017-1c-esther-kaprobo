@@ -12,7 +12,6 @@
 
 int main(int argc, char **argv) {
 	fd_set descriptoresLectura;
-	int socketServidor ;
 	int socketCliente[MAX_CLIENTES];
 	int numeroClientes = 0;
 	int maximo;
@@ -26,8 +25,10 @@ int main(int argc, char **argv) {
 	cargarConfiguracion();
 	mostrarConfiguracion();
 
-	socketServidor = socket_escucha("127.0.0.1",puerto_prog);
-	listen(socketServidor,1);
+	socketCPU = socket_escucha("127.0.0.1",puerto_cpu);
+	listen(socketCPU,1);
+	socketConsola = socket_escucha("127.0.0.1",puerto_prog);
+	listen(socketConsola,1);
 	printf("Estoy Escuchando\n");
 	t_paquete* paqueteRecibido;
 
@@ -39,7 +40,8 @@ int main(int argc, char **argv) {
 			FD_ZERO (&descriptoresLectura);
 
 			//se agrega para select el servidor
-			FD_SET (socketServidor, &descriptoresLectura);
+			FD_SET (socketCPU, &descriptoresLectura);
+			FD_SET (socketConsola, &descriptoresLectura);
 
 			//se agregan para el select los clientes ya conectados
 			for (i=0; i<numeroClientes; i++)
@@ -48,8 +50,9 @@ int main(int argc, char **argv) {
 			//el valor del descriptor mas grande, si no hay, retorna 0
 			maximo = dameMaximo(socketCliente, numeroClientes);
 
-			if(maximo < socketServidor)
-				maximo = socketServidor;
+			if(maximo < socketConsola){
+				maximo = socketConsola;
+			}
 
 			//esperamos hasta que haya un cambio
 			printf("Antes Select\n");
@@ -74,9 +77,13 @@ int main(int argc, char **argv) {
 				else printf("No hubo cambios en cliente %d, continua \n\n",i+1);
 			}
 			//comprueba si algun cliente nuevo
-			if(FD_ISSET (socketServidor, &descriptoresLectura)){
-				printf("Nuevo pedido de conexion\n");
-				nuevoCliente(socketServidor, socketCliente, &numeroClientes);
+			if(FD_ISSET (socketCPU, &descriptoresLectura)){
+				printf("Nuevo pedido de conexion CPU\n");
+				nuevoCliente(socketCPU, socketCliente, &numeroClientes);
+			}
+			if(FD_ISSET (socketConsola, &descriptoresLectura)){
+				printf("Nuevo pedido de conexion Consola\n");
+				nuevoCliente(socketConsola, socketCliente, &numeroClientes);
 			}
 		}
 	return EXIT_SUCCESS;
