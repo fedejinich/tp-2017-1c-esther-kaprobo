@@ -12,15 +12,12 @@
 
 int main(int argc, char **argv) {
 	fd_set descriptoresLectura;
-		int socketServidor ;
-		int socketCliente[MAX_CLIENTES];
-		int numeroClientes = 0;
-		int maximo;
-		int i;
-		socketServidor = socket_escucha("127.0.0.1",8090);
-		listen(socketServidor,1);
-		printf("Estoy Escuchando\n");
-		t_paquete* paqueteRecibido;
+	int socketServidor ;
+	int socketCliente[MAX_CLIENTES];
+	int numeroClientes = 0;
+	int maximo;
+	int i;
+
 
 
 
@@ -28,6 +25,11 @@ int main(int argc, char **argv) {
 
 	cargarConfiguracion();
 	mostrarConfiguracion();
+
+	socketServidor = socket_escucha("127.0.0.1",puerto_prog);
+	listen(socketServidor,1);
+	printf("Estoy Escuchando\n");
+	t_paquete* paqueteRecibido;
 
 	while(1){
 			//elimina todos los clientes que hayan cerrado conexion
@@ -95,43 +97,60 @@ void cargarConfiguracion() {
 	quantum_sleep = config_get_int_value(config, "QUANTUM_SLEEP");
 	algoritmo = config_get_string_value(config, "ALGORITMO");
 	grado_multiprog = config_get_int_value(config, "GRADO_MULTIPROG");
+	//sem_ids = config_get_array_value(config, "SEM_IDS");
+	//sem_inits = config_get_array_value(config, "SEM_INIT");;
+	//shared_vars = config_get_array_value(config, "SHARED_VARS");;
+	stack_size = config_get_int_value(config, "STACK_SIZE");;
 }
 
 void mostrarConfiguracion(){
-	printf("Puerto Prog: %i \n",puerto_prog);
-	printf("Puerto CPU: %i \n",puerto_cpu);
-	printf("IP Memoria: %s \n",ip_memoria);
-	printf("Puerto Memoria: %i \n",puerto_memoria);
-	printf("IP File System: %s \n",ip_fs);
-	printf("Puerto File System: %i \n",puerto_fs);
-	printf("Quantum: %i \n",quantum);
-	printf("Quantum Sleep: %i \n",quantum_sleep);
-	printf("Algoritmo: %s \n",algoritmo);
-	printf("Grado Multiprogramacion: %i \n",grado_multiprog);
-	//Falta mostrar arrays
-}
+	printf("Puerto Prog: %i \n", puerto_prog);
+	printf("Puerto CPU: %i \n", puerto_cpu);
+	printf("IP Memoria: %s \n", ip_memoria);
+	printf("Puerto Memoria: %i \n", puerto_memoria);
+	printf("IP File System: %s \n", ip_fs);
+	printf("Puerto File System: %i \n", puerto_fs);
+	printf("Quantum: %i \n", quantum);
+	printf("Quantum Sleep: %i \n", quantum_sleep);
+	printf("Algoritmo: %s \n", algoritmo);
+	printf("Grado Multiprogramacion: %i \n", grado_multiprog);
 
+	//Falta mostrar arrays
+
+	printf("Stack Size: %i \n", stack_size);
+}
 
 void nuevoCliente (int servidor, int *clientes, int *nClientes)
 {
 	/* Acepta la conexión con el cliente, guardándola en el array */
-	clientes[*nClientes] =  aceptar_conexion(servidor);
+	clientes[*nClientes] = aceptar_conexion(servidor);
 	(*nClientes)++;
 
 	/* Si se ha superado el maximo de clientes, se cierra la conexión,
 	 * se deja todo como estaba y se vuelve. */
-	if ((*nClientes) >= MAX_CLIENTES)
+
+	printf ("CANTIDAD DE CLIENTES %d\n", *nClientes);
+	printf ("MAXIMO DE CLIENTES %i\n", MAX_CLIENTES);
+	if ((*nClientes) > MAX_CLIENTES)
 	{
 		close (clientes[(*nClientes) -1]);
 		(*nClientes)--;
 		return;
 	}
 
+	bool resultado = esperar_handshake(clientes[*nClientes - 1], 11) || esperar_handshake(clientes[*nClientes - 1], 12);
+
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
-	printf ("Aceptado cliente %d\n", *nClientes);
+	if(resultado){
+		printf ("Aceptado cliente %d\n", *nClientes);
+	}
+	else{
+		printf ("Handshake rechazado\n");
+	}
+
+
 	return;
 }
-
 
 /*
  * Función que devuelve el valor máximo en la tabla.

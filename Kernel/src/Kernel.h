@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <commons/log.h>
 
-#define MAX_CLIENTES 10
+#define MAX_CLIENTES 3
 
 /*
  * VARIABLES
@@ -26,6 +26,10 @@ int quantum;
 int quantum_sleep;
 char* algoritmo;
 int grado_multiprog;
+char* sem_ids[3];
+int sem_inits[3];
+char* shared_vars[2];
+int stack_size;
 
 //Variables para Sockets
 
