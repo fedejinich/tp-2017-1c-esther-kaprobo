@@ -16,13 +16,18 @@ int main(int argc, char **argv) {
 	kernel = conectarConElKernel();
 	memoria = conectarConMemoria();
 	while (1){
-		char mensaje[1000];
-		scanf("%s", mensaje);
-		if(strcmp(mensaje,"help")){
-			printf("Funciones de ANSISOP: \n");
-		} else {
-			send(kernel,mensaje,strlen(mensaje),0);
+		char* buffer = malloc(1000);
+		int bytesRecibidos = recv(*(int*)kernel, buffer, 1000, 0);
+		if (bytesRecibidos <= 0) {
+			perror("El proceso se desconecto\n");
+			return 1;
 		}
+
+		buffer[bytesRecibidos] = '\0';
+		printf("Me llegaron %d bytes con %s, del Kernel %d\n", bytesRecibidos, buffer,*(int*)socket);
+		pcb = deserializarPCB(buffer);
+		int pid = pcb->pid;
+		free(buffer);
 	}
 
 	return 0;
@@ -91,4 +96,24 @@ int conectarConMemoria(){
 		printf("Fallo en el handshake, se aborta conexion\n");
 		exit (EXIT_FAILURE);
 	}
+}
+
+
+//Funcion que toma lo que envio el Kernel y lo convierte en el PCB.
+t_pcb* deserializarPCB(char* buffer){
+	t_pcb* pcb;
+
+	pcb = malloc(sizeof(t_pcb));
+	memcpy(pcb, buffer, sizeof(t_pcb));
+	buffer += sizeof(t_pcb);
+
+	pcb->pid = malloc(sizeof(int));
+	memcpy(pcb->pid, buffer, sizeof(int));
+	buffer =+ sizeof(int);
+
+	pcb->contadorDePaginas = malloc(sizeof(int));
+	memcpy(pcb->contadorDePaginas, buffer, sizeof(int));
+	buffer =+ sizeof(int);
+
+	return pcb;
 }
