@@ -74,12 +74,11 @@ int main(int argc, char **argv) {
 				else printf("No hubo cambios en cliente %d, continua \n\n",i+1);
 			}
 			//comprueba si algun cliente nuevo
-			if(FD_ISSET (socketServidor, &descriptoresLectura))
+			if(FD_ISSET (socketServidor, &descriptoresLectura)){
 				printf("Nuevo pedido de conexion\n");
 				nuevoCliente(socketServidor, socketCliente, &numeroClientes);
+			}
 		}
-
-
 	return EXIT_SUCCESS;
 }
 
