@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
 	iniciarConsola();
 	crearArchivoLog();
 	cargarConfiguracion();
+	kernel = conectarConElKernel();
 
 	//Interfaz con el Usuario
 
@@ -54,7 +55,7 @@ int main(int argc, char **argv) {
 
 	}
 
-	kernel = conectarConElKernel();
+
 /*
 	while (1){
 		char mensaje[1000];
