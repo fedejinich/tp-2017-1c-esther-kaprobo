@@ -11,29 +11,73 @@
 #include "Kernel.h"
 
 int main(int argc, char **argv) {
+	fd_set descriptoresLectura;
+		int socketServidor ;
+		int socketCliente[MAX_CLIENTES];
+		int numeroClientes = 0;
+		int maximo;
+		int i;
+		socketServidor = socket_escucha("127.0.0.1",8090);
+		listen(socketServidor,1);
+		printf("Estoy Escuchando\n");
+		t_paquete* paqueteRecibido;
+
+
+
 	logger = log_create("kernel.log","Kernel",0,LOG_LEVEL_INFO);
 
 	cargarConfiguracion();
 	mostrarConfiguracion();
 
-	//Creacion de hilos servidores
-	pthread_create(&servidorConexionesConsola, NULL, hiloServidorConsola, NULL);
-	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
+	while(1){
+			//elimina todos los clientes que hayan cerrado conexion
+			compactaClaves(socketCliente, &numeroClientes);
 
-	//Creacion de hilos clientes
-	pthread_create(&clienteConexionMemoria, NULL, hiloConexionMemoria,NULL);
-	pthread_create(&clienteConexionFileSystem,NULL,hiloConexionFileSystem,NULL);
+			//se inicia descriptor lectura
+			FD_ZERO (&descriptoresLectura);
 
-	//bloqueo de hilos hasta que finalicen
-	pthread_join(servidorConexionesConsola, NULL);
-	pthread_join(servidorConexionesCPU, NULL);
-	pthread_join(clienteConexionMemoria,NULL);
-	pthread_join(clienteConexionFileSystem,NULL);
+			//se agrega para select el servidor
+			FD_SET (socketServidor, &descriptoresLectura);
 
-	/*servidor = inicializarServidor();
-	prepararservidoretServidorParaEscuchar();
-	atenderYCrearConexiones();
-	*/
+			//se agregan para el select los clientes ya conectados
+			for (i=0; i<numeroClientes; i++)
+				FD_SET (socketCliente[i],&descriptoresLectura);
+
+			//el valor del descriptor mas grande, si no hay, retorna 0
+			maximo = dameMaximo(socketCliente, numeroClientes);
+
+			if(maximo < socketServidor)
+				maximo = socketServidor;
+
+			//esperamos hasta que haya un cambio
+			printf("Antes Select\n");
+			select(maximo +1, &descriptoresLectura, NULL, NULL, NULL);
+			printf("Hubo cambios en Sockets, verificando...\n\n");
+
+			/* Se comprueba si algún cliente ya conectado ha enviado algo */
+			for (i=0; i<numeroClientes; i++){
+				printf("verificando cliente %d \n", i+1);
+				if(FD_ISSET(socketCliente[i],&descriptoresLectura)){
+					paqueteRecibido = recibir(socketCliente[i]);
+					//verifica codigo de operacion, si es -1 se desconecto
+					if(paqueteRecibido->codigo_operacion >0){
+						printf("me envio datos\n");
+					}
+					else {
+						printf("el cliente %d se desconecto\n",i+1);
+						socketCliente[i] = -1;
+					}
+
+				}
+				else printf("No hubo cambios en cliente %d, continua \n\n",i+1);
+			}
+			//comprueba si algun cliente nuevo
+			if(FD_ISSET (socketServidor, &descriptoresLectura))
+				printf("Nuevo pedido de conexion\n");
+				nuevoCliente(socketServidor, socketCliente, &numeroClientes);
+		}
+
+
 	return EXIT_SUCCESS;
 }
 
@@ -67,243 +111,65 @@ void mostrarConfiguracion(){
 	//Falta mostrar arrays
 }
 
-//Crea servidor para consola
-void *hiloServidorConsola(void *arg){
-	printf("------Hilo CONSOLA------\n");
-	int servidorSocket, socketCliente;
-	int *socketClienteTemp;
-	socketConsola = socket_escucha("127.0.0.1", puerto_prog);
-	printf("Creacion socket servidor consola exitosa\n\n");
-	listen(socketConsola, 1024);
-	while(1){
 
-		//printf("a: %d\n",a);
-		socketCliente = aceptar_conexion(socketConsola);
-		printf("Iniciando Handshake con CONSOLA\n");
-			bool resultado_hand = esperar_handshake(socketCliente);
-			if(resultado_hand){
-				printf("Conexión aceptada de la consola %d!!\n\n", socketCliente);
+void nuevoCliente (int servidor, int *clientes, int *nClientes)
+{
+	/* Acepta la conexión con el cliente, guardándola en el array */
+	clientes[*nClientes] =  aceptar_conexion(servidor);
+	(*nClientes)++;
 
-
-			}else {
-				printf("Handshake fallo, se aborta conexion\n\n");
-				exit (EXIT_FAILURE);
-			};
-		socketClienteTemp=malloc(sizeof(int));
-		*socketClienteTemp = socketCliente;
-		pthread_t conexionConsola;
-		pthread_create(&conexionConsola, NULL, hiloConexionConsola, (void*)socketClienteTemp);
-
+	/* Si se ha superado el maximo de clientes, se cierra la conexión,
+	 * se deja todo como estaba y se vuelve. */
+	if ((*nClientes) >= MAX_CLIENTES)
+	{
+		close (clientes[(*nClientes) -1]);
+		(*nClientes)--;
+		return;
 	}
 
-}
-//Crea hilos para atender todas las solicitudes que lleguen desde Consola
-void *hiloConexionConsola(void *socket){
-
-	while(1) {
-		char* buffer = malloc(1000);
-		int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
-		if (bytesRecibidos <= 0) {
-			perror("El proceso se desconecto\n");
-			return 1;
-		}
-
-		buffer[bytesRecibidos] = '\0';
-		printf("Me llegaron %d bytes con %s, de la consola %d\n", bytesRecibidos, buffer,*(int*)socket);
-		send(*(int*)socket,*buffer,strlen(buffer),0);
-		replicarMensajeAFileSystemYMemoria(buffer);
-		free(buffer);
-	}
-
-	return 0;
-
-}
-
-void replicarMensajeAFileSystemYMemoria(char* mensaje) {
-
-	//send(*(int*)fileSystem,*mensaje,strlen(mensaje),0);
-
-}
-
-//Crea servidor para CPU
-void *hiloServidorCPU(void *arg){
-	printf("------Hilo CPU------\n");
-	int servidorSocket, socketCliente;
-	int *socketClienteTemp;
-	socketCPU = socket_escucha("127.0.0.1", puerto_cpu);
-	printf("Creacion socket servidor CPU exitosa\n\n");
-	listen(socketCPU, 1024);
-	while(1){
-
-
-		socketCliente = aceptar_conexion(socketCPU);
-		printf("Iniciando Handshake con CPU\n");
-			bool resultado_hand = esperar_handshake(socketCliente);
-			if(resultado_hand){
-				printf("Conexión aceptada de la CPU %d!!\n\n", socketCliente);
-
-
-			}else {
-				printf("Handshake fallo, se aborta conexion\n\n");
-				exit (EXIT_FAILURE);
-			};
-		socketClienteTemp=malloc(sizeof(int));
-		*socketClienteTemp = socketCliente;
-		pthread_t conexionCPU;
-		pthread_create(&conexionCPU, NULL, hiloConexionCPU, (void*)socketClienteTemp);
-
-	}
-
-}
-
-//Crea hilos para atender todas las solicitudes que lleguen desde CPU
-void *hiloConexionCPU(void *socket){
-
-	while(1){
-	char* buffer = malloc(1000);
-	int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
-	if (bytesRecibidos <= 0) {
-		perror("El proceso se desconecto\n");
-		return 1;
-	}
-
-	buffer[bytesRecibidos] = '\0';
-	printf("Me llegaron %d bytes con %s, de la CPU %d\n", bytesRecibidos, buffer,*(int*)socket);
-	free(buffer);
-	}
-
-	return 0;
-
-}
-
-void* hiloConexionFileSystem(void* arg) {
-	printf("------Hilo File System------\n");
-	fileSystem = conectarConFileSystem();
-
-	//Conexion  file system
-	while (1){
-		char mensaje[1000];
-		scanf("%s", mensaje);
-		send(fileSystem,mensaje,strlen(mensaje),0);
-	}
-
-}
-
-un_socket conectarConFileSystem() {
-	printf("Inicio de conexion con File System\n");
-	// funcion deSockets
-	int socketFileSystem = conectar_a(ip_fs,puerto_fs);
-	if (socketFileSystem == 0) {
-		printf("KERNEL: No se pudo conectar con File System\n");
-		exit (EXIT_FAILURE);
-	}
-	printf("KERNEL: File System recibio nuestro pedido de conexion\n");
-	printf("KERNEL: Iniciando Handshake\n");
-	bool resultado = realizar_handshake(socketFileSystem);
-		if (resultado){
-		printf("Handshake exitoso! Conexion establecida\n");
-		return socketFileSystem;
-	} else {
-		printf("Fallo en el handshake, se aborta conexion\n");
-		exit (EXIT_FAILURE);
-	}
-}
-
-void *hiloConexionMemoria(void *arg){
-printf("------Inicio conexion con Memoria------\n\n");
-return 0;
+	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
+	printf ("Aceptado cliente %d\n", *nClientes);
+	return;
 }
 
 
+/*
+ * Función que devuelve el valor máximo en la tabla.
+ * Supone que los valores válidos de la tabla son positivos y mayores que 0.
+ * Devuelve 0 si n es 0 o la tabla es NULL */
+int dameMaximo (int *tabla, int n)
+{
+	int i;
+	int max;
 
+	if ((tabla == NULL) || (n<1))
+		return 0;
 
-int inicializarServidor(){
-	struct sockaddr_in direccionServidor;
-	direccionServidor.sin_family = AF_INET;
-	direccionServidor.sin_addr.s_addr = INADDR_ANY;
-	direccionServidor.sin_port = htons(8080);
+	max = tabla[0];
+	for (i=0; i<n; i++)
+		if (tabla[i] > max)
+			max = tabla[i];
 
-	int servidor = socket(AF_INET, SOCK_STREAM, 0);
-
-	int activado = 1;
-	setsockopt(servidor, SOL_SOCKET, SO_REUSEADDR, &activado, sizeof(activado));
-
-	if (bind(servidor, (void*) &direccionServidor, sizeof(direccionServidor)) != 0) {
-		perror("Falló el bind");
-		return 1;
-	}
-
-	printf("Estoy escuchando\n");
-	listen(servidor, 100);
-	return servidor;
+	return max;
 }
 
-void prepararservidoretServidorParaEscuchar() {
-	FD_ZERO(&fds_activos);
-	FD_SET(servidor, &fds_activos);
-}
+void compactaClaves (int *tabla, int *n)
+{
+	int i,j;
 
-void atenderYCrearConexiones() {
-	while (1) {
-		/* Bloquea hasta que llegan modificaciones de uno o mas sockets. */
-		timeout.tv_sec = 10;
-		timeout.tv_usec = 500000;
-		int sockets_a_atender = select (FD_SETSIZE, &fds_activos, NULL, NULL, &timeout);
-		if (sockets_a_atender < 0) {
-			perror ("Ocurrio un error en el select");
-			exit (EXIT_FAILURE);
-		}
+	if ((tabla == NULL) || ((*n) == 0))
+		return;
 
-		if (sockets_a_atender == 0)	{
-			perror ("Ocurrio un error de timeout");
-			exit (EXIT_FAILURE);
-		}
-
-		// Atender a todos los sockets con alguna modificacion.
-		int un_socket;
-		struct sockaddr_in cliente;
-		size_t size;
-
-		//Recorro el listado de sockets para ver cuales fueron modificados.
-		for (un_socket = 0; un_socket < FD_SETSIZE; ++un_socket){
-			//Si un socket ISSET, significa que fue modificado, sino, no
-			if (FD_ISSET (un_socket, &fds_activos))	{
-				//Si el socket modificado en cuestion es el servidor, significa que hay un pedido de nueva conexion
-				if (un_socket == servidor) {
-					int socket_nueva_conexion;
-					size = sizeof (cliente);
-					socket_nueva_conexion = accept (servidor, (struct servidoraddr *) &cliente, &size);
-					if (socket_nueva_conexion < 0) {
-						perror ("Ocurrio un error en el accept");
-						exit (EXIT_FAILURE);
-					}
-					fprintf (stderr, "Servidor: conectar desde host %s, puerto %hd.\n", inet_ntoa (cliente.sin_addr), ntohs (cliente.sin_port));
-
-					//Agrego el socket de la nueva conexion al listado de sockets a monitorear
-					FD_SET (socket_nueva_conexion, &fds_activos);
-				} else {
-					//Es un socket que tiene informacion y hay que leerlo
-					char* mensaje = recibirMensajeCliente(un_socket);
-					printf("%s \n" , mensaje);
-				}
-			}
+	j=0;
+	for (i=0; i<(*n); i++)
+	{
+		if (tabla[i] != -1)
+		{
+			tabla[j] = tabla[i];
+			j++;
 		}
 	}
+
+	*n = j;
 }
-
-char* recibirMensajeCliente(int un_socket){
-
-	char* payload;
-	recv(un_socket, &payload, 512, 0);
-
-	//Para cuando utilicemos el header, por ahora, basico
-	/*int header;
-
-	recv(un_socket, &header, sizeof(int), 0);
-
-	recv(un_socket, &payload, tamanio_payload, 0);
-
-	return payload;*/
-}
-
 

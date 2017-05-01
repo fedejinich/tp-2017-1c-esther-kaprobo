@@ -6,6 +6,8 @@
 #include <pthread.h>
 #include <commons/log.h>
 
+#define MAX_CLIENTES 10
+
 /*
  * VARIABLES
  * */
@@ -25,11 +27,8 @@ int quantum_sleep;
 char* algoritmo;
 int grado_multiprog;
 
-// Hilos
-pthread_t servidorConexionesConsola, servidorConexionesCPU, clienteConexionMemoria, clienteConexionFileSystem;
-
-
 //Variables para Sockets
+
 un_socket fileSystem;
 int servidor; //Identificador del socket del servidor
 fd_set fds_activos; //Almacena los sockets a ser monitoreados por el select
@@ -51,6 +50,10 @@ int inicializarServidor();
 void prepararservidoretServidorParaEscuchar();
 void atenderYCrearConexiones();
 char* recibirMensajeCliente();
+void compactaClaves(int *tabla, int *n);
+int dameMaximo (int *tabla, int n);
+
+void nuevoCliente (int servidor, int *clientes, int *nClientes);
 
 //Funciones de Hilos
 void* hiloServidorConsola(void *arg);
