@@ -10,6 +10,10 @@ char* ip_kernel;
 int puerto_kernel;
 t_log * log;
 
+
+//Hilos
+pthread_t threadNewProgram;
+
 //Sockets
 signed int kernel;
 

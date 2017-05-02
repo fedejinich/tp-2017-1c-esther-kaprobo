@@ -90,6 +90,8 @@ void cargarConfiguracion(){
 //Iniciara programa AnSISOP recibiendo el path del script. Creará un hilo Programa
 void iniciarPrograma(){
 	printf("Iniciar Programa\n\n");
+	pthread_create(&threadNewProgram, NULL, hiloNuevoPrograma, NULL);
+
 	return;
 }
 
@@ -108,9 +110,14 @@ void limpiarMensajes(){
 	return;
 }
 
+void hiloNuevoPrograma(){
+
+}
+
+
+
+
 //funcion que conecta Consola con Kernel utilizando sockets
-
-
 int conectarConElKernel(){
 	printf("Inicio de conexion con Kernel\n");
 	// funcion deSockets
