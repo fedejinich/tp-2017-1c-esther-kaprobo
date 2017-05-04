@@ -3,6 +3,7 @@
 #include <string.h>
 #include <commons/config.h>
 #include "src/Commons_Kaprobo.h"
+#include "src/Estructuras.h"
 #include <pthread.h>
 #include <commons/log.h>
 #include <math.h>
@@ -12,6 +13,8 @@
 
 //Logger
 t_log* logger;
+
+
 
 /*
  *
@@ -70,10 +73,4 @@ un_socket conectarConLaMemoria();
 
 
 
-typedef struct {
-	int programID;
-	int pageCounter;
-	//Falta referencia a tabla
-	int stackPosition;
-	int exitCode;
-} t_pcb;
+

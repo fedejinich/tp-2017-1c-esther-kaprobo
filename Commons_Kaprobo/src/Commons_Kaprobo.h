@@ -1,5 +1,5 @@
-#ifndef COMMONS_KAPROBO_COMMONS_KAPROBO_H_
-#define COMMONS_KAPROBO_COMMONS_KAPROBO_H_
+#ifndef COMMONS_KAPROBO_H_
+#define COMMONS_KAPROBO_H_
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -15,9 +15,25 @@
 #include <commons/error.h>
 #include <commons/log.h>
 #include <commons/config.h>
+#include <commons/collections/list.h>
+
+//Estructuras
+
+typedef struct {
+	int codigo_operacion;
+	int tamanio;
+	void * data;
+} t_paquete;
 
 
 
+
+//Variables
+
+typedef int un_socket;
+
+
+//Funciones Generales
 /**
  * @NAME: iniciarLog
  * @DESC: Crea el .log del proceso, borrando el log anterior.
@@ -26,12 +42,7 @@
 t_log* iniciarLog(char* nombreDelArchivoLog, char* nombreDelProceso);
 
 
-typedef int un_socket;
-typedef struct {
-	int codigo_operacion;
-	int tamanio;
-	void * data;
-} t_paquete;
+//Funciones Sockets
 
 /**	@NAME: conectar_a
  * 	@DESC: Intenta conectarse.

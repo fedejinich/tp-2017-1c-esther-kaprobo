@@ -10,6 +10,7 @@
 
 #include "Kernel.h"
 
+
 int main(int argc, char **argv) {
 	int i;
 
@@ -170,8 +171,10 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido){
 
 void crearProcesoAnsisop(){
 	//Creo PCB para el proceso en cuestion
+
 	t_pcb* pcb;
 	pcb->programID = 1;
+
 
 	//Pido paginas a memoria y memoria me dice si le alcanzan
 	int resultadoPedidoPaginas = pedirPaginasParaProceso();
@@ -190,6 +193,7 @@ int pedirPaginasParaProceso(){
 	memoria = conectarConLaMemoria();
 	//Calculo paginas de memoria que necesito pedir de memoria para este script
 	int paginasAPedir = ceil(paqueteRecibido->tamanio/TAMANIODEPAGINA);
+
 
 	//Armo el paquete con el pedido de paginas para mandar a memoria y lo envio
 	t_paquete* pedidoDePaginas;
