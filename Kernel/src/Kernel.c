@@ -137,8 +137,7 @@ void nuevoCliente (int servidor, int *clientes, int *nClientes)
 	/* Si se ha superado el maximo de clientes, se cierra la conexión,
 	 * se deja todo como estaba y se vuelve. */
 
-	if ((*nClientes) > MAX_CLIENTES)
-	{
+	if ((*nClientes) > MAX_CLIENTES) {
 		close (clientes[(*nClientes) -1]);
 		(*nClientes)--;
 		return;
@@ -183,8 +182,7 @@ void crearProcesoAnsisop(){
 	if(resultadoPedidoPaginas > 0){
 		pcb->pageCounter = resultadoPedidoPaginas;
 	}
-	else
-	{
+	else {
 		//????
 	}
 }
@@ -198,6 +196,7 @@ int pedirPaginasParaProceso(){
 	//Armo el paquete con el pedido de paginas para mandar a memoria y lo envio
 	t_paquete* pedidoDePaginas;
 	pedidoDePaginas->codigo_operacion = 201; //HAY QUE HACER UN ARCHIVO DE CODIGOS URGENTE, ESTE LO INVENTE 201 = PEDIDO DE PAGINAS DE KERNEL A MEMORIA
+	//ENUMS, NADA DE CODIGOS!
 	pedidoDePaginas->tamanio = sizeof(int);
 	pedidoDePaginas->data = paginasAPedir;
 	enviar(memoria, 201, pedidoDePaginas->tamanio,pedidoDePaginas);//VA ACA EL 201 O EN EL PAQUETE?
@@ -239,8 +238,7 @@ int conectarConLaMemoria(){
  * Función que devuelve el valor máximo en la tabla.
  * Supone que los valores válidos de la tabla son positivos y mayores que 0.
  * Devuelve 0 si n es 0 o la tabla es NULL */
-int dameSocketMasGrande (int *tabla, int n)
-{
+int dameSocketMasGrande (int *tabla, int n) {
 	int i;
 	int max;
 
@@ -255,18 +253,15 @@ int dameSocketMasGrande (int *tabla, int n)
 	return max;
 }
 
-void compactaClaves (int *tabla, int *n)
-{
+void compactaClaves (int *tabla, int *n) {
 	int i,j;
 
 	if ((tabla == NULL) || ((*n) == 0))
 		return;
 
 	j=0;
-	for (i=0; i<(*n); i++)
-	{
-		if (tabla[i] != -1)
-		{
+	for (i=0; i<(*n); i++) {
+		if (tabla[i] != -1) {
 			tabla[j] = tabla[i];
 			j++;
 		}
