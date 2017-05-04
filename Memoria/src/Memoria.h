@@ -4,11 +4,15 @@
 #include <commons/config.h>
 #include <commons/log.h>
 #include <pthread.h>
-
-#include "src/Commons_Kaprobo.h"
 #include <signal.h>
 #include <commons/collections/list.h>
+
+
+#include "src/Commons_Kaprobo.h"
 #include "estructuras.h"
+#include "hilos/hiloCPU.h"
+#include "hilos/hiloKernel.h"
+#include "hilos/hiloConsola.h"
 
 
 
@@ -37,6 +41,7 @@ t_log* logger;
 
 pthread_t servidorConexionesCPU;
 pthread_t servidorConexionesKernel;
+pthread_t consolaMemoria;
 
 //Sockets
 un_socket socketCPU;
@@ -52,7 +57,7 @@ void cargarConfiguracion();
 
 //Funciones
 void iniciarSeniales();
-void iniciarServidor();
+void iniciarHilos();
 
 
 void alojarEnMemoria(int pid, int paginasRequeridas);
@@ -66,4 +71,5 @@ void* hiloServidorCPU(void* arg);
 void* hiloConexionCPU(void* socket);
 void* hiloServidorKernel(void* arg);
 void* hiloConexionKernel(void* socket);
+void* hiloConsolaMemoria();
 
