@@ -11,23 +11,16 @@
 #include "CPU.h"
 
 int main(int argc, char **argv) {
+	t_paquete* paquete_recibido;
 	iniciarCPU();
 	cargarConfiguracion(argv[0]);
 	kernel = conectarConElKernel();
 	memoria = conectarConMemoria();
 	while (1){
-		char* buffer = malloc(1000);
-		int bytesRecibidos = recv(*(int*)kernel, buffer, 1000, 0);
-		if (bytesRecibidos <= 0) {
-			perror("El proceso se desconecto\n");
-			return 1;
-		}
-
-		buffer[bytesRecibidos] = '\0';
-		printf("Me llegaron %d bytes con %s, del Kernel %d\n", bytesRecibidos, buffer,*(int*)socket);
-		pcb = deserializarPCB(buffer);
+		paquete_recibido = recibir(kernel);
+		pcb = deserializarPCB(paquete_recibido->data);
 		int pid = pcb->pid;
-		free(buffer);
+		free(paquete_recibido);
 	}
 
 	return 0;

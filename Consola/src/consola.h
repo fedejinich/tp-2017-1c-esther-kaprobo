@@ -2,19 +2,31 @@
 #define CONSOLA_H_
 
 #include "src/Commons_Kaprobo.h"
+#include <pthread.h>
 
 #define ARCHIVOLOG "Consola.log"
 
 //Configuracion
 char* ip_kernel;
 int puerto_kernel;
+
+//log
 t_log * log;
+
+//Varias
+char* script;
+FILE* archivo;
+char nomArchi[50];
+
+//Hilos
+pthread_t threadNewProgram;
 
 //Sockets
 signed int kernel;
+t_paquete *paqueteRecibido;
 
 //Variables Consola
-bool ejecuta;
+int ejecuta;
 int opcion;
 
 //Funciones Consola
@@ -26,6 +38,9 @@ void iniciarPrograma();
 void finalizarPrograma();
 void desconectarConsola();
 void limpiarMensajes();
+void hiloNuevoPrograma();
+char * leerArchivo(FILE *archivo);
+
 
 //Funciones Sockets
 int conectarConElKernel();

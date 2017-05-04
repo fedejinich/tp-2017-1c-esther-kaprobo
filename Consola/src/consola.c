@@ -11,8 +11,10 @@
 #include "consola.h"
 //Comentar para entregas todos los printf
 
+int ejecuta = 1;
+
 int main(int argc, char **argv) {
-	ejecuta = true;
+
 	iniciarConsola();
 	crearArchivoLog();
 	cargarConfiguracion();
@@ -54,7 +56,7 @@ int main(int argc, char **argv) {
 
 	}
 
-	kernel = conectarConElKernel();
+
 /*
 	while (1){
 		char mensaje[1000];
@@ -89,6 +91,8 @@ void cargarConfiguracion(){
 //Iniciara programa AnSISOP recibiendo el path del script. Creará un hilo Programa
 void iniciarPrograma(){
 	printf("Iniciar Programa\n\n");
+	pthread_create(&threadNewProgram, NULL, hiloNuevoPrograma, NULL);
+	pthread_join(threadNewProgram, NULL);
 	return;
 }
 
@@ -107,9 +111,42 @@ void limpiarMensajes(){
 	return;
 }
 
+//Funcion que es creada con un hiloPrograma
+void hiloNuevoPrograma(){
+	printf("Ingrese el nombre del archivo\n");
+	scanf("%s",&nomArchi);
+
+	//Solicito archivo, lo abro y en caso de no poder, salgo con error
+	archivo = fopen(nomArchi, "r");
+	if(archivo == NULL){
+		printf("No se pudo abrir el archivo\n");
+		exit (EXIT_FAILURE);
+	}
+
+	else
+	{
+		//Creo el script, en base al archivo
+		script = leerArchivo(archivo);
+		fclose(archivo);
+		printf("enviando a ejecutar programa AnSISOP\n");
+		printf("el script es: %s\n",script);
+	}
+	char* scriptParaEnviar = malloc(strlen(script));
+	memcpy(scriptParaEnviar, script, strlen(script));
+
+	//Abro conexion con Kernel, realizo Handshake dentro
+	kernel = conectarConElKernel();
+
+	//envio paquete con codigo 101 y el script a ejecutar al Kernel
+	enviar(kernel, 101, strlen(script),scriptParaEnviar);
+	free(scriptParaEnviar);
+
+}
+
+
+
+
 //funcion que conecta Consola con Kernel utilizando sockets
-
-
 int conectarConElKernel(){
 	printf("Inicio de conexion con Kernel\n");
 	// funcion deSockets
@@ -134,4 +171,13 @@ int conectarConElKernel(){
 
 
 
+}
+char * leerArchivo(FILE *archivo){
+	fseek(archivo, 0, SEEK_END);
+	long fsize = ftell(archivo);
+	fseek(archivo, 0, SEEK_SET);
+	char *script = malloc(fsize + 1);
+	fread(script, fsize, 1, archivo);
+	script[fsize] = '\0';
+	return script;
 }
