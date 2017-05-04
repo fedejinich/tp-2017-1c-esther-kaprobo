@@ -21,21 +21,13 @@ int main(int argc, char **argv){
 
 	//iniciarSeniales();
 	cargarConfiguracion();
-	grandMalloc();
-	//crearEstructurasAdministrativas();
-	esperarAlKernel();
+	grandMalloc(); //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
 	iniciarServidor();
-
 
 
 	return EXIT_SUCCESS;
 
 }
-
-void esperarAlKernel() {
-
-}
-
 
 void cargarConfiguracion(){
 
@@ -58,15 +50,17 @@ void cargarConfiguracion(){
 	log_info(logger,"El archivo de configuracion fue cargado con exito\n");
 }
 
-void grandMalloc() {
-	memoria = malloc(marcos * marco_size);
+void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
 
-	tablaDePaginas = list_create();
+	memoria = malloc(marcos * marco_size);
 
 	if (memoria == NULL) {
 		error_show("\x1b[31mNo se pudo otorgar la memoria solicitada.\n\x1b[0m");
 		exit(EXIT_FAILURE);
 	}
+
+	tablaDePaginas = list_create();
+
 }
 
 void iniciarServidor() {
@@ -76,6 +70,8 @@ void iniciarServidor() {
 	pthread_join(servidorConexionesCPU, NULL);
 	pthread_join(servidorConexionesKernel, NULL);
 }
+
+
 
 void* hiloServidorCPU(void* arg) {
 	log_info(logger,"------Hilo CPU------\n");
@@ -102,7 +98,7 @@ void* hiloServidorCPU(void* arg) {
 }
 
 void* hiloConexionCPU(void* socket) {
-	while(1){
+	while(1) {
 		char* buffer = malloc(1000);
 		int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
 		if (bytesRecibidos <= 0) {
@@ -115,80 +111,23 @@ void* hiloConexionCPU(void* socket) {
 	}
 }
 
-void* hiloServidorKernel(void* arg) {
-	log_info(logger,"------Hilo Kernel------\n");
-	int servidorSocket, socketCliente;
-	int *socketClienteTemp;
-	socketKernel = socket_escucha("127.0.0.1", puerto);
-	log_info(logger,"Creacion socket servidor Kernel exitosa\n");
-	listen(socketKernel, 1024);
-	while(1) {
-		socketCliente = aceptar_conexion(socketKernel);
-		log_info(logger,"Iniciando Handshake con Kernel\n");
-		bool resultado_hand = esperar_handshake(socketCliente,13);
-		if(resultado_hand){
-			log_info(logger,"Conexión aceptada del Kernel %d!!\n", socketCliente);
-		} else {
-			log_info(logger,"Handshake fallo, se aborta conexion\n");
-			exit (EXIT_FAILURE);
-		}
-		socketClienteTemp = malloc(sizeof(int));
-		*socketClienteTemp = socketCliente;
-		pthread_t conexionKernel;
-		pthread_create(&conexionKernel, NULL, hiloConexionKernel, (void*)socketClienteTemp);
+void alojarEnMemoria(int pid, int paginasRequeridas) {
+	int i;
+	for(i = 0; i <= paginasRequeridas; i++) {
+		//no se por que me tira error al hacer entrada->pagina = i, etc
+		t_entradaTablaDePaginas entrada;
+		entrada.pagina = i;
+		entrada.marco = i;
+		entrada.pid = pid;
+		//list_add(memoria,entrada); no deberia estar comentado
 	}
+
 }
 
-/*void* hiloConexionKernel(void* socketKernel) {
-	t_paquete * paquete_nuevo;
 
-	int pid, paginasRequeridas, tamanioCodigo;
-	char* codigo;
-
-	/*while (1) {
-
-		paquete_nuevo = recibir(socketKernel);
-		switch (paquete_nuevo->codigo_operacion) {
-			case INICIALIZAR:
-				memcpy(&pid, paquete_nuevo->data, sizeof(int));
-				memcpy(&paginasRequeridas, paquete_nuevo->data + sizeof(int),sizeof(int));
-				memcpy(&tamanioCodigo, paquete_nuevo->data + sizeof(int) * 2,sizeof(int));
-				memcpy(codigo, paquete_nuevo->data + sizeof(int) * 3,tamanioCodigo);
-
-				log_info(logger,"Llega un nuevo proceso, las paginas requeridas son %d.\n",paginasRequeridas);
-
-				codigo = malloc(tamanioCodigo);
-
-				if (puede_iniciar_proceso(pid, paginasRequeridas, codigo)) {
-					inicializar_programa(pid, paginasRequeridas);
-					log_info(logger,"Se pudo inicializar el proceso con el pid %d.\n",pid);
-					enviar(socketKernel, EXITO, sizeof(int), &pid);
-				} else {
-					log_info(logger,"No se pudo inicializar el proceso con el pid %d.\n",pid);
-					enviar(socketKernel, FRACASO, sizeof(int), &pid);
-				}
-				free(codigo);
-			break;
-			default:
-				break;
-		}
-
-	}
-}*/
-
-void* hiloConexionKernel(void* socket) {
-	while(1){
-
-//		AHORA TENGO QUE ESPERAR A RECIBIR UN ARCHIVO, CON SU RESPECTIVO RETARDO
-		char* buffer = malloc(1000);
-		int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
-		if (bytesRecibidos <= 0) {
-			log_warning(logger,"El proceso se desconecto\n");
-			return 1;
-		}
-		buffer[bytesRecibidos] = '\0';
-		printf("Me llegaron %d bytes con %s, de la Kernel %d\n", bytesRecibidos, buffer,*(int*)socket);
-		free(buffer);
-	}
+bool espacioDisponible(int pid, int paginasRequeridas) {
+	return true;
 }
+
+
 

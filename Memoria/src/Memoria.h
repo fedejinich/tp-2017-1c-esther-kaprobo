@@ -8,6 +8,7 @@
 #include "src/Commons_Kaprobo.h"
 #include <signal.h>
 #include <commons/collections/list.h>
+#include "estructuras.h"
 
 
 
@@ -25,7 +26,7 @@ char* reemplazo_cache;
 int retardo_memoria;
 
 //Memoria
-void* memoria;
+t_list* memoria;
 t_list* tablaDePaginas;
 
 //Logger
@@ -49,11 +50,15 @@ un_socket socketKernel;
 void grandMalloc();
 void cargarConfiguracion();
 
-
 //Funciones
 void iniciarSeniales();
 void iniciarServidor();
 
+
+void alojarEnMemoria(int pid, int paginasRequeridas);
+bool espacioDisponible(int pid, int paginasRequeridas);
+void agregarEntradaEnTablaDePaginas(int pid, int paginasRequeridas);
+int getMarcoDisponible();
 
 //Funciones de hilos
 
