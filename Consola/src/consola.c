@@ -30,8 +30,7 @@ int main(int argc, char **argv) {
 		printf("Su Opcion:");
 		scanf("%i",&opcion);
 		//opciones para consola
-		switch(opcion)
-		{
+		switch(opcion) {
 		case 1 :
 			//Inicia nuevo programa AnSISOP, va a enviar el path del script
 			iniciarPrograma();
