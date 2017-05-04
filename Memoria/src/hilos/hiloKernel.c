@@ -8,7 +8,7 @@
 #include "hiloKernel.h"
 
 void* hiloServidorKernel(void* arg) {
-	log_info(logger,"------Hilo Kernel------\n");
+	log_info(logger,"Inicio del hilo Kernel\n");
 	int servidorSocket, socketCliente;
 	int *socketClienteTemp;
 	socketKernel = socket_escucha("127.0.0.1", puerto);
