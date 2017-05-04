@@ -5,17 +5,21 @@
 #include "src/Commons_Kaprobo.h"
 #include <pthread.h>
 #include <commons/log.h>
+#include <math.h>
 
 #define MAX_CLIENTES 3
-
-/*
- * VARIABLES
- * */
+#define TAMANIODEPAGINA 256
 
 //Logger
 t_log* logger;
 
-//Variables de configuracion
+/*
+ *
+ * CONFIGURACION
+ *
+ * */
+
+//VARIABLES
 int puerto_prog;
 int puerto_cpu;
 char* ip_memoria;
@@ -31,40 +35,45 @@ int sem_inits[3];
 char* shared_vars[2];
 int stack_size;
 
-//Variables para Sockets
-
-un_socket fileSystem;
-int servidor; //Identificador del socket del servidor
-fd_set fds_activos; //Almacena los sockets a ser monitoreados por el select
-struct timeval timeout;
-
-
-int socketConsola, socketCPU;
-
-/*
- * FUNCIONES
- * */
-
-//Funciones de configuracion
+//FUNCIONES
 void cargarConfiguracion();
 void mostrarConfiguracion();
 
-//Funciones de sockets
-int inicializarServidor();
-void prepararservidoretServidorParaEscuchar();
-void atenderYCrearConexiones();
-char* recibirMensajeCliente();
+/*
+ *
+ * SOCKETS
+ *
+ * */
+
+//VARIABLES
+un_socket fileSystem;
+un_socket socketConsola;
+un_socket socketCPU;
+fd_set fds_activos; //Almacena los sockets a ser monitoreados por el select
+un_socket socketCliente[MAX_CLIENTES];
+un_socket socketMasGrande;
+int numeroClientes = 0;
+t_paquete* paqueteRecibido;
+un_socket memoria;
+
+//struct timeval timeout;
+
+//FUNCIONES
 void compactaClaves(int *tabla, int *n);
-int dameMaximo (int *tabla, int n);
-
+int dameSocketMasGrande (int *tabla, int n);
+void prepararSocketsServidores();
+void verSiHayNuevosClientes();
 void nuevoCliente (int servidor, int *clientes, int *nClientes);
+void procesarPaqueteRecibido(t_paquete* paqueteRecibido);
+int pedirPaginasParaProceso();
+un_socket conectarConLaMemoria();
 
-//Funciones de Hilos
-void* hiloServidorConsola(void *arg);
-void* hiloConexionConsola(void *socket);
-void* hiloServidorCPU(void *arg);
-void* hiloConexionCPU(void *socket);
-void* hiloClienteFileSystem(void* arg);
-void* hiloConexionFileSystem(void *arg);
-void* hiloConexionMemoria(void *arg);
 
+
+typedef struct {
+	int programID;
+	int pageCounter;
+	//Falta referencia a tabla
+	int stackPosition;
+	int exitCode;
+} t_pcb;

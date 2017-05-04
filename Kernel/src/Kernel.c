@@ -11,81 +11,63 @@
 #include "Kernel.h"
 
 int main(int argc, char **argv) {
-	fd_set descriptoresLectura;
-	int socketCliente[MAX_CLIENTES];
-	int numeroClientes = 0;
-	int maximo;
 	int i;
 
-
-
-
+	//Crear Log
 	logger = log_create("kernel.log","Kernel",0,LOG_LEVEL_INFO);
 
 	cargarConfiguracion();
 	mostrarConfiguracion();
 
-	socketCPU = socket_escucha("127.0.0.1",puerto_cpu);
-	listen(socketCPU,1);
-	socketConsola = socket_escucha("127.0.0.1",puerto_prog);
-	listen(socketConsola,1);
-	printf("Estoy Escuchando\n");
-	t_paquete* paqueteRecibido;
+	prepararSocketsServidores();
 
 	while(1){
-			//elimina todos los clientes que hayan cerrado conexion
-			compactaClaves(socketCliente, &numeroClientes);
+		//elimina todos los clientes que hayan cerrado conexion
+		compactaClaves(socketCliente, &numeroClientes);
 
-			//se inicia descriptor lectura
-			FD_ZERO (&descriptoresLectura);
+		//se inicia descriptor lectura
+		FD_ZERO (&fds_activos);
 
-			//se agrega para select el servidor
-			FD_SET (socketCPU, &descriptoresLectura);
-			FD_SET (socketConsola, &descriptoresLectura);
+		//se agrega para select el servidor
+		FD_SET (socketCPU, &fds_activos);
+		FD_SET (socketConsola, &fds_activos);
 
-			//se agregan para el select los clientes ya conectados
-			for (i=0; i<numeroClientes; i++)
-				FD_SET (socketCliente[i],&descriptoresLectura);
+		//se agregan para el select los clientes ya conectados
+		for (i=0; i<numeroClientes; i++)
+			FD_SET (socketCliente[i],&fds_activos);
 
-			//el valor del descriptor mas grande, si no hay, retorna 0
-			maximo = dameMaximo(socketCliente, numeroClientes);
+		//el valor del descriptor mas grande, si no hay, retorna 0
+		socketMasGrande = dameSocketMasGrande(socketCliente, numeroClientes);
 
-			if(maximo < socketConsola){
-				maximo = socketConsola;
-			}
-
-			//esperamos hasta que haya un cambio
-			printf("Antes Select\n");
-			select(maximo +1, &descriptoresLectura, NULL, NULL, NULL);
-			printf("Hubo cambios en Sockets, verificando...\n\n");
-
-			/* Se comprueba si algún cliente ya conectado ha enviado algo */
-			for (i=0; i<numeroClientes; i++){
-				printf("verificando cliente %d \n", i+1);
-				if(FD_ISSET(socketCliente[i],&descriptoresLectura)){
-					paqueteRecibido = recibir(socketCliente[i]);
-					//verifica codigo de operacion, si es -1 se desconecto
-					if(paqueteRecibido->codigo_operacion >0){
-						printf("me envio datos\n");
-					}
-					else {
-						printf("el cliente %d se desconecto\n",i+1);
-						socketCliente[i] = -1;
-					}
-
-				}
-				else printf("No hubo cambios en cliente %d, continua \n\n",i+1);
-			}
-			//comprueba si algun cliente nuevo
-			if(FD_ISSET (socketCPU, &descriptoresLectura)){
-				printf("Nuevo pedido de conexion CPU\n");
-				nuevoCliente(socketCPU, socketCliente, &numeroClientes);
-			}
-			if(FD_ISSET (socketConsola, &descriptoresLectura)){
-				printf("Nuevo pedido de conexion Consola\n");
-				nuevoCliente(socketConsola, socketCliente, &numeroClientes);
-			}
+		if(socketMasGrande < socketConsola){
+			socketMasGrande = socketConsola;
 		}
+
+		//esperamos hasta que haya un cambio
+		printf("Antes Select\n");
+		select(socketMasGrande +1, &fds_activos, NULL, NULL, NULL);
+		printf("Hubo cambios en Sockets, verificando...\n\n");
+
+		/* Se comprueba si algún cliente ya conectado ha enviado algo */
+		for (i=0; i<numeroClientes; i++){
+			printf("verificando cliente %d \n", i+1);
+			if(FD_ISSET(socketCliente[i],&fds_activos)){
+				paqueteRecibido = recibir(socketCliente[i]);
+				//verifica codigo de operacion, si es -1 se desconecto
+				if(paqueteRecibido->codigo_operacion > 0){
+					printf("Me envio datos\n");
+					procesarPaqueteRecibido(paqueteRecibido);
+				}
+				else {
+					printf("El cliente %d se desconecto\n",i+1);
+					socketCliente[i] = -1;
+				}
+
+			}
+			else printf("No hubo cambios en cliente %d, continua \n\n",i+1);
+		}
+		verSiHayNuevosClientes();
+	}
 	return EXIT_SUCCESS;
 }
 
@@ -126,6 +108,25 @@ void mostrarConfiguracion(){
 	printf("Stack Size: %i \n", stack_size);
 }
 
+void prepararSocketsServidores(){
+	socketCPU = socket_escucha("127.0.0.1",puerto_cpu);
+	listen(socketCPU,1);
+	socketConsola = socket_escucha("127.0.0.1",puerto_prog);
+	listen(socketConsola,1);
+	printf("Estoy Escuchando\n");
+}
+
+void verSiHayNuevosClientes(){
+	if(FD_ISSET (socketCPU, &fds_activos)){
+		printf("Nuevo pedido de conexion CPU\n");
+		nuevoCliente(socketCPU, socketCliente, &numeroClientes);
+	}
+	if(FD_ISSET (socketConsola, &fds_activos)){
+		printf("Nuevo pedido de conexion Consola\n");
+		nuevoCliente(socketConsola, socketCliente, &numeroClientes);
+	}
+}
+
 void nuevoCliente (int servidor, int *clientes, int *nClientes)
 {
 	/* Acepta la conexión con el cliente, guardándola en el array */
@@ -135,8 +136,6 @@ void nuevoCliente (int servidor, int *clientes, int *nClientes)
 	/* Si se ha superado el maximo de clientes, se cierra la conexión,
 	 * se deja todo como estaba y se vuelve. */
 
-	printf ("CANTIDAD DE CLIENTES %d\n", *nClientes);
-	printf ("MAXIMO DE CLIENTES %i\n", MAX_CLIENTES);
 	if ((*nClientes) > MAX_CLIENTES)
 	{
 		close (clientes[(*nClientes) -1]);
@@ -158,11 +157,85 @@ void nuevoCliente (int servidor, int *clientes, int *nClientes)
 	return;
 }
 
+void procesarPaqueteRecibido(t_paquete* paqueteRecibido){
+	switch(paqueteRecibido->codigo_operacion){
+		//Codigo 101: Ejecutar Script Ansisop
+		case 101:
+			crearProcesoAnsisop();
+			break;
+		default:
+			break;
+	}
+}
+
+void crearProcesoAnsisop(){
+	//Creo PCB para el proceso en cuestion
+	t_pcb* pcb;
+	pcb->programID = 1;
+
+	//Pido paginas a memoria y memoria me dice si le alcanzan
+	int resultadoPedidoPaginas = pedirPaginasParaProceso();
+
+	//Si la memoria devolvio OK, asigno la cantidad de paginas al PCB. Si no devolvió OK, ????
+	if(resultadoPedidoPaginas > 0){
+		pcb->pageCounter = resultadoPedidoPaginas;
+	}
+	else
+	{
+		//????
+	}
+}
+
+int pedirPaginasParaProceso(){
+	memoria = conectarConLaMemoria();
+	//Calculo paginas de memoria que necesito pedir de memoria para este script
+	int paginasAPedir = ceil(paqueteRecibido->tamanio/TAMANIODEPAGINA);
+
+	//Armo el paquete con el pedido de paginas para mandar a memoria y lo envio
+	t_paquete* pedidoDePaginas;
+	pedidoDePaginas->codigo_operacion = 201; //HAY QUE HACER UN ARCHIVO DE CODIGOS URGENTE, ESTE LO INVENTE 201 = PEDIDO DE PAGINAS DE KERNEL A MEMORIA
+	pedidoDePaginas->tamanio = sizeof(int);
+	pedidoDePaginas->data = paginasAPedir;
+	enviar(memoria, 201, pedidoDePaginas->tamanio,pedidoDePaginas);//VA ACA EL 201 O EN EL PAQUETE?
+
+	//Tengo que esperar a que vuelva la respuesta del pedido. Si esta OK, devuelve la cantidad de paginas, sino devuelve -1
+	t_paquete* respuestaAPedidoDePaginas;
+	respuestaAPedidoDePaginas = recibir(memoria);
+
+	return respuestaAPedidoDePaginas->data;
+}
+
+int conectarConLaMemoria(){
+	printf("Inicio de conexion con la Memoria\n");
+	// funcion deSockets
+	memoria = conectar_a(ip_memoria,puerto_memoria);
+	printf("ESTOY ACA 1\n");
+	if (memoria==0){
+		printf("CONSOLA: No se pudo conectar con la Memoria\n");
+		exit (EXIT_FAILURE);
+	}
+	printf("CONSOLA: Memoria recibio nuestro pedido de conexion\n");
+
+	printf("CONSOLA: Iniciando Handshake\n");
+	bool resultado = realizar_handshake(memoria, 13);
+	if (resultado){
+		printf("Handshake exitoso! Conexion establecida\n");
+		return memoria;
+	}
+	else{
+		printf("Fallo en el handshake, se aborta conexion\n");
+		exit (EXIT_FAILURE);
+	}
+
+
+
+}
+
 /*
  * Función que devuelve el valor máximo en la tabla.
  * Supone que los valores válidos de la tabla son positivos y mayores que 0.
  * Devuelve 0 si n es 0 o la tabla es NULL */
-int dameMaximo (int *tabla, int n)
+int dameSocketMasGrande (int *tabla, int n)
 {
 	int i;
 	int max;
