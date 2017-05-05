@@ -30,8 +30,9 @@ char* reemplazo_cache;
 int retardo_memoria;
 
 //Memoria
-t_list* memoria;
+char* memoria;
 t_list* tablaDePaginas;
+char* ultimaPosicion; //puntero que apunta a la ultima posicion utilizada de memoria
 
 //Logger
 
