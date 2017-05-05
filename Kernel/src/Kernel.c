@@ -13,6 +13,7 @@
 
 int main(int argc, char **argv) {
 	int i;
+	cantidadDeProgramas = 0;
 
 	//Crear Log
 	logger = log_create("kernel.log","Kernel",0,LOG_LEVEL_INFO);
@@ -61,6 +62,7 @@ int main(int argc, char **argv) {
 				}
 				else {
 					printf("El cliente %d se desconecto\n",i+1);
+					log_info(logger, "El cliente %d se desconecto\n",i+1);
 					socketCliente[i] = -1;
 				}
 
@@ -75,6 +77,8 @@ int main(int argc, char **argv) {
 void cargarConfiguracion() {
 
 	printf("Cargando archivo de configuracion 'kernel.config'\n\n");
+	log_info(logger, "Cargando archivo de configuracion 'kernel.config'");
+
 	t_config* config = config_create(getenv("archivo_configuracion_kernel"));
 	puerto_prog = config_get_int_value(config, "PUERTO_PROG");
 	puerto_cpu = config_get_int_value(config, "PUERTO_CPU");
@@ -87,9 +91,11 @@ void cargarConfiguracion() {
 	algoritmo = config_get_string_value(config, "ALGORITMO");
 	grado_multiprog = config_get_int_value(config, "GRADO_MULTIPROG");
 	//sem_ids = config_get_array_value(config, "SEM_IDS");
-	//sem_inits = config_get_array_value(config, "SEM_INIT");;
-	//shared_vars = config_get_array_value(config, "SHARED_VARS");;
-	stack_size = config_get_int_value(config, "STACK_SIZE");;
+	//sem_inits = config_get_array_value(config, "SEM_INIT");
+	//shared_vars = config_get_array_value(config, "SHARED_VARS");
+	stack_size = config_get_int_value(config, "STACK_SIZE");
+
+	log_info(logger, "Archivo de configuración cargado");
 }
 
 void mostrarConfiguracion(){
@@ -115,15 +121,18 @@ void prepararSocketsServidores(){
 	socketConsola = socket_escucha("127.0.0.1",puerto_prog);
 	listen(socketConsola,1);
 	printf("Estoy Escuchando\n");
+	log_info(logger, "Sockets escuchando");
 }
 
 void verSiHayNuevosClientes(){
 	if(FD_ISSET (socketCPU, &fds_activos)){
 		printf("Nuevo pedido de conexion CPU\n");
+		log_info(logger, "Nuevo pedido de conexion CPU");
 		nuevoCliente(socketCPU, socketCliente, &numeroClientes);
 	}
 	if(FD_ISSET (socketConsola, &fds_activos)){
 		printf("Nuevo pedido de conexion Consola\n");
+		log_info(logger, "Nuevo pedido de conexion Consola");
 		nuevoCliente(socketConsola, socketCliente, &numeroClientes);
 	}
 }
@@ -147,12 +156,13 @@ void nuevoCliente (int servidor, int *clientes, int *nClientes)
 
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
 	if(resultado){
+		log_info(logger, "Handshake OK, pedido de conexion aceptado");
 		printf ("Aceptado cliente %d\n", *nClientes);
 	}
 	else{
+		log_error(logger, "Handshake fallo, pedido de conexion rechazado");
 		printf ("Handshake rechazado\n");
 	}
-
 
 	return;
 }
@@ -170,9 +180,9 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido){
 
 void crearProcesoAnsisop(){
 	//Creo PCB para el proceso en cuestion
-
 	t_pcb* pcb;
-	pcb->programID = 1;
+	cantidadDeProgramas++;
+	pcb->pid = cantidadDeProgramas;
 
 
 	//Pido paginas a memoria y memoria me dice si le alcanzan
@@ -181,6 +191,7 @@ void crearProcesoAnsisop(){
 	//Si la memoria devolvio OK, asigno la cantidad de paginas al PCB. Si no devolvió OK, ????
 	if(resultadoPedidoPaginas > 0){
 		pcb->pageCounter = resultadoPedidoPaginas;
+
 	}
 	else {
 		//????
@@ -196,6 +207,7 @@ int pedirPaginasParaProceso(){
 	//Armo el paquete con el pedido de paginas para mandar a memoria y lo envio
 	t_paquete* pedidoDePaginas;
 	pedidoDePaginas->codigo_operacion = 201; //HAY QUE HACER UN ARCHIVO DE CODIGOS URGENTE, ESTE LO INVENTE 201 = PEDIDO DE PAGINAS DE KERNEL A MEMORIA
+
 	//ENUMS, NADA DE CODIGOS!
 	pedidoDePaginas->tamanio = sizeof(int);
 	pedidoDePaginas->data = paginasAPedir;
@@ -210,28 +222,30 @@ int pedirPaginasParaProceso(){
 
 int conectarConLaMemoria(){
 	printf("Inicio de conexion con la Memoria\n");
-	// funcion deSockets
+	log_info(logger, "Inicio de conexion con la Memoria");
 	memoria = conectar_a(ip_memoria,puerto_memoria);
-	printf("ESTOY ACA 1\n");
+
 	if (memoria==0){
-		printf("CONSOLA: No se pudo conectar con la Memoria\n");
+		printf("No se pudo conectar con la Memoria\n");
+		log_error(logger, "No se pudo conectar con la Memoria");
 		exit (EXIT_FAILURE);
 	}
-	printf("CONSOLA: Memoria recibio nuestro pedido de conexion\n");
 
-	printf("CONSOLA: Iniciando Handshake\n");
+	printf("MEMORIA: Recibio pedido de conexion de Kernel\n");
+	log_info(logger, "MEMORIA: Recibio pedido de conexion de Kernel")
+
+	printf("MEMORIA: Iniciando Handshake\n");
 	bool resultado = realizar_handshake(memoria, 13);
 	if (resultado){
-		printf("Handshake exitoso! Conexion establecida\n");
+		printf("MEMORIA: Handshake exitoso! Conexion establecida\n");
+		log_info(logger, "MEMORIA: Handshake exitoso! Conexion establecida");
 		return memoria;
 	}
 	else{
-		printf("Fallo en el handshake, se aborta conexion\n");
+		printf("MEMORIA: Fallo en el handshake, se aborta conexion\n");
+		log_error(logger, "MEMORIA: Fallo en el handshake, se aborta conexion");
 		exit (EXIT_FAILURE);
 	}
-
-
-
 }
 
 /*
