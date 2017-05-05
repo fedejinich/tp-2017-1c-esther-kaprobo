@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
 	while (1){
 		paquete_recibido = recibir(kernel);
 		pcb = deserializarPCB(paquete_recibido->data);
-		int pid = pcb->programID;
+		int pid = pcb->pid;
 		free(paquete_recibido);
 	}
 
@@ -100,8 +100,8 @@ t_pcb* deserializarPCB(char* buffer){
 	memcpy(pcb, buffer, sizeof(t_pcb));
 	buffer += sizeof(t_pcb);
 
-	pcb->programID = malloc(sizeof(int));
-	memcpy(pcb->programID, buffer, sizeof(int));
+	pcb->pid = malloc(sizeof(int));
+	memcpy(pcb->pid, buffer, sizeof(int));
 	buffer =+ sizeof(int);
 
 	pcb->pageCounter = malloc(sizeof(int));
