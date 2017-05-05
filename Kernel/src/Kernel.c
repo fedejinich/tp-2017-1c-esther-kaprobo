@@ -180,13 +180,18 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido){
 
 void crearProcesoAnsisop(){
 	//Creo PCB para el proceso en cuestion
+	printf("Aca estoy 1\n");
 	t_pcb* pcb;
+	printf("Aca estoy 2\n");
 	cantidadDeProgramas++;
+	printf("Aca estoy 3\n");
 	pcb->pid = cantidadDeProgramas;
+	printf("Aca estoy 4\n");
 
 
 	//Pido paginas a memoria y memoria me dice si le alcanzan
 	int resultadoPedidoPaginas = pedirPaginasParaProceso();
+
 
 	//Si la memoria devolvio OK, asigno la cantidad de paginas al PCB. Si no devolvió OK, ????
 	if(resultadoPedidoPaginas > 0){
@@ -232,7 +237,7 @@ int conectarConLaMemoria(){
 	}
 
 	printf("MEMORIA: Recibio pedido de conexion de Kernel\n");
-	log_info(logger, "MEMORIA: Recibio pedido de conexion de Kernel")
+	log_info(logger, "MEMORIA: Recibio pedido de conexion de Kernel");
 
 	printf("MEMORIA: Iniciando Handshake\n");
 	bool resultado = realizar_handshake(memoria, 13);
