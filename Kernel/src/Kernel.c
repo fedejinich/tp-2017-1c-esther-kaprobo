@@ -180,13 +180,9 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido){
 
 void crearProcesoAnsisop(){
 	//Creo PCB para el proceso en cuestion
-	printf("Aca estoy 1\n");
-	t_pcb* pcb;
-	printf("Aca estoy 2\n");
+	t_pcb* pcb = malloc(sizeof(t_pcb));
 	cantidadDeProgramas++;
-	printf("Aca estoy 3\n");
 	pcb->pid = cantidadDeProgramas;
-	printf("Aca estoy 4\n");
 
 
 	//Pido paginas a memoria y memoria me dice si le alcanzan
@@ -197,6 +193,7 @@ void crearProcesoAnsisop(){
 	if(resultadoPedidoPaginas > 0){
 		pcb->pageCounter = resultadoPedidoPaginas;
 
+		//TODO El programa ya esta listo para ejecutarse, ver tema de planificación
 	}
 	else {
 		//????
