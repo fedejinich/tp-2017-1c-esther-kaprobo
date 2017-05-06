@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <commons/config.h>
 #include "src/Commons_Kaprobo.h"
-#include "src/primitivas.h"
+#include "primitivas.h"
 #include "src/Estructuras.h"
 #include <pthread.h>
 #include <parser/parser.h>

@@ -1,3 +1,5 @@
+#include "primitivas.h"
+
 definirVariable(t_nombre_variable identificador_variable){
 	printf("Definiendo variable: %s", identificador_variable);
 }
