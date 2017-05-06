@@ -10,7 +10,9 @@
 #include <pthread.h>
 #include <parser/parser.h>
 
+#define ARCHIVOLOG "Consola.log"
 
+t_log* logger;
 char* ip_kernel;
 int puerto_kernel;
 char* ip_memoria;
@@ -24,6 +26,7 @@ signed int memoria;
 t_pcb* pcb;
 
 void iniciarCPU();
+void crearArchivoLog();
 void cargarConfiguracion(char* pathconf);
 int conectarConElKernel();
 int conectarConMemoria();
