@@ -11,10 +11,12 @@
 #define MAX_CLIENTES 3
 #define TAMANIODEPAGINA 256
 
+int cantidadDeProgramas;
+
+
+
 //Logger
 t_log* logger;
-
-
 
 /*
  *
