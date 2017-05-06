@@ -10,11 +10,20 @@
 
 #include "CPU.h"
 
+AnSISOP_funciones primitivas = {
+.AnSISOP_definirVariable	= definirVariable,
+.AnSISOP_asignar	= asignar,
+.AnSISOP_finalizar	= finalizar,
+};
+AnSISOP_kernel primitivas_kernel = {
+};
+
 int main(int argc, char **argv) {
 	t_paquete* paquete_recibido;
 	iniciarCPU();
 	crearArchivoLog();
 	cargarConfiguracion(argv[0]);
+	//No funciona conexiones.
 	kernel = conectarConElKernel();
 	memoria = conectarConMemoria();
 	prueboParser();
@@ -38,8 +47,28 @@ void crearArchivoLog(){
 }
 void prueboParser(){
 	printf("Inicio prueba de parser anSISOP. \n");
-	script = leerArchivo("testParser");
+	//Deberia poder leer el archivo, pero no lo lee.
+	archivo = fopen("testParser", "r");
+	ejecutarArchivo(archivo);
 	fclose(archivo);
+}
+void ejecutarArchivo(FILE *archivo){
+	fseek(archivo, 0, SEEK_END);
+	long fsize = ftell(archivo);
+	fseek(archivo, 0, SEEK_SET);
+	char sentencia[256];
+	//Obtengo linea a linea y la ejecuto con el analizador.
+	while(fgets(sentencia, sizeof(sentencia), archivo)){
+		analizadorLinea(depurarSentencia(sentencia), &primitivas, &primitivas_kernel);
+	}
+}
+char* depurarSentencia(char* sentencia){
+	int i = strlen(sentencia);
+	while (string_ends_with(sentencia, "\n")) {
+	i--;
+	sentencia = string_substring_until(sentencia, i);
+	}
+	return sentencia;
 }
 char * leerArchivo(FILE *archivo){
 	fseek(archivo, 0, SEEK_END);
@@ -88,7 +117,7 @@ int conectarConElKernel(){
 	else{
 		printf("Fallo en el handshake, se aborta conexion\n");
 		log_info(logger, "Conexion fallida con Kernel. \n");
-		exit (EXIT_FAILURE);
+		//exit (EXIT_FAILURE);
 	}
 }
 

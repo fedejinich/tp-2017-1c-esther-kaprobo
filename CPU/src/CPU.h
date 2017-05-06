@@ -34,9 +34,11 @@ void iniciarCPU();
 void crearArchivoLog();
 void prueboParser();
 void cargarConfiguracion(char* pathconf);
+void ejecutarArchivo(FILE *archivo);
 int conectarConElKernel();
 int conectarConMemoria();
 t_pcb* deserializarPCB(char* buffer);
 char * leerArchivo(FILE *archivo);
+char* depurarSentencia(char* sentencia);
 
 #endif
