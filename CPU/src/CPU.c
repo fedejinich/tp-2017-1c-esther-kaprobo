@@ -17,6 +17,7 @@ int main(int argc, char **argv) {
 	cargarConfiguracion(argv[0]);
 	kernel = conectarConElKernel();
 	memoria = conectarConMemoria();
+	prueboParser();
 	while (1){
 		paquete_recibido = recibir(kernel);
 		pcb = deserializarPCB(paquete_recibido->data);
@@ -34,6 +35,20 @@ void iniciarCPU(){
 void crearArchivoLog(){
 	logger = iniciarLog(ARCHIVOLOG,"CPU");
 	log_info(logger, "Iniciando CPU. \n");
+}
+void prueboParser(){
+	printf("Inicio prueba de parser anSISOP. \n");
+	script = leerArchivo("testParser");
+	fclose(archivo);
+}
+char * leerArchivo(FILE *archivo){
+	fseek(archivo, 0, SEEK_END);
+	long fsize = ftell(archivo);
+	fseek(archivo, 0, SEEK_SET);
+	char *script = malloc(fsize + 1);
+	fread(script, fsize, 1, archivo);
+	script[fsize] = '\0';
+	return script;
 }
 void cargarConfiguracion(char* pathconf){
 	t_config* config = config_create(getenv("archivo_configuracion_CPU"));

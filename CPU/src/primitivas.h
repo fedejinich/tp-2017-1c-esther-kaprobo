@@ -5,6 +5,7 @@
 
 t_puntero definirVariable(t_nombre_variable identificador_variable);
 t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable);
+void asignar(t_puntero direccion_variable,t_valor_variable valor);
 t_valor_variable dereferenciar(t_puntero direccion_variable);
 t_valor_variable obtenerValorCompartida(t_nombre_compartida variable);
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable,t_valor_variable valor);
