@@ -152,10 +152,10 @@ void nuevoCliente (int servidor, int *clientes, int *nClientes)
 		return;
 	}
 
-	bool resultado = esperar_handshake(clientes[*nClientes - 1], 11) || esperar_handshake(clientes[*nClientes - 1], 12);
-
+	bool resultado_CPU = esperar_handshake(clientes[*nClientes - 1], 12);
+	bool resultado_Consola = esperar_handshake(clientes[*nClientes - 1], 11);
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
-	if(resultado){
+	if(resultado_CPU || resultado_Consola){
 		log_info(logger, "Handshake OK, pedido de conexion aceptado");
 		printf ("Aceptado cliente %d\n", *nClientes);
 	}
