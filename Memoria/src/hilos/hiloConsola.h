@@ -12,7 +12,7 @@
 
 void* hiloConsolaMemoria();
 
-char* comando;
+char comando[50];
 
 void flush();
 void size();

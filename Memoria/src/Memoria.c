@@ -61,8 +61,9 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 
 	log_info(logger,"Inicio del proceso de reserva de memoria continua\n");
 
-	memoria = malloc(marcos * marco_size);
-	ultimaPosicion = &memoria[0];
+	tamanioMemoria = marcos * marco_size;
+	memoria = malloc(tamanioMemoria);
+	ultimaPosicion = 0;
 
 	if (memoria == NULL) {
 		error_show("\x1b[31mNo se pudo otorgar la memoria solicitada.\n\x1b[0m");
@@ -87,18 +88,24 @@ void alojarEnMemoria(int pid, int paginasRequeridas) {
 	log_info(logger,"Alojando %i paginas en memoria del proceso %i",paginasRequeridas,pid);
 	int i;
 	for(i = 0; i <= paginasRequeridas; i++) {
-		char* buffer = malloc(sizeof(int)+sizeof(int));
+		//esto seria agregar una entrada en la tabla  (la tabla ya tiene que estar iniicializada (es decir todos los lugares completados con -1))
+
+		/*char* buffer = malloc(sizeof(int)+sizeof(int));
 		int numeroDePagina = i;
 		memcpy(&buffer,pid,sizeof(int)); //mando a buffer el pid
 		memcpy(&buffer,numeroDePagina,sizeof(int)); //mando a buffer el numero de pagina
 		memcpy(&memoria,buffer,strlen(buffer)+1); //mando el buffer a memoria, es necesario el +1?
-		ultimaPosicion = &memoria[&ultimaPosicion+strlen(buffer)+1]; //actualizo la ultima posicion, esta bien hecho?
+		ultimaPosicion = ultimaPosicion + strlen(buffer) + 1; //actualizo la ultima posicion, esta bien hecho?
+		free(buffer);*/
 	}
 	//muy feo esto, hay que mejorarlo pero va por este lado
 }
 
 bool espacioDisponible(int pid, int paginasRequeridas) {
-	return true;
+	//me fijo si el espacio que hay en memoria es mayor al espacio que voy a alocar
+	int espacioAAlocar = malloc(sizeof(int));
+	espacioAAlocar = sizeof((sizeof(int)+sizeof(int))*paginasRequeridas);
+	return ultimaPosicion + espacioAAlocar < tamanioMemoria;
 }
 
 
