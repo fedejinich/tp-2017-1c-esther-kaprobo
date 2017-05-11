@@ -152,10 +152,10 @@ void nuevoCliente (int servidor, int *clientes, int *nClientes)
 		return;
 	}
 
-	bool resultado = esperar_handshake(clientes[*nClientes - 1], 11) || esperar_handshake(clientes[*nClientes - 1], 12);
-
+	bool resultado_CPU = esperar_handshake(clientes[*nClientes - 1], 12);
+	bool resultado_Consola = esperar_handshake(clientes[*nClientes - 1], 11);
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
-	if(resultado){
+	if(resultado_CPU || resultado_Consola){
 		log_info(logger, "Handshake OK, pedido de conexion aceptado");
 		printf ("Aceptado cliente %d\n", *nClientes);
 	}
@@ -180,13 +180,9 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido){
 
 void crearProcesoAnsisop(){
 	//Creo PCB para el proceso en cuestion
-	printf("Aca estoy 1\n");
-	t_pcb* pcb;
-	printf("Aca estoy 2\n");
+	t_pcb* pcb = malloc(sizeof(t_pcb));
 	cantidadDeProgramas++;
-	printf("Aca estoy 3\n");
 	pcb->pid = cantidadDeProgramas;
-	printf("Aca estoy 4\n");
 
 
 	//Pido paginas a memoria y memoria me dice si le alcanzan
@@ -197,6 +193,7 @@ void crearProcesoAnsisop(){
 	if(resultadoPedidoPaginas > 0){
 		pcb->pageCounter = resultadoPedidoPaginas;
 
+		//TODO El programa ya esta listo para ejecutarse, ver tema de planificación
 	}
 	else {
 		//????
