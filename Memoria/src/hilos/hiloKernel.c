@@ -50,7 +50,7 @@ void* hiloConexionKernel(void* socketKernel) {
 				if (espacioDisponible(pid, paginasRequeridas)) {
 					alojarEnMemoria(pid, paginasRequeridas);
 					log_info(logger,"Se pudo inicializar el proceso con el pid %d.\n",pid);
-					enviar(socketKernel, EXITO, sizeof(int), &pid); //2 DEBERIA SER EXITO
+					enviar(socketKernel, 2, sizeof(int), &pid); //2 DEBERIA SER EXITO
 				} else {
 					log_info(logger,"No se pudo inicializar el proceso con el pid %d.\n",pid);
 					enviar(socketKernel, 3, sizeof(int), &pid);//3 DEBERIA SER FRACASO
