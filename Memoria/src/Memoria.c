@@ -22,6 +22,7 @@ int main(int argc, char **argv){
 	//iniciarSeniales();
 	cargarConfiguracion();
 	grandMalloc(); //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
+	inicializarTablaDePaginas();
 	iniciarHilos();
 
 
@@ -72,6 +73,35 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 		log_info(logger,"Memoria continua reservada correctamente\n");
 
 	tablaDePaginas = list_create();
+}
+
+void inicializarTablaDePaginas() {
+	log_info(logger, "Inicializando tabla de paginas\n");
+	int i;
+
+	for(i = 0; i <= 500;i++) {
+		char* buffer = malloc(sizeof(t_entradaTablaDePaginas));
+
+		uint32_t marco = i;
+		uint32_t pid = -1;
+		uint32_t pagina = 0;
+
+		memcpy(buffer,&marco,sizeof(uint32_t));
+		memcpy(buffer + sizeof(uint32_t),&pid,sizeof(uint32_t));
+		memcpy(buffer + sizeof(uint32_t) * 2,&pagina,sizeof(uint32_t));
+
+		memcpy(memoria, buffer, sizeof(t_entradaTablaDePaginas));
+
+		//log_info(logger,"Insertando Entrada: MARCO = %i, PID = %i, PAGINA = %i\n",marco,pid,pagina);
+
+		free(buffer);
+	}
+
+	log_info(logger,"Tabla de paginas inicializada correctamente\n");
+}
+
+t_entradaTablaDePaginas* getEntradaTablaDePaginasByFrame(uint32_t frame) {
+
 }
 
 void iniciarHilos() {

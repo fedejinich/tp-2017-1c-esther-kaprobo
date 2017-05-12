@@ -56,6 +56,7 @@ un_socket socketKernel;
 //Funciones de configuracion
 void grandMalloc();
 void cargarConfiguracion();
+void inicializarTablaDePaginas();
 
 //Funciones
 void iniciarSeniales();
