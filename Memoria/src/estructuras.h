@@ -11,7 +11,6 @@ typedef struct {
 	int pid;
 	int pagina;
 	int marco;
-	bool uso;
 } t_entradaTablaDePaginas;
 
 
