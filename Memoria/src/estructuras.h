@@ -8,10 +8,12 @@
 
 
 typedef struct {
-	uint32_t marco;
-	uint32_t pid;
-	uint32_t pagina;
+	int marco;
+	int pid;
+	int pagina;
 } t_entradaTablaDePaginas;
+
+
 
 //4 bytes pid, 4 bytes pagina y 4 bytes marco = 12 bytes entrada
 //12 bytes * 500 = 6000 bytes es lo que ocupa la tabla de paginas dentro del grandMalloc (gran bloque de memoria continua)
