@@ -13,6 +13,7 @@ typedef struct {
 	int pagina;
 } t_entradaTablaDePaginas;
 
+t_entradaTablaDePaginas* tablaDePaginas[499];
 
 
 //4 bytes pid, 4 bytes pagina y 4 bytes marco = 12 bytes entrada

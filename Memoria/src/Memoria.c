@@ -24,7 +24,11 @@ int main(int argc, char **argv){
 	grandMalloc(); //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
 	inicializarMemoria();
 	inicializarTablaDePaginas();
-	iniciarHilos();
+
+	t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
+	entrada = tablaDePaginas[2];
+	 printf("hola");
+	//iniciarHilos();
 
 
 	return EXIT_SUCCESS;
@@ -73,7 +77,6 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 	} else
 		log_info(logger,"Memoria continua reservada correctamente\n");
 
-	tablaDePaginas = list_create();
 }
 
 void inicializarMemoria() {
@@ -83,39 +86,40 @@ void inicializarMemoria() {
 }
 
 void inicializarTablaDePaginas() {
-	log_info(logger,"Inicializando tabla de paginas...\n");
-	int cantidadDeMarcosAEscribir = getCantidadDeMarcosTablaDePaginas();
+	printf("Inicializando tabla de paginas...\n");
+		int cantidadDeMarcosAEscribir = 23;  //500*12/256
 
-	int nroDeMarcoTabla;
-	int marcoAEscribir = 0;
-	int offset;
-	for(nroDeMarcoTabla = 0; nroDeMarcoTabla <= 499;) {
-		offset = 0;
-		for(offset = 0;offset<252 && nroDeMarcoTabla <= 499;offset = offset+12) {
+		int nroDeMarcoTabla;
+		int marcoAEscribir = 0;
+		int offset;
+		for(nroDeMarcoTabla = 0; nroDeMarcoTabla <= 499;) {
+			offset = 0;
+			for(offset = 0;offset<252 && nroDeMarcoTabla <= 499;offset = offset+12) {
 
-		t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
+				t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
 
-		int marco = nroDeMarcoTabla;
-		int pid = -1;
-		int pagina = 0;
+				int marco = nroDeMarcoTabla;
+				int pid = -1;
+				int pagina = 0;
 
-		entrada->marco = marco;
-		entrada->pid = pid;
-		entrada->pagina = pagina;
+				entrada->marco = marco;
+				entrada->pid = pid;
+				entrada->pagina = pagina;
 
-		if(marco == 0 || marco == 499 || marco > 499)
-			log_info(logger,"Frame en tabla de paginas numero: %i\n",marco);
-		escribir_marco(marcoAEscribir,offset,sizeof(t_entradaTablaDePaginas),entrada);
+				tablaDePaginas[nroDeMarcoTabla] = entrada;
 
-		nroDeMarcoTabla++;
+				if(marco == 0 || marco == 499 || marco > 499)
+					printf("Frame en tabla de paginas numero: %i\n",marco);
+				escribir_marco(marcoAEscribir,offset,sizeof(t_entradaTablaDePaginas),entrada);
 
-		free(entrada);
+				nroDeMarcoTabla++;
 
+				free(entrada);
+			}
+			marcoAEscribir = marcoAEscribir+1;
 		}
+		printf("Tabla de paginas inicializada.\n");
 
-		marcoAEscribir = marcoAEscribir+1;
-	}
-	log_info(logger,"Tabla de paginas inicializada.\n");
 }
 
 void iniciarHilos() {
@@ -160,7 +164,4 @@ void escribir_marco(int marco, int offset, int tamanio, void * contenido) {
 
 }
 
-t_entradaTablaDePaginas* getEntradaTablaDePaginasByFrame(uint32_t frame) {
-
-}
 

@@ -32,7 +32,6 @@ int retardo_memoria;
 
 //Memoria
 char* memoria;
-t_list* tablaDePaginas;
 int ultimaPosicion;//puntero que apunta a la ultima posicion utilizada de memoria
 int tamanioMemoria;
 
