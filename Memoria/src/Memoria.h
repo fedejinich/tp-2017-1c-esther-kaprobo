@@ -13,6 +13,7 @@
 #include "hilos/hiloCPU.h"
 #include "hilos/hiloKernel.h"
 #include "hilos/hiloConsola.h"
+#include "funcionesAuxiliares/funcionesAuxiliares.h"
 
 
 
@@ -57,6 +58,7 @@ un_socket socketKernel;
 void grandMalloc();
 void cargarConfiguracion();
 void inicializarTablaDePaginas();
+void inicializarMemoria();
 
 //Funciones
 void iniciarSeniales();
@@ -76,3 +78,6 @@ void* hiloServidorKernel(void* arg);
 void* hiloConexionKernel(void* socket);
 void* hiloConsolaMemoria();
 
+
+//Auxiliares
+void escribir_marco(int marco, int offset, int tamanio, void * contenido);

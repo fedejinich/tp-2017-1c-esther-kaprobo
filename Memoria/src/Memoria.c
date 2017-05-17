@@ -22,6 +22,7 @@ int main(int argc, char **argv){
 	//iniciarSeniales();
 	cargarConfiguracion();
 	grandMalloc(); //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
+	inicializarMemoria();
 	inicializarTablaDePaginas();
 	iniciarHilos();
 
@@ -75,33 +76,46 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 	tablaDePaginas = list_create();
 }
 
-void inicializarTablaDePaginas() {
-	log_info(logger, "Inicializando tabla de paginas\n");
-	int i;
-
-	for(i = 0; i <= 500;i++) {
-		char* buffer = malloc(sizeof(t_entradaTablaDePaginas));
-
-		uint32_t marco = i;
-		uint32_t pid = -1;
-		uint32_t pagina = 0;
-
-		memcpy(buffer,&marco,sizeof(uint32_t));
-		memcpy(buffer + sizeof(uint32_t),&pid,sizeof(uint32_t));
-		memcpy(buffer + sizeof(uint32_t) * 2,&pagina,sizeof(uint32_t));
-
-		memcpy(memoria, buffer, sizeof(t_entradaTablaDePaginas));
-
-		//log_info(logger,"Insertando Entrada: MARCO = %i, PID = %i, PAGINA = %i\n",marco,pid,pagina);
-
-		free(buffer);
-	}
-
-	log_info(logger,"Tabla de paginas inicializada correctamente\n");
+void inicializarMemoria() {
+	//Lleno la memoria con \0
+	memset(memoria,'\0',tamanioMemoria);
+	log_info(logger, "Inicializando memoria con /0");
 }
 
-t_entradaTablaDePaginas* getEntradaTablaDePaginasByFrame(uint32_t frame) {
+void inicializarTablaDePaginas() {
+	log_info(logger,"Inicializando tabla de paginas...\n");
+	int cantidadDeMarcosAEscribir = getCantidadDeMarcosTablaDePaginas();
 
+	int nroDeMarcoTabla;
+	int marcoAEscribir = 0;
+	int offset;
+	for(nroDeMarcoTabla = 0; nroDeMarcoTabla <= 499;) {
+		offset = 0;
+		for(offset = 0;offset<252 && nroDeMarcoTabla <= 499;offset = offset+12) {
+
+		t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
+
+		int marco = nroDeMarcoTabla;
+		int pid = -1;
+		int pagina = 0;
+
+		entrada->marco = marco;
+		entrada->pid = pid;
+		entrada->pagina = pagina;
+
+		if(marco == 0 || marco == 499 || marco > 499)
+			log_info(logger,"Frame en tabla de paginas numero: %i\n",marco);
+		escribir_marco(marcoAEscribir,offset,sizeof(t_entradaTablaDePaginas),entrada);
+
+		nroDeMarcoTabla++;
+
+		free(entrada);
+
+		}
+
+		marcoAEscribir = marcoAEscribir+1;
+	}
+	log_info(logger,"Tabla de paginas inicializada.\n");
 }
 
 void iniciarHilos() {
@@ -112,7 +126,6 @@ void iniciarHilos() {
 	//pthread_join(servidorConexionesCPU, NULL);
 	pthread_join(servidorConexionesKernel, NULL);
 }
-
 
 void alojarEnMemoria(int pid, int paginasRequeridas) {
 	log_info(logger,"Alojando %i paginas en memoria del proceso %i",paginasRequeridas,pid);
@@ -138,5 +151,16 @@ bool espacioDisponible(int pid, int paginasRequeridas) {
 	return ultimaPosicion + espacioAAlocar < tamanioMemoria;
 }
 
+void escribir_marco(int marco, int offset, int tamanio, void * contenido) {
 
+	//Consigo la posicion de memoria donde voy a empezar a escribir
+	int desplazamiento = marco * marco_size;
+
+	memcpy(memoria + desplazamiento + offset, contenido, tamanio);
+
+}
+
+t_entradaTablaDePaginas* getEntradaTablaDePaginasByFrame(uint32_t frame) {
+
+}
 
