@@ -150,3 +150,11 @@ bool esperar_handshake(un_socket socket_del_cliente, int codigo) {
 
 	return resultado;
 }
+
+int getParteEntera(double numeroDecimal) {
+	return (int) numeroDecimal;
+}
+
+double getParteDecimal(double numeroDecimal) {
+	return numeroDecimal - getParteEntera(numeroDecimal);
+}

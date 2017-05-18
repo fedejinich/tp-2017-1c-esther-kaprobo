@@ -33,7 +33,7 @@ typedef struct {
 typedef int un_socket;
 
 
-//Funciones Generales
+//FUNCIONES GENERALES
 /**
  * @NAME: iniciarLog
  * @DESC: Crea el .log del proceso, borrando el log anterior.
@@ -41,8 +41,16 @@ typedef int un_socket;
  */
 t_log* iniciarLog(char* nombreDelArchivoLog, char* nombreDelProceso);
 
+//FUNCIONES DE NUMEROS
 
-//Funciones Sockets
+/** @NAME: getParteEntera @DESC: Consigue la parte entera de un double @RETURN: Retorna la parte entera de un double como int*/
+int getParteEntera(double numeroDecimal);
+
+/** @NAME: getParteEntera @DESC: Consigue la parte entera de un double @RETURN: Retorna la parte entera de un double como int*/
+double getParteDecimal(double numeroDecimal);
+
+
+//FUNCIONES DE SOCKETS
 
 /**	@NAME: conectar_a
  * 	@DESC: Intenta conectarse.
