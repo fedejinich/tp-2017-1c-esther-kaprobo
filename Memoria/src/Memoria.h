@@ -31,7 +31,7 @@ char* reemplazo_cache;
 int retardo_memoria;
 
 //Memoria
-char* memoria;
+void* memoria;
 int ultimaPosicion;//puntero que apunta a la ultima posicion utilizada de memoria
 int tamanioMemoria;
 

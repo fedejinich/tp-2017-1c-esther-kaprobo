@@ -22,11 +22,18 @@ int main(int argc, char **argv){
 	//iniciarSeniales();
 	cargarConfiguracion();
 	grandMalloc(); //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
-	inicializarMemoria();
+	//inicializarMemoria();
 	inicializarTablaDePaginas();
 
-	t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
-	entrada = tablaDePaginas[2];
+	int i;
+	for(i=0; i<=400;i++) {
+		if(i == 0 || i == 400 || i == 200)
+			printf("Marco: %i, PID: %i, Pagina = %i\n",(int)tablaDePaginas[i].marco,(int)tablaDePaginas[i].pid,(int)tablaDePaginas[i].pagina);
+	}
+
+
+
+
 	 printf("hola");
 	//iniciarHilos();
 
@@ -87,15 +94,13 @@ void inicializarMemoria() {
 
 void inicializarTablaDePaginas() {
 	printf("Inicializando tabla de paginas...\n");
-		int cantidadDeMarcosAEscribir = 23;  //500*12/256
-
+		int limiteMarco = getLimiteMarcoByOffset(12); //Consigo el ultimo lugar en el cual voy a poder escribir segun un offset
 		int nroDeMarcoTabla;
 		int marcoAEscribir = 0;
 		int offset;
-		for(nroDeMarcoTabla = 0; nroDeMarcoTabla <= 499;) {
+		for(nroDeMarcoTabla = 0; nroDeMarcoTabla <= marcos;) {
 			offset = 0;
-			for(offset = 0;offset<252 && nroDeMarcoTabla <= 499;offset = offset+12) {
-
+			for(offset = 0;offset < limiteMarco && nroDeMarcoTabla <= marcos;offset = offset+12) {
 				t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
 
 				int marco = nroDeMarcoTabla;
@@ -106,20 +111,20 @@ void inicializarTablaDePaginas() {
 				entrada->pid = pid;
 				entrada->pagina = pagina;
 
-				tablaDePaginas[nroDeMarcoTabla] = entrada;
-
-				if(marco == 0 || marco == 499 || marco > 499)
+				if(marco == 0 || marco == 100 || marco == 200 || marco == 300 ||marco == 400 ||marco == 500)
 					printf("Frame en tabla de paginas numero: %i\n",marco);
+
 				escribir_marco(marcoAEscribir,offset,sizeof(t_entradaTablaDePaginas),entrada);
 
-				nroDeMarcoTabla++;
+				nroDeMarcoTabla = nroDeMarcoTabla + 1;
 
 				free(entrada);
 			}
 			marcoAEscribir = marcoAEscribir+1;
+			printf("hola\n");
 		}
+		tablaDePaginas = (t_entradaTablaDePaginas*)&memoria[0];
 		printf("Tabla de paginas inicializada.\n");
-
 }
 
 void iniciarHilos() {

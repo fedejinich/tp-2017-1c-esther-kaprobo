@@ -14,6 +14,17 @@ int getCantidadDeMarcosTablaDePaginas() {
 
 	if(parteDecimal > 0)
 		return parteEntera + 1;
-	else
-		return parteEntera;
+
+	return parteEntera;
+}
+
+
+
+int getLimiteMarcoByOffset(int offset) {
+	int limite = marco_size - offset; //hay que agregarle un -1 aca?
+
+	if(offset >= marco_size)
+		return -1;	//ojala se puediese tirar una excepcion
+
+	return limite;
 }

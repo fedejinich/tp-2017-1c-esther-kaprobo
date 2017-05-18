@@ -11,6 +11,6 @@
 #include "../Memoria.h"
 
 int getCantidadDeMarcosTablaDePaginas();
-
+int getLimiteMarcoByOffset(int offset);
 
 #endif /* FUNCIONESAUXILIARES_FUNCIONESAUXILIARES_H_ */
