@@ -11,9 +11,19 @@
 #include "CPU.h"
 
 AnSISOP_funciones primitivas = {
-.AnSISOP_definirVariable	= definirVariable,
-.AnSISOP_asignar	= asignar,
-.AnSISOP_finalizar	= finalizar,
+.AnSISOP_definirVariable			= definirVariable,
+.AnSISOP_obtenerPosicionVariable	= obtenerPosicionVariable,
+.AnSISOP_dereferenciar				= dereferenciar,
+.AnSISOP_asignar					= asignar,
+.AnSISOP_obtenerPosicionVariable	= obtenerValorCompartida,
+.AnSISOP_asignarValorCompartida		= asignarValorCompartida,
+.AnSISOP_irAlLabel					= irAlLabel,
+.AnSISOP_llamarConRetorno			= llamarConRetorno,
+.AnSISOP_retornar					= retornar,
+.AnSISOP_imprimir					= imprimir,
+.AnSISOP_imprimirTexto				= imprimirTexto,
+.AnSISOP_finalizar					= finalizar,
+
 };
 AnSISOP_kernel primitivas_kernel = {
 };
