@@ -9,8 +9,8 @@
 
 int getCantidadDeMarcosTablaDePaginas() {
 	double cantidad = (marcos*sizeof(t_entradaTablaDePaginas))/marco_size;
-	int parteEntera = (int) cantidad;
-	double parteDecimal = cantidad - parteEntera;
+	int parteEntera = getParteEntera(cantidad);
+	double parteDecimal = getParteDecimal(cantidad);
 
 	if(parteDecimal > 0)
 		return parteEntera + 1;
@@ -21,10 +21,5 @@ int getCantidadDeMarcosTablaDePaginas() {
 
 
 int getLimiteMarcoByOffset(int offset) {
-	int limite = marco_size - offset; //hay que agregarle un -1 aca?
-
-	if(offset >= marco_size)
-		return -1;	//ojala se puediese tirar una excepcion
-
-	return limite;
+	return getParteEntera(marco_size/offset) * offset;
 }

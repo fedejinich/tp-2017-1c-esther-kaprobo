@@ -15,6 +15,7 @@
 
 int main(int argc, char **argv){
 
+	printf("El tamanio de marco es de %i",sizeof(char));
 	logger = iniciarLog("memoria.log","Memoria");
 
 	printf("%s", "\n\n====== INICIO MEMORIA ======\n\n");
@@ -26,9 +27,9 @@ int main(int argc, char **argv){
 	inicializarTablaDePaginas();
 
 	int i;
-	for(i=0; i<=400;i++) {
-		if(i == 0 || i == 400 || i == 200)
-			printf("Marco: %i, PID: %i, Pagina = %i\n",(int)tablaDePaginas[i].marco,(int)tablaDePaginas[i].pid,(int)tablaDePaginas[i].pagina);
+	for(i=0; i<=21;i++) {
+		//if(i == 0 || i == 100 || i == 200 || i == 300 || i == 400 || i == 500)
+			printf("Marco: %i, PID: %i, Pagina = %i\n",tablaDePaginas[i].marco,tablaDePaginas[i].pid,tablaDePaginas[i].pagina);
 	}
 
 
@@ -94,37 +95,39 @@ void inicializarMemoria() {
 
 void inicializarTablaDePaginas() {
 	printf("Inicializando tabla de paginas...\n");
-		int limiteMarco = getLimiteMarcoByOffset(12); //Consigo el ultimo lugar en el cual voy a poder escribir segun un offset
-		int nroDeMarcoTabla;
-		int marcoAEscribir = 0;
-		int offset;
-		for(nroDeMarcoTabla = 0; nroDeMarcoTabla <= marcos;) {
-			offset = 0;
-			for(offset = 0;offset < limiteMarco && nroDeMarcoTabla <= marcos;offset = offset+12) {
-				t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
+	int limiteMarco = getLimiteMarcoByOffset(12); //Consigo el ultimo lugar en el cual voy a poder escribir segun un offset
+	int marcoAEscribir = 0; //Empiezo escribiendo el primer marco y luego incremento en base al espacio disponible
+	int nroDeMarcoTabla = 0; //Es el nro de marco que va a aparecer en la tabla de paginas
+	int offset; //El desplazamiento dentro del marco a escribir
 
-				int marco = nroDeMarcoTabla;
-				int pid = -1;
-				int pagina = 0;
+	while(nroDeMarcoTabla <= marcos) {
+		for(offset = 0;offset < limiteMarco && nroDeMarcoTabla <= marcos;offset = offset + sizeof(t_entradaTablaDePaginas)) {
+			t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
 
-				entrada->marco = marco;
-				entrada->pid = pid;
-				entrada->pagina = pagina;
+			int marco = nroDeMarcoTabla;
+			int pid = -1;
+			int pagina = 0;
 
-				if(marco == 0 || marco == 100 || marco == 200 || marco == 300 ||marco == 400 ||marco == 500)
-					printf("Frame en tabla de paginas numero: %i\n",marco);
+			entrada->marco = marco;
+			entrada->pid = pid;
+			entrada->pagina = pagina;
 
-				escribir_marco(marcoAEscribir,offset,sizeof(t_entradaTablaDePaginas),entrada);
+			if(marco == 0 || marco == 100 || marco == 200 || marco == 300 ||marco == 400 ||marco == 500 || marco > 500)
+				printf("Frame en tabla de paginas numero: %i\n",marco);
 
-				nroDeMarcoTabla = nroDeMarcoTabla + 1;
+			escribir_marco(marcoAEscribir,offset,sizeof(t_entradaTablaDePaginas),entrada);
 
-				free(entrada);
-			}
-			marcoAEscribir = marcoAEscribir+1;
-			printf("hola\n");
+			nroDeMarcoTabla = nroDeMarcoTabla + 1;
+
+			free(entrada);
 		}
-		tablaDePaginas = (t_entradaTablaDePaginas*)&memoria[0];
-		printf("Tabla de paginas inicializada.\n");
+		marcoAEscribir = marcoAEscribir + 1;
+	}
+
+	//Pongo el puntero para manejar la tabla de paginas en el inicio de la misma
+	tablaDePaginas = (t_entradaTablaDePaginas*)&memoria[0];
+
+	printf("Tabla de paginas inicializada.\n");
 }
 
 void iniciarHilos() {
@@ -162,7 +165,7 @@ bool espacioDisponible(int pid, int paginasRequeridas) {
 
 void escribir_marco(int marco, int offset, int tamanio, void * contenido) {
 
-	//Consigo la posicion de memoria donde voy a empezar a escribir
+	//Es el desplazamiento dentro del bloque de memoria principal para luego conseguir el marco en el cual voy a escribir
 	int desplazamiento = marco * marco_size;
 
 	memcpy(memoria + desplazamiento + offset, contenido, tamanio);
