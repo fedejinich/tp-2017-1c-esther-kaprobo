@@ -23,7 +23,6 @@ int main(int argc, char **argv){
 	//iniciarSeniales();
 	cargarConfiguracion();
 	grandMalloc(); //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
-	//inicializarMemoria();
 	inicializarTablaDePaginas();
 
 	int i;
@@ -31,9 +30,6 @@ int main(int argc, char **argv){
 		//if(i == 0 || i == 100 || i == 200 || i == 300 || i == 400 || i == 500)
 			printf("Marco: %i, PID: %i, Pagina = %i\n",tablaDePaginas[i].frame,tablaDePaginas[i].pid,tablaDePaginas[i].pagina);
 	}
-
-
-
 
 	 printf("hola");
 	//iniciarHilos();
@@ -87,14 +83,6 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 
 }
 
-void inicializarMemoria() {
-	//Lleno la memoria con \0
-	memset(memoria,'\0',tamanioMemoria);
-	log_info(logger, "Inicializando memoria con /0");
-}
-
-
-
 void iniciarHilos() {
 	//pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
 	pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
@@ -103,31 +91,4 @@ void iniciarHilos() {
 	//pthread_join(servidorConexionesCPU, NULL);
 	pthread_join(servidorConexionesKernel, NULL);
 }
-
-void alojarEnMemoria(int pid, int paginasRequeridas) {
-	log_info(logger,"Alojando %i paginas en memoria del proceso %i",paginasRequeridas,pid);
-	int i;
-	for(i = 0; i <= paginasRequeridas; i++) {
-		//esto seria agregar una entrada en la tabla  (la tabla ya tiene que estar iniicializada (es decir todos los lugares completados con -1))
-
-		/*char* buffer = malloc(sizeof(int)+sizeof(int));
-		int numeroDePagina = i;
-		memcpy(&buffer,pid,sizeof(int)); //mando a buffer el pid
-		memcpy(&buffer,numeroDePagina,sizeof(int)); //mando a buffer el numero de pagina
-		memcpy(&memoria,buffer,strlen(buffer)+1); //mando el buffer a memoria, es necesario el +1?
-		ultimaPosicion = ultimaPosicion + strlen(buffer) + 1; //actualizo la ultima posicion, esta bien hecho?
-		free(buffer);*/
-	}
-	//muy feo esto, hay que mejorarlo pero va por este lado
-}
-
-bool espacioDisponible(int pid, int paginasRequeridas) {
-	//me fijo si el espacio que hay en memoria es mayor al espacio que voy a alocar
-	int espacioAAlocar = malloc(sizeof(int));
-	espacioAAlocar = sizeof((sizeof(int)+sizeof(int))*paginasRequeridas);
-	return ultimaPosicion + espacioAAlocar < tamanioMemoria;
-}
-
-
-
 

@@ -47,14 +47,7 @@ void* hiloConexionKernel(void* socketKernel) {
 
 				log_info(logger,"Llega un nuevo proceso, las paginas requeridas son %d.\n",paginasRequeridas);
 
-				if (espacioDisponible(pid, paginasRequeridas)) {
-					alojarEnMemoria(pid, paginasRequeridas);
-					log_info(logger,"Se pudo inicializar el proceso con el pid %d.\n",pid);
-					enviar(socketKernel, 2, sizeof(int), &pid); //2 DEBERIA SER EXITO
-				} else {
-					log_info(logger,"No se pudo inicializar el proceso con el pid %d.\n",pid);
-					enviar(socketKernel, 3, sizeof(int), &pid);//3 DEBERIA SER FRACASO
-				}
+				//Grabar pid y paginas en la tabla
 			break;
 			default:
 				break;

@@ -56,25 +56,13 @@ un_socket socketKernel;
 //Funciones de configuracion
 void grandMalloc();
 void cargarConfiguracion();
-void inicializarTablaDePaginas();
-void inicializarMemoria();
+
+
 
 //Funciones
 void iniciarSeniales();
 void iniciarHilos();
 
 
-void alojarEnMemoria(int pid, int paginasRequeridas);
-bool espacioDisponible(int pid, int paginasRequeridas);
-void agregarEntradaEnTablaDePaginas(int pid, int paginasRequeridas);
-int getMarcoDisponible();
-
-//Funciones de hilos
-
-void* hiloServidorCPU(void* arg);
-void* hiloConexionCPU(void* socket);
-void* hiloServidorKernel(void* arg);
-void* hiloConexionKernel(void* socket);
-void* hiloConsolaMemoria();
 
 
