@@ -8,14 +8,14 @@
 
 
 typedef struct {
-	int marco;
+	int frame;
 	int pid;
 	int pagina;
 } t_entradaTablaDePaginas;
 
 typedef struct {
 	char* data[256];
-}t_marco;
+}t_frame;
 
 
 //t_entradaTablaDePaginas* tablaDePaginas[499];

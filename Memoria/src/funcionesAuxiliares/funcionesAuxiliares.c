@@ -7,8 +7,8 @@
 
 #include "funcionesAuxiliares.h"
 
-int getCantidadDeMarcosTablaDePaginas() {
-	double cantidad = (marcos*sizeof(t_entradaTablaDePaginas))/marco_size;
+int getCantidadDeFramesTablaDePaginas() {
+	double cantidad = (frames*sizeof(t_entradaTablaDePaginas))/frame_size;
 	int parteEntera = getParteEntera(cantidad);
 	double parteDecimal = getParteDecimal(cantidad);
 
@@ -20,6 +20,6 @@ int getCantidadDeMarcosTablaDePaginas() {
 
 
 
-int getLimiteMarcoByOffset(int offset) {
-	return getParteEntera(marco_size/offset) * offset;
+int getLimiteFrameByOffset(int offset) {
+	return getParteEntera(frame_size/offset) * offset;
 }

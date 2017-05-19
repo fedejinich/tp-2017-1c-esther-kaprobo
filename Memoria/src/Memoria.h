@@ -23,8 +23,8 @@
 
 //Variables de configuracion
 int puerto;
-int marcos;
-int marco_size;
+int frames;
+int frame_size;
 int entradas_cache;
 int cache_x_proc;
 char* reemplazo_cache;
