@@ -14,8 +14,8 @@
 
 
 int main(int argc, char **argv){
+	printf("tamanio marco %i", sizeof(t_marco));
 
-	printf("El tamanio de marco es de %i",sizeof(char));
 	logger = iniciarLog("memoria.log","Memoria");
 
 	printf("%s", "\n\n====== INICIO MEMORIA ======\n\n");
@@ -97,10 +97,12 @@ void inicializarTablaDePaginas() {
 	printf("Inicializando tabla de paginas...\n");
 	int limiteMarco = getLimiteMarcoByOffset(12); //Consigo el ultimo lugar en el cual voy a poder escribir segun un offset
 	int marcoAEscribir = 0; //Empiezo escribiendo el primer marco y luego incremento en base al espacio disponible
-	int nroDeMarcoTabla = 0; //Es el nro de marco que va a aparecer en la tabla de paginas
 	int offset; //El desplazamiento dentro del marco a escribir
 
+	int nroDeMarcoTabla = 0; //Es el nro de marco que va a aparecer en la tabla de paginas
+	//Un while para recorrer todas las entradas de tabla de pagina que quiero llenr (500 entradas)
 	while(nroDeMarcoTabla <= marcos) {
+		//Un for para recorrer cada marco que quiero llenar con entrada de tabla de pagina (un marco tiene 23 entradas aprox)
 		for(offset = 0;offset < limiteMarco && nroDeMarcoTabla <= marcos;offset = offset + sizeof(t_entradaTablaDePaginas)) {
 			t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
 
