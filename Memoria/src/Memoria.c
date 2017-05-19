@@ -14,8 +14,6 @@
 
 
 int main(int argc, char **argv){
-	printf("tamanio frame %i", sizeof(t_frame));
-
 	logger = iniciarLog("memoria.log","Memoria");
 
 	printf("%s", "\n\n====== INICIO MEMORIA ======\n\n");
@@ -36,7 +34,6 @@ int main(int argc, char **argv){
 
 
 	return EXIT_SUCCESS;
-
 }
 
 void cargarConfiguracion(){

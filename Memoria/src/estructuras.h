@@ -14,13 +14,15 @@ typedef struct {
 } t_entradaTablaDePaginas;
 
 typedef struct {
-	char* data[256];
+	char data[256];
 }t_frame;
 
 
 //t_entradaTablaDePaginas* tablaDePaginas[499];
 
 t_entradaTablaDePaginas* tablaDePaginas;
+t_frame* marcos;
+
 
 
 
