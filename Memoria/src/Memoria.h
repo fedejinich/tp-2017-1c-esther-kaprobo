@@ -14,7 +14,7 @@
 #include "hilos/hiloKernel.h"
 #include "hilos/hiloConsola.h"
 #include "funcionesAuxiliares/funcionesAuxiliares.h"
-
+#include "tablaDePaginas.h"
 
 
 /*
@@ -78,5 +78,3 @@ void* hiloConexionKernel(void* socket);
 void* hiloConsolaMemoria();
 
 
-//Auxiliares
-void escribir_marco(int marco, int offset, int tamanio, void * contenido);
