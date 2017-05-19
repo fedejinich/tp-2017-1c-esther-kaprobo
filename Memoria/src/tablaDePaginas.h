@@ -11,5 +11,6 @@
 #include "Memoria.h"
 
 void inicializarTablaDePaginas();
+t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada);
 
 #endif /* TABLADEPAGINAS_H_ */

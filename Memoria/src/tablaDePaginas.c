@@ -46,3 +46,7 @@ void inicializarTablaDePaginas() {
 
 	printf("Tabla de paginas inicializada.\n");
 }
+
+t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada) {
+	//Es una cosa onda corte de control en algoritmos
+};
