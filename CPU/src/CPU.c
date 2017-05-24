@@ -10,33 +10,41 @@
 
 #include "CPU.h"
 
+
+int flag = 0;
+
 AnSISOP_funciones primitivas = {
 .AnSISOP_definirVariable			= definirVariable,
 .AnSISOP_obtenerPosicionVariable	= obtenerPosicionVariable,
 .AnSISOP_dereferenciar				= dereferenciar,
 .AnSISOP_asignar					= asignar,
-.AnSISOP_obtenerPosicionVariable	= obtenerValorCompartida,
+.AnSISOP_obtenerValorCompartida		= obtenerValorCompartida,
 .AnSISOP_asignarValorCompartida		= asignarValorCompartida,
 .AnSISOP_irAlLabel					= irAlLabel,
+.AnSISOP_llamarSinRetorno			= llamarSinRetorno,
 .AnSISOP_llamarConRetorno			= llamarConRetorno,
-.AnSISOP_retornar					= retornar,
-.AnSISOP_imprimir					= imprimir,
-.AnSISOP_imprimirTexto				= imprimirTexto,
 .AnSISOP_finalizar					= finalizar,
-
+.AnSISOP_retornar					= retornar,
 };
+
+
 AnSISOP_kernel primitivas_kernel = {
 };
 
 int main(int argc, char **argv) {
-	t_paquete* paquete_recibido;
+
 	iniciarCPU();
+	sigusr1_desactivado=1;
+	//manejo de señales
+	signal(SIGUSR1, sig_handler);
+	signal(SIGINT, sig_handler2);
+
 	crearArchivoLog();
-	cargarConfiguracion(argv[0]);
+	cargarConfiguracion();
 	//No funciona conexiones.
 	kernel = conectarConElKernel();
 	memoria = conectarConMemoria();
-	prueboParser();
+	//prueboParser();
 	while (1){
 		paquete_recibido = recibir(kernel);
 		pcb = deserializarPCB(paquete_recibido->data);
@@ -89,7 +97,7 @@ char * leerArchivo(FILE *archivo){
 	script[fsize] = '\0';
 	return script;
 }
-void cargarConfiguracion(char* pathconf){
+void cargarConfiguracion(){
 	t_config* config = config_create(getenv("archivo_configuracion_CPU"));
 	puerto_kernel = config_get_int_value(config, "PUERTO_KERNEL");
 	ip_kernel = config_get_string_value(config, "IP_KERNEL");
@@ -103,6 +111,20 @@ void cargarConfiguracion(char* pathconf){
 	printf("El archivo de configuracion fue cargado con exito\n");
 }
 
+void sig_handler(int signo) {
+	sigusr1_desactivado = 0;
+	log_info(logger,"Se detecto señal SIGUSR1, la CPU se cerrara al finalizar\n");
+	if(flag==1) exit(0);
+	return;
+}
+void sig_handler2(int signo) {
+	sigusr1_desactivado = 0;
+	if(flag==1) exit(0);
+	//programaAbortado=1;
+
+	log_info(logger,"Se detecto señal sig int CRT C.\n");
+	return;
+}
 //funcion que conecta CPU con Kernel utilizando sockets
 int conectarConElKernel(){
 	printf("Inicio de conexion con Kernel\n");

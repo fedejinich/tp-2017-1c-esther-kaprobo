@@ -10,8 +10,9 @@
 #include "src/Estructuras.h"
 #include <pthread.h>
 #include <parser/parser.h>
+#include <signal.h>
 
-#define ARCHIVOLOG "Consola.log"
+#define ARCHIVOLOG "CPU.log"
 
 t_log* logger;
 char* ip_kernel;
@@ -26,19 +27,25 @@ FILE* archivo;
 char nomArchi[50];
 
 
-
+t_paquete* paquete_recibido;
+int sigusr1_desactivado;
 
 t_pcb* pcb;
 
 void iniciarCPU();
 void crearArchivoLog();
 void prueboParser();
-void cargarConfiguracion(char* pathconf);
+void cargarConfiguracion();
 void ejecutarArchivo(FILE *archivo);
 int conectarConElKernel();
 int conectarConMemoria();
 t_pcb* deserializarPCB(char* buffer);
 char * leerArchivo(FILE *archivo);
 char* depurarSentencia(char* sentencia);
+
+void sig_handler(int signo);
+void sig_handler2(int signo);
+
+
 
 #endif
