@@ -25,6 +25,31 @@ int main(int argc, char **argv){
 	inicializarTablaDePaginas();
 	//iniciarHilos();
 
+
+	//Es para debbugear, despues lo borro
+	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(0);
+	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+	entrada = getEntradaTablaDePaginas(8);
+	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+	entrada = getEntradaTablaDePaginas(10);
+	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+	entrada = getEntradaTablaDePaginas(21);
+	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+	entrada = getEntradaTablaDePaginas(22);
+	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+	entrada = getEntradaTablaDePaginas(23);
+	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+	entrada = getEntradaTablaDePaginas(30);
+	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+	entrada = getEntradaTablaDePaginas(42);
+	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+	entrada = getEntradaTablaDePaginas(63);
+	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+	entrada = getEntradaTablaDePaginas(499);
+	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+	entrada = getEntradaTablaDePaginas(500);
+	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+
 	return EXIT_SUCCESS;
 }
 
