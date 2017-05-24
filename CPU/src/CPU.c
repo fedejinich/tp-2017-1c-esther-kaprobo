@@ -13,6 +13,7 @@
 
 int flag = 0;
 
+
 AnSISOP_funciones primitivas = {
 .AnSISOP_definirVariable			= definirVariable,
 .AnSISOP_obtenerPosicionVariable	= obtenerPosicionVariable,
@@ -38,13 +39,14 @@ int main(int argc, char **argv) {
 	//manejo de señales
 	signal(SIGUSR1, sig_handler);
 	signal(SIGINT, sig_handler2);
-
 	crearArchivoLog();
+	pthread_mutex_init(&mutex_pcb, NULL);
 	cargarConfiguracion();
 	//No funciona conexiones.
 	kernel = conectarConElKernel();
 	memoria = conectarConMemoria();
 	//prueboParser();
+	t_paquete* datos_kernel = recibir(kernel);
 	while (1){
 		paquete_recibido = recibir(kernel);
 		pcb = deserializarPCB(paquete_recibido->data);

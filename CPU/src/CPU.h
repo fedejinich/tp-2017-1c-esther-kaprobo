@@ -29,6 +29,7 @@ char nomArchi[50];
 
 t_paquete* paquete_recibido;
 int sigusr1_desactivado;
+pthread_mutex_t mutex_pcb;
 
 t_pcb* pcb;
 
