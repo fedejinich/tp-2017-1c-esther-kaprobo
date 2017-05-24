@@ -7,7 +7,6 @@
 #include <signal.h>
 #include <commons/collections/list.h>
 
-
 #include "src/Commons_Kaprobo.h"
 #include "estructuras.h"
 #include "hilos/hiloCPU.h"
@@ -32,7 +31,6 @@ int retardo_memoria;
 
 //Memoria
 char* memoria;
-int ultimaPosicion;//puntero que apunta a la ultima posicion utilizada de memoria
 int tamanioMemoria;
 
 //Logger
@@ -56,7 +54,6 @@ un_socket socketKernel;
 //Funciones de configuracion
 void grandMalloc();
 void cargarConfiguracion();
-
 
 
 //Funciones

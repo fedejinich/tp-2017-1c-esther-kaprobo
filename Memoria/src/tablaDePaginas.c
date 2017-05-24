@@ -9,44 +9,50 @@
 #include "tablaDePaginas.h"
 
 void inicializarTablaDePaginas() {
-	printf("Inicializando tabla de paginas...\n");
-	int limiteMarco = getLimiteFrameByOffset(12); //Consigo el ultimo lugar en el cual voy a poder escribir segun un offset
+	log_info(logger,"Inicializando tabla de paginas...");
+
+	int limiteFrame = getLimiteFrameByOffset(12); //Consigo el ultimo lugar en el cual voy a poder escribir segun un offset
 	int frameAEscribir = 0; //Empiezo escribiendo el primer frame y luego incremento en base al espacio disponible
 	int offset; //El desplazamiento dentro del frame a escribir
 
-	int nroDeMarcoTabla = 0; //Es el nro de frame que va a aparecer en la tabla de paginas
-	//Un while para recorrer todas las entradas de tabla de pagina que quiero llenr (500 entradas)
-	while(nroDeMarcoTabla <= frames) {
-		//Un for para recorrer cada frame que quiero llenar con entrada de tabla de pagina (un frame tiene 23 entradas aprox)
-		for(offset = 0;offset < limiteMarco && nroDeMarcoTabla <= frames;offset = offset + sizeof(t_entradaTablaDePaginas)) {
-			t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
+	int nroDeFrameTablaDePaginas = 0; //Es el nro de frame que va a aparecer en la tabla de paginas
 
-			int frame = nroDeMarcoTabla;
+	//Un while para recorrer todas las entradas de tabla de pagina que quiero llenr (500 entradas)
+	while(nroDeFrameTablaDePaginas <= frames) {
+		//Un for para recorrer cada frame que quiero llenar con entrada de tabla de pagina (un frame tiene 20 entradas aprox)
+
+		for(offset = 0; offset < limiteFrame && nroDeFrameTablaDePaginas <= frames; offset += sizeof(t_entradaTablaDePaginas)) {
+			t_entradaTablaDePaginas* entradaTablaDePaginas = malloc(sizeof(t_entradaTablaDePaginas));
+
+			int frame = nroDeFrameTablaDePaginas;
 			int pid = -1;
 			int pagina = 0;
 
-			entrada->frame = frame;
-			entrada->pid = pid;
-			entrada->pagina = pagina;
+			entradaTablaDePaginas->frame = frame;
+			entradaTablaDePaginas->pid = pid;
+			entradaTablaDePaginas->pagina = pagina;
 
 			if(frame == 0 || frame == 100 || frame == 200 || frame == 300 ||frame == 400 ||frame == 500 || frame > 500)
-				printf("Frame en tabla de paginas numero: %i\n",frame);
+				log_info(logger,"Entrada de tabla de paginas en memoria, entrada numero: %i",frame);
 
-			escribir_frame(frameAEscribir,offset,sizeof(t_entradaTablaDePaginas),entrada);
+			escribir_frame(frameAEscribir,offset,sizeof(t_entradaTablaDePaginas),entradaTablaDePaginas);
 
-			nroDeMarcoTabla = nroDeMarcoTabla + 1;
+			nroDeFrameTablaDePaginas = nroDeFrameTablaDePaginas + 1;
 
-			free(entrada);
+			free(entradaTablaDePaginas);
 		}
-		frameAEscribir = frameAEscribir + 1;
+		frameAEscribir++;
 	}
 
-	//Pongo el puntero para manejar la tabla de paginas en el inicio de la misma
-	tablaDePaginas = (t_entradaTablaDePaginas*)&memoria[0];
-
-	printf("Tabla de paginas inicializada.\n");
+	log_info(logger,"Tabla de paginas inicializada.");
 }
 
-t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada) {
-	//Es una cosa onda corte de control en algoritmos
-};
+t_entradaTablaDePaginas* getEntradaTablaDePaginas(int entrada) {
+	int numeroDeEntradaEnFrame = numeroDeEntradaEnFrameBy(entrada);
+	int numeroDeFrame = numeroDeFrameBy(entrada);
+
+	entradaTablaPointer = &framePointer[numeroDeFrame];
+
+	return &entradaTablaPointer[numeroDeEntradaEnFrame];
+}
+
