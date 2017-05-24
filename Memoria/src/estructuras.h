@@ -18,9 +18,8 @@ typedef struct {
 } t_frame;
 
 
-//t_entradaTablaDePaginas* tablaDePaginas[499];
 
-t_entradaTablaDePaginas* tablaDePaginas;
+t_entradaTablaDePaginas* entradaTablaPointer;
 t_frame* framePointer;
 
 

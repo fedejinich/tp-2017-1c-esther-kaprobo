@@ -16,3 +16,4 @@ void escribir_frame(int frame, int offset, int tamanio, void * contenido) {
 	memcpy(memoria + desplazamiento + offset, contenido, tamanio);
 
 }
+
