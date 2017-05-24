@@ -15,10 +15,7 @@
 
 int main(int argc, char **argv){
 
-
 	logger = iniciarLog("memoria.log","Memoria");
-
-
 
 	printf("%s", "\n====== INICIO MEMORIA ======\n\n");
 
@@ -27,27 +24,6 @@ int main(int argc, char **argv){
 	grandMalloc(); //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
 	inicializarTablaDePaginas();
 	//iniciarHilos();
-
-	int entrada = 21;
-	int entrada2 = 0;
-	int entrada3 = 451;
-	int entrada4 = 84;
-	int entrada5 = 500;
-	int entrada6 = 235;
-	printf("Entrada %i, Frame = %i, Ubicacion dentro del frame = %i\n",entrada,numeroDeFrameBy(entrada),numeroDeEntradaEnFrameBy(entrada));
-	printf("Entrada %i, Frame = %i, Ubicacion dentro del frame = %i\n",entrada2,numeroDeFrameBy(entrada2),numeroDeEntradaEnFrameBy(entrada2));
-	printf("Entrada %i, Frame = %i, Ubicacion dentro del frame = %i\n",entrada3,numeroDeFrameBy(entrada3),numeroDeEntradaEnFrameBy(entrada3));
-	printf("Entrada %i, Frame = %i, Ubicacion dentro del frame = %i\n",entrada4,numeroDeFrameBy(entrada4),numeroDeEntradaEnFrameBy(entrada4));
-	printf("Entrada %i, Frame = %i, Ubicacion dentro del frame = %i\n",entrada5,numeroDeFrameBy(entrada5),numeroDeEntradaEnFrameBy(entrada5));
-	printf("Entrada %i, Frame = %i, Ubicacion dentro del frame = %i\n",entrada6,numeroDeFrameBy(entrada6),numeroDeEntradaEnFrameBy(entrada6));
-
-
-
-
-	escribir_frame(31,0,4,"hola");
-	char* buffer = malloc(4);
-	memcpy(buffer,&framePointer[31],4);
-	printf("\nasd: %s\n",buffer);
 
 	return EXIT_SUCCESS;
 }
