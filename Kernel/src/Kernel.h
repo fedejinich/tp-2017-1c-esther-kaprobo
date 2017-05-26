@@ -61,6 +61,11 @@ int numeroClientes = 0;
 t_paquete* paqueteRecibido;
 un_socket memoria;
 
+typedef struct {
+	int pid;
+	int paginasAPedir;
+} t_pedidoDePaginas;
+
 //struct timeval timeout;
 
 //FUNCIONES
@@ -70,7 +75,7 @@ void prepararSocketsServidores();
 void verSiHayNuevosClientes();
 void nuevoCliente (int servidor, int *clientes, int *nClientes);
 void procesarPaqueteRecibido(t_paquete* paqueteRecibido);
-int pedirPaginasParaProceso();
+int pedirPaginasParaProceso(int pid);
 un_socket conectarConLaMemoria();
 
 

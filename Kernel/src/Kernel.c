@@ -186,7 +186,7 @@ void crearProcesoAnsisop(){
 
 
 	//Pido paginas a memoria y memoria me dice si le alcanzan
-	int resultadoPedidoPaginas = pedirPaginasParaProceso();
+	int resultadoPedidoPaginas = pedirPaginasParaProceso(cantidadDeProgramas);
 
 
 	//Si la memoria devolvio OK, asigno la cantidad de paginas al PCB. Si no devolvió OK, ????
@@ -200,20 +200,26 @@ void crearProcesoAnsisop(){
 	}
 }
 
-int pedirPaginasParaProceso(){
+int pedirPaginasParaProceso(int pid){
 	memoria = conectarConLaMemoria();
 	//Calculo paginas de memoria que necesito pedir de memoria para este script
 	int paginasAPedir = ceil(paqueteRecibido->tamanio/TAMANIODEPAGINA);
 
+	//ENUMS, NADA DE CODIGOS!
+	t_pedidoDePaginas* pedidoDePaginas = malloc(sizeof(t_pedidoDePaginas));
+	pedidoDePaginas->pid = pid;
+	pedidoDePaginas->paginasAPedir = paginasAPedir;
 
 	//Armo el paquete con el pedido de paginas para mandar a memoria y lo envio
-	t_paquete* pedidoDePaginas;
-	pedidoDePaginas->codigo_operacion = 201; //HAY QUE HACER UN ARCHIVO DE CODIGOS URGENTE, ESTE LO INVENTE 201 = PEDIDO DE PAGINAS DE KERNEL A MEMORIA
+	t_paquete* paquete = malloc(sizeof(t_paquete));
+	paquete->codigo_operacion = 201; //HAY QUE HACER UN ARCHIVO DE CODIGOS URGENTE, ESTE LO INVENTE 201 = PEDIDO DE PAGINAS DE KERNEL A MEMORIA
+	paquete->tamanio = sizeof(t_pedidoDePaginas);
+	paquete->data = pedidoDePaginas;
 
-	//ENUMS, NADA DE CODIGOS!
-	pedidoDePaginas->tamanio = sizeof(int);
-	pedidoDePaginas->data = paginasAPedir;
-	enviar(memoria, 201, pedidoDePaginas->tamanio,pedidoDePaginas);//VA ACA EL 201 O EN EL PAQUETE?
+	enviar(memoria, 201, paquete->tamanio,paquete);//VA ACA EL 201 O EN EL PAQUETE?
+
+	free(pedidoDePaginas);
+	free(paquete);
 
 	//Tengo que esperar a que vuelva la respuesta del pedido. Si esta OK, devuelve la cantidad de paginas, sino devuelve -1
 	t_paquete* respuestaAPedidoDePaginas;
