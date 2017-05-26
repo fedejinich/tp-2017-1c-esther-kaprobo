@@ -22,6 +22,8 @@ t_entradaTablaDePaginas* entradaTablaPointer;
 
 void inicializarTablaDePaginas();
 //t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada);
-void escribirEntradaTablaDePaginas(t_entradaTablaDePaginas*  entrada);
+void escribirTablaDePaginas(t_entradaTablaDePaginas*  entrada);
+bool espacioDisponible(int paginasRequeridas, int tamanioCodigo);
+int getFrameDisponible();
 
 #endif /* TABLADEPAGINAS_H_ */

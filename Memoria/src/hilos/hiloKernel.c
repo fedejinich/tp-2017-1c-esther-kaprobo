@@ -33,8 +33,6 @@ void* hiloServidorKernel(void* arg) {
 
 
 void* hiloConexionKernel(void* socketKernel) {
-
-
 	t_paquete * paquete_nuevo;
 	int pid, paginasRequeridas, tamanioCodigo;
 
@@ -47,12 +45,27 @@ void* hiloConexionKernel(void* socketKernel) {
 
 				log_info(logger,"Llega un nuevo proceso, las paginas requeridas son %d.",paginasRequeridas);
 
-				//Grabar pid y paginas en la tabla
+				if(espacioDisponible(paginasRequeridas, tamanioCodigo)) {
+					int i;
+					for(i = 1; i <= paginasRequeridas; i++) {
+						int frameDisponible = getFrameDisponible();
+
+						t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
+						entrada->frame = frameDisponible;
+						entrada->pid = pid;
+						entrada->pagina = i;
+
+						escribirTablaDePaginas(entrada);
+						free(entrada);
+					}
+				} else
+					log_warning(logger, "El proceso %i no se pudo inicializar.", pid);
 			break;
+
+
 			default:
 				break;
 		}
-
 	}
 
 	return 1;

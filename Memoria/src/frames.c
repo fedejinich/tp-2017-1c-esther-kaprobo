@@ -12,6 +12,7 @@ void escribir_frame(int frame, int offset, int tamanio, void * contenido) {
 
 	//Es el desplazamiento dentro del bloque de memoria principal para luego conseguir el frame en el cual voy a escribir
 	//int desplazamiento = frame * frame_size;
+	sleep(retardo_memoria); //retardo de memoria
 
 	memcpy(&memoria[frame] + offset, contenido, tamanio);
 

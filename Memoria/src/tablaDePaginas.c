@@ -32,7 +32,7 @@ void inicializarTablaDePaginas() {
 			entradaTablaDePaginas->pid = pid;
 			entradaTablaDePaginas->pagina = pagina;
 
-			escribirEntradaTablaDePaginas(entradaTablaDePaginas);
+			escribirTablaDePaginas(entradaTablaDePaginas);
 
 			nroDeFrameTablaDePaginas = nroDeFrameTablaDePaginas + 1;
 
@@ -59,10 +59,34 @@ t_entradaTablaDePaginas* getEntradaTablaDePaginas(int entrada) {
 	return &entradaTablaPointer[numeroDeEntradaEnFrame];
 }
 
-void escribirEntradaTablaDePaginas(t_entradaTablaDePaginas*  entrada) {
+void escribirTablaDePaginas(t_entradaTablaDePaginas*  entrada) {
 	int nroDeEntradaEnFrame = numeroDeEntradaEnFrameBy(entrada->frame);
 	int nroDeFrameAEscribir = numeroDeFrameBy(entrada->frame);
 	entradaTablaPointer = &memoria[nroDeFrameAEscribir];
 	memcpy(&entradaTablaPointer[nroDeEntradaEnFrame], entrada, sizeof(t_entradaTablaDePaginas));
 }
 
+bool espacioDisponible(int paginasRequeridas, int tamanioCodigo) {
+	int i;
+	for(i = 1; i <= paginasRequeridas; i++) {
+		if(getFrameDisponible() == -1) {
+			log_warning(logger, "No hay mas espacio disponible en memoria.");
+			return false;
+		}
+
+	}
+
+	return true;
+}
+
+int getFrameDisponible() {
+	int i;
+	int frameDisponible = -1;
+	for(i = 0; i <= frames; i++) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		if(entrada->pid == -1)
+			return entrada->frame;
+	}
+
+	return frameDisponible;
+}
