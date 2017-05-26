@@ -210,16 +210,11 @@ int pedirPaginasParaProceso(int pid){
 	pedidoDePaginas->pid = pid;
 	pedidoDePaginas->paginasAPedir = paginasAPedir;
 
-	//Armo el paquete con el pedido de paginas para mandar a memoria y lo envio
-	t_paquete* paquete = malloc(sizeof(t_paquete));
-	paquete->codigo_operacion = 201; //HAY QUE HACER UN ARCHIVO DE CODIGOS URGENTE, ESTE LO INVENTE 201 = PEDIDO DE PAGINAS DE KERNEL A MEMORIA
-	paquete->tamanio = sizeof(t_pedidoDePaginasKernel);
-	paquete->data = pedidoDePaginas;
 
-	enviar(memoria, 201, paquete->tamanio,paquete);//VA ACA EL 201 O EN EL PAQUETE?
+	//Envio a
+	enviar(memoria, 201, sizeof(t_pedidoDePaginasKernel),pedidoDePaginas);//VA ACA EL 201 O EN EL PAQUETE?
 
 	free(pedidoDePaginas);
-	free(paquete);
 
 	//Tengo que esperar a que vuelva la respuesta del pedido. Si esta OK, devuelve la cantidad de paginas, sino devuelve -1
 
