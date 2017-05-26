@@ -30,7 +30,6 @@ char* reemplazo_cache;
 int retardo_memoria;
 
 //Memoria
-char* memoria;
 int tamanioMemoria;
 
 //Logger

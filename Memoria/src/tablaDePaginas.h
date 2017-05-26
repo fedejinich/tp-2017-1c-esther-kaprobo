@@ -9,11 +9,12 @@
 #define TABLADEPAGINAS_H_
 
 #include "Memoria.h"
+#include "frames.h"
 
 typedef struct {
-int frame;
-int pid;
-int pagina;
+	int frame;
+	int pid;
+	int pagina;
 } t_entradaTablaDePaginas;
 
 t_entradaTablaDePaginas* entradaTablaPointer;

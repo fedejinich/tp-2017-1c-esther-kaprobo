@@ -32,10 +32,7 @@ void inicializarTablaDePaginas() {
 			entradaTablaDePaginas->pid = pid;
 			entradaTablaDePaginas->pagina = pagina;
 
-			if(frame == 21 || frame == 100 || frame == 200 || frame == 300 ||frame == 400 ||frame == 500 || frame > 500)
-				log_info(logger,"Entrada de tabla de paginas en memoria, entrada numero: %i",frame);
-
-			escribir_frame(frameAEscribir,offset,sizeof(t_entradaTablaDePaginas),entradaTablaDePaginas);
+			escribirEntradaTablaDePaginas(entradaTablaDePaginas);
 
 			nroDeFrameTablaDePaginas = nroDeFrameTablaDePaginas + 1;
 
@@ -49,12 +46,15 @@ void inicializarTablaDePaginas() {
 
 t_entradaTablaDePaginas* getEntradaTablaDePaginas(int entrada) {
 
+	if(entrada > frames) {
+		log_error(logger,"Se solicito una entrada inexistente");
+		return EXIT_FAILURE;
+	}
+
 	int numeroDeFrame = numeroDeFrameBy(entrada);
 	int numeroDeEntradaEnFrame = numeroDeEntradaEnFrameBy(entrada);
 
-
-	entradaTablaPointer = &framePointer[numeroDeFrame];
-
+	entradaTablaPointer = &memoria[numeroDeFrame];
 
 	return &entradaTablaPointer[numeroDeEntradaEnFrame];
 }

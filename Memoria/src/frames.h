@@ -10,6 +10,12 @@
 
 #include "Memoria.h"
 
+typedef struct {
+	char data[256];
+} t_frame;
+
+t_frame* memoria;
+
 void escribir_frame(int frame, int offset, int tamanio, void * contenido);
 
 #endif /* FRAMES_H_ */
