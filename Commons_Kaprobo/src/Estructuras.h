@@ -13,5 +13,9 @@ typedef struct __attribute__((packed))t_pcb{
 	int exitCode;
 }t_pcb;
 
+typedef struct {
+	int pid;
+	int paginasAPedir;
+} t_pedidoDePaginas;
 
 #endif
