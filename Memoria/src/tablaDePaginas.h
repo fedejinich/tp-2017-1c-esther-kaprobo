@@ -19,6 +19,11 @@ typedef struct {
 
 t_entradaTablaDePaginas* entradaTablaPointer;
 
+typedef struct {
+	int pid;
+	int paginasAPedir;
+} t_pedidoDePaginas; //DESPUES HAY QUE HACER UN FIX DE ESTO Y DEFINIR ESTE STRUCT SOLO EN ESTRUCTURAS.H
+//PERO AHORA EL PUTO DE C NO C PORQUE NO ME ESTA DEJANDO
 
 void inicializarTablaDePaginas();
 //t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada);

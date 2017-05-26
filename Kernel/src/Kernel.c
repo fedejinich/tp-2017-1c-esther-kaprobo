@@ -206,14 +206,14 @@ int pedirPaginasParaProceso(int pid){
 	int paginasAPedir = ceil(paqueteRecibido->tamanio/TAMANIODEPAGINA);
 
 	//ENUMS, NADA DE CODIGOS!
-	t_pedidoDePaginas* pedidoDePaginas = malloc(sizeof(t_pedidoDePaginas));
+	t_pedidoDePaginasKernel* pedidoDePaginas = malloc(sizeof(t_pedidoDePaginasKernel));
 	pedidoDePaginas->pid = pid;
 	pedidoDePaginas->paginasAPedir = paginasAPedir;
 
 	//Armo el paquete con el pedido de paginas para mandar a memoria y lo envio
 	t_paquete* paquete = malloc(sizeof(t_paquete));
 	paquete->codigo_operacion = 201; //HAY QUE HACER UN ARCHIVO DE CODIGOS URGENTE, ESTE LO INVENTE 201 = PEDIDO DE PAGINAS DE KERNEL A MEMORIA
-	paquete->tamanio = sizeof(t_pedidoDePaginas);
+	paquete->tamanio = sizeof(t_pedidoDePaginasKernel);
 	paquete->data = pedidoDePaginas;
 
 	enviar(memoria, 201, paquete->tamanio,paquete);//VA ACA EL 201 O EN EL PAQUETE?
@@ -222,6 +222,7 @@ int pedirPaginasParaProceso(int pid){
 	free(paquete);
 
 	//Tengo que esperar a que vuelva la respuesta del pedido. Si esta OK, devuelve la cantidad de paginas, sino devuelve -1
+
 	t_paquete* respuestaAPedidoDePaginas;
 	respuestaAPedidoDePaginas = recibir(memoria);
 

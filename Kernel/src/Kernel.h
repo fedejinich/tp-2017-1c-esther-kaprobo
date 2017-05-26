@@ -64,7 +64,8 @@ un_socket memoria;
 typedef struct {
 	int pid;
 	int paginasAPedir;
-} t_pedidoDePaginas;
+} t_pedidoDePaginasKernel; //DESPUES HAY QUE HACER UN FIX DE ESTO Y DEFINIR ESTE STRUCT SOLO EN ESTRUCTURAS.H
+//PERO AHORA EL PUTO DE C NO C PORQUE NO ME ESTA DEJANDO
 
 //struct timeval timeout;
 

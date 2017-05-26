@@ -14,6 +14,7 @@ void* hiloServidorKernel(void* arg) {
 	socketKernel = socket_escucha("127.0.0.1", puerto);
 	log_info(logger,"Creacion socket servidor Kernel exitosa");
 	listen(socketKernel, 1024);
+
 	while(1) {
 		socketCliente = aceptar_conexion(socketKernel);
 		log_info(logger,"Iniciando Handshake con Kernel\n");
@@ -33,17 +34,20 @@ void* hiloServidorKernel(void* arg) {
 
 
 void* hiloConexionKernel(void* socketKernel) {
+	log_info(logger,"Iniciando hilo conexion kernel");
+
 	t_paquete * paquete_nuevo;
 	int pid, paginasRequeridas, tamanioCodigo;
 
 	while (1) {
 		paquete_nuevo = recibir(socketKernel);
-		switch (paquete_nuevo->codigo_operacion) {
-			case 1: //1 en realidad  deberia ser INICIAR_PROCESO
-				memcpy(&pid, paquete_nuevo->data, sizeof(int));
-				memcpy(&paginasRequeridas, paquete_nuevo->data + sizeof(int),sizeof(int));
 
-				log_info(logger,"Llega un nuevo proceso, las paginas requeridas son %d.",paginasRequeridas);
+		switch (paquete_nuevo->codigo_operacion) {
+			case 1: //1 en realidad  deberia ser PEDIDO_DE_PAGINAS
+				paginasRequeridas = ((t_pedidoDePaginas*)(paquete_nuevo->data))->paginasAPedir;
+				pid = ((t_pedidoDePaginas*)(paquete_nuevo->data))->pid;
+
+				log_info(logger,"Se piden %i paginas para el proceso %i.",paginasRequeridas, pid);
 
 				if(espacioDisponible(paginasRequeridas, tamanioCodigo)) {
 					int i;
@@ -58,8 +62,11 @@ void* hiloConexionKernel(void* socketKernel) {
 						escribirTablaDePaginas(entrada);
 						free(entrada);
 					}
+
+					log_info(logger,"Se otorgaron %i paginas al proceso %i.",paginasRequeridas, pid);
 				} else
 					log_warning(logger, "El proceso %i no se pudo inicializar.", pid);
+
 			break;
 
 
@@ -67,6 +74,7 @@ void* hiloConexionKernel(void* socketKernel) {
 				break;
 		}
 	}
+
 
 	return 1;
 }

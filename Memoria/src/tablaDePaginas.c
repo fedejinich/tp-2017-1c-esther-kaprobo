@@ -76,6 +76,7 @@ bool espacioDisponible(int paginasRequeridas, int tamanioCodigo) {
 
 	}
 
+	log_info(logger, "Hay espacio disponible");
 	return true;
 }
 
