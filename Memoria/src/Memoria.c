@@ -23,25 +23,7 @@ int main(int argc, char **argv){
 	cargarConfiguracion();
 	grandMalloc(); //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
 	inicializarTablaDePaginas();
-	//iniciarHilos();
-
-	//Es para debbugear, despues lo borro
-	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(0);
-	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
-	entrada = getEntradaTablaDePaginas(1);
-	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
-	entrada = getEntradaTablaDePaginas(21);
-	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
-	entrada = getEntradaTablaDePaginas(42);
-	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
-	entrada = getEntradaTablaDePaginas(63);
-	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
-	entrada = getEntradaTablaDePaginas(499);
-	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
-	entrada = getEntradaTablaDePaginas(500);
-	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
-	entrada = getEntradaTablaDePaginas(501);
-	log_info(logger,"Frame = %i, PID = %i, Pagina = %i", entrada->frame,entrada->pid,entrada->pagina);
+	iniciarHilos();
 
 	return EXIT_SUCCESS;
 }

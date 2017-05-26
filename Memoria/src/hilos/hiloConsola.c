@@ -8,7 +8,7 @@
 #include "hiloConsola.h"
 
 void* hiloConsolaMemoria() {
-	log_info(logger,"Inicio del hilo Consola\n");
+	log_info(logger,"Inicio del hilo Consola");
 	while(1) {
 		scanf("%s",&comando);
 		//opciones para consola memoria

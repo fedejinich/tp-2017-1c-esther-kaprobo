@@ -8,20 +8,20 @@
 #include "hiloCPU.h"
 
 void* hiloServidorCPU(void* arg) {
-	log_info(logger,"Inicio del hilo CPU\n");
+	log_info(logger,"Inicio del hilo CPU");
 	int servidorSocket, socketCliente;
 	int *socketClienteTemp;
 	socketCPU = socket_escucha("127.0.0.2", puerto);
-	log_info(logger,"Creacion socket servidor CPU exitosa\n\n");
+	log_info(logger,"Creacion socket servidor CPU exitosa");
 	listen(socketCPU, 1024);
 	while(1) {
 		socketCliente = aceptar_conexion(socketCPU);
-		log_info(logger,"Iniciando Handshake con CPU\n");
+		log_info(logger,"Iniciando Handshake con CPU");
 		bool resultado_hand = esperar_handshake(socketCliente,15);
 		if(resultado_hand){
-			log_info(logger,"Conexión aceptada de la CPU %d!!\n", socketCliente);
+			log_info(logger,"Conexión aceptada de la CPU %d!!", socketCliente);
 		} else {
-			log_info(logger,"Handshake fallo, se aborta conexion\n");
+			log_info(logger,"Handshake fallo, se aborta conexion");
 			exit (EXIT_FAILURE);
 		}
 		socketClienteTemp = malloc(sizeof(int));
@@ -36,11 +36,11 @@ void* hiloConexionCPU(void* socket) {
 		char* buffer = malloc(1000);
 		int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
 		if (bytesRecibidos <= 0) {
-			log_warning(logger,"El proceso se desconecto\n");
+			log_warning(logger,"El proceso se desconecto");
 			return 1;
 		}
 		buffer[bytesRecibidos] = '\0';
-		printf("Me llegaron %d bytes con %s, de la CPU %d\n", bytesRecibidos, buffer,*(int*)socket);
+		log_info("Me llegaron %d bytes con %s, de la CPU %d", bytesRecibidos, buffer,*(int*)socket);
 		free(buffer);
 	}
 }
