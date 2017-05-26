@@ -43,7 +43,7 @@ void* hiloConexionKernel(void* socketKernel) {
 		paquete_nuevo = recibir(socketKernel);
 
 		switch (paquete_nuevo->codigo_operacion) {
-			case 1: //1 en realidad  deberia ser PEDIDO_DE_PAGINAS
+			case PEDIDO_DE_PAGINAS:
 				paginasRequeridas = ((t_pedidoDePaginas*)(paquete_nuevo->data))->paginasAPedir;
 				pid = ((t_pedidoDePaginas*)(paquete_nuevo->data))->pid;
 
@@ -63,9 +63,13 @@ void* hiloConexionKernel(void* socketKernel) {
 						free(entrada);
 					}
 
+					enviar(socketKernel, PEDIDO_DE_PAGINAS_OK, sizeof(int), paginasRequeridas);
+
 					log_info(logger,"Se otorgaron %i paginas al proceso %i.",paginasRequeridas, pid);
-				} else
+				} else {
+					enviar(socketKernel, PEDIDO_DE_PAGINAS_FALLO, sizeof(int), -1); //EL TAMANIO Y DATA ESTAN AL PEDO PERO BUEN
 					log_warning(logger, "El proceso %i no se pudo inicializar.", pid);
+				}
 
 			break;
 

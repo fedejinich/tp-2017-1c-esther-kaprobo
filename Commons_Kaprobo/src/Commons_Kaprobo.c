@@ -47,8 +47,7 @@ un_socket socket_escucha(char* IP, char* Port) {
 	return socketEscucha;
 }
 
-void enviar(un_socket socket_para_enviar, int codigo_operacion, int tamanio,
-		void * data) {
+void enviar(un_socket socket_para_enviar, int codigo_operacion, int tamanio, void * data) {
 
 	int tamanio_paquete = 2 * sizeof(int) + tamanio;
 	void * buffer = malloc(tamanio_paquete);
@@ -60,6 +59,8 @@ void enviar(un_socket socket_para_enviar, int codigo_operacion, int tamanio,
 	send(socket_para_enviar, buffer, tamanio_paquete, MSG_WAITALL);
 
 	free(buffer);
+
+	//POR QUE NO ENVIA UN PAQUETE DIRECTAMENTE EN VEZ DE UN BUFFER?
 
 }
 
