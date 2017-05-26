@@ -59,3 +59,10 @@ t_entradaTablaDePaginas* getEntradaTablaDePaginas(int entrada) {
 	return &entradaTablaPointer[numeroDeEntradaEnFrame];
 }
 
+void escribirEntradaTablaDePaginas(t_entradaTablaDePaginas*  entrada) {
+	int nroDeEntradaEnFrame = numeroDeEntradaEnFrameBy(entrada->frame);
+	int nroDeFrameAEscribir = numeroDeFrameBy(entrada->frame);
+	entradaTablaPointer = &memoria[nroDeFrameAEscribir];
+	memcpy(&entradaTablaPointer[nroDeEntradaEnFrame], entrada, sizeof(t_entradaTablaDePaginas));
+}
+
