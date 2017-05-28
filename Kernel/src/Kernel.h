@@ -3,7 +3,7 @@
 #include <string.h>
 #include <commons/config.h>
 #include "src/Commons_Kaprobo.h"
-#include "src/Estructuras.h"
+//#include "src/Estructuras.h"
 #include <pthread.h>
 #include <commons/log.h>
 #include <math.h>
@@ -13,7 +13,13 @@
 
 int cantidadDeProgramas;
 
-
+typedef struct __attribute__((packed))t_pcb{
+	int pid;
+	int pageCounter;
+	//Falta referencia a tabla
+	int stackPosition;
+	int exitCode;
+}t_pcb;
 
 //Logger
 t_log* logger;

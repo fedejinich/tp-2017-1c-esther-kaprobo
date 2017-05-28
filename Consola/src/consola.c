@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 
 	//Interfaz con el Usuario
 
-	while(ejecuta){
+	while(1){
 		printf("Ingrese la opcion deseada:\n");
 		printf("OPCION 1 - INICIAR PROGRAMA\n");
 		printf("OPCION 2 - FINALIZAR PROGRAMA\n");
@@ -56,13 +56,7 @@ int main(int argc, char **argv) {
 	}
 
 
-/*
-	while (1){
-		char mensaje[1000];
-		scanf("%s", mensaje);
-		send(kernel,mensaje,strlen(mensaje),0);
 
-	}*/
 	return 0;
 }
 
@@ -112,6 +106,7 @@ void limpiarMensajes(){
 
 //Funcion que es creada con un hiloPrograma
 void hiloNuevoPrograma(){
+	int programaFinalizado = 1;
 	printf("Ingrese el nombre del archivo\n");
 	scanf("%s",&nomArchi);
 
@@ -139,6 +134,8 @@ void hiloNuevoPrograma(){
 	//envio paquete con codigo 101 y el script a ejecutar al Kernel
 	enviar(kernel, 101, strlen(script),scriptParaEnviar);
 	free(scriptParaEnviar);
+
+
 
 }
 

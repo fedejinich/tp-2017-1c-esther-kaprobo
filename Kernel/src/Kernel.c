@@ -128,16 +128,17 @@ void verSiHayNuevosClientes(){
 	if(FD_ISSET (socketCPU, &fds_activos)){
 		printf("Nuevo pedido de conexion CPU\n");
 		log_info(logger, "Nuevo pedido de conexion CPU");
-		nuevoCliente(socketCPU, socketCliente, &numeroClientes);
+		nuevoClienteCPU(socketCPU, socketCliente, &numeroClientes);
 	}
 	if(FD_ISSET (socketConsola, &fds_activos)){
 		printf("Nuevo pedido de conexion Consola\n");
 		log_info(logger, "Nuevo pedido de conexion Consola");
-		nuevoCliente(socketConsola, socketCliente, &numeroClientes);
+		nuevoClienteConsola(socketConsola, socketCliente, &numeroClientes);
 	}
 }
+//Ver si hay una mejor manera de corregir esto, repite codigo
 
-void nuevoCliente (int servidor, int *clientes, int *nClientes)
+void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 {
 	/* Acepta la conexión con el cliente, guardándola en el array */
 	clientes[*nClientes] = aceptar_conexion(servidor);
@@ -153,9 +154,37 @@ void nuevoCliente (int servidor, int *clientes, int *nClientes)
 	}
 
 	bool resultado_CPU = esperar_handshake(clientes[*nClientes - 1], 12);
+	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
+	if(resultado_CPU){
+		log_info(logger, "Handshake OK, pedido de conexion aceptado");
+		printf ("Aceptado cliente %d\n", *nClientes);
+	}
+	else{
+		log_error(logger, "Handshake fallo, pedido de conexion rechazado");
+		printf ("Handshake rechazado\n");
+	}
+
+	return;
+}
+
+void nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
+{
+	/* Acepta la conexión con el cliente, guardándola en el array */
+	clientes[*nClientes] = aceptar_conexion(servidor);
+	(*nClientes)++;
+
+	/* Si se ha superado el maximo de clientes, se cierra la conexión,
+	 * se deja todo como estaba y se vuelve. */
+
+	if ((*nClientes) > MAX_CLIENTES) {
+		close (clientes[(*nClientes) -1]);
+		(*nClientes)--;
+		return;
+	}
+
 	bool resultado_Consola = esperar_handshake(clientes[*nClientes - 1], 11);
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
-	if(resultado_CPU || resultado_Consola){
+	if(resultado_Consola){
 		log_info(logger, "Handshake OK, pedido de conexion aceptado");
 		printf ("Aceptado cliente %d\n", *nClientes);
 	}

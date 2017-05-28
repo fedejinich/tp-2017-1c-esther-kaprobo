@@ -41,19 +41,34 @@ int main(int argc, char **argv) {
 	signal(SIGINT, sig_handler2);
 	crearArchivoLog();
 	pthread_mutex_init(&mutex_pcb, NULL);
+
 	cargarConfiguracion();
-	//No funciona conexiones.
 	kernel = conectarConElKernel();
 	memoria = conectarConMemoria();
+
 	//prueboParser();
 	t_paquete* datos_kernel = recibir(kernel);
+	algoritmo = ((t_datos_kernel*)(datos_kernel->data))->ALGORITMO;
+
+	//No se que manera ver que algoritmo estamos usando
+	bool resultado = string_equals_ignore_case(algoritmo, "FIFO");
+
+	if(resultado){
+		ejecutarConFIFO();
+	}
+	else{
+		ejecutarConRR(datos_kernel);
+	}
+
+
+	/*
 	while (1){
 		paquete_recibido = recibir(kernel);
 		pcb = deserializarPCB(paquete_recibido->data);
 		int pid = pcb->pid;
 		free(paquete_recibido);
 	}
-
+*/
 	return 0;
 }
 
@@ -61,10 +76,13 @@ void iniciarCPU(){
 	printf("%s", "\n\n====== INICIO CPU ======\n\n");
 
 }
+
+
 void crearArchivoLog(){
 	logger = iniciarLog(ARCHIVOLOG,"CPU");
 	log_info(logger, "Iniciando CPU. \n");
 }
+
 void prueboParser(){
 	printf("Inicio prueba de parser anSISOP. \n");
 	//Deberia poder leer el archivo, pero no lo lee.
@@ -72,6 +90,7 @@ void prueboParser(){
 	ejecutarArchivo(archivo);
 	fclose(archivo);
 }
+
 void ejecutarArchivo(FILE *archivo){
 	fseek(archivo, 0, SEEK_END);
 	long fsize = ftell(archivo);
@@ -82,6 +101,7 @@ void ejecutarArchivo(FILE *archivo){
 		analizadorLinea(depurarSentencia(sentencia), &primitivas, &primitivas_kernel);
 	}
 }
+
 char* depurarSentencia(char* sentencia){
 	int i = strlen(sentencia);
 	while (string_ends_with(sentencia, "\n")) {
@@ -90,6 +110,7 @@ char* depurarSentencia(char* sentencia){
 	}
 	return sentencia;
 }
+
 char * leerArchivo(FILE *archivo){
 	fseek(archivo, 0, SEEK_END);
 	long fsize = ftell(archivo);
@@ -99,6 +120,7 @@ char * leerArchivo(FILE *archivo){
 	script[fsize] = '\0';
 	return script;
 }
+
 void cargarConfiguracion(){
 	t_config* config = config_create(getenv("archivo_configuracion_CPU"));
 	puerto_kernel = config_get_int_value(config, "PUERTO_KERNEL");
@@ -119,6 +141,7 @@ void sig_handler(int signo) {
 	if(flag==1) exit(0);
 	return;
 }
+
 void sig_handler2(int signo) {
 	sigusr1_desactivado = 0;
 	if(flag==1) exit(0);
@@ -127,6 +150,17 @@ void sig_handler2(int signo) {
 	log_info(logger,"Se detecto señal sig int CRT C.\n");
 	return;
 }
+
+void ejecutarConRR(t_paquete* datos_kernel){
+	asignarDatosKernel(datos_kernel);
+	liberar_paquete(datos_kernel);
+
+}
+
+void ejecutarConFIFO(){
+
+}
+
 //funcion que conecta CPU con Kernel utilizando sockets
 int conectarConElKernel(){
 	printf("Inicio de conexion con Kernel\n");
@@ -183,6 +217,14 @@ int conectarConMemoria(){
 	}
 }
 
+void asignarDatosKernel(t_paquete * datos_kernel){
+	quantum = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM;
+	// VER // tamanio_pag = ((t_datos_kernel*)(datos_kernel->data))->TAMPAG;
+	quantum_sleep = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM_SLEEP;
+	stack_size = ((t_datos_kernel*)(datos_kernel->data))->STACK_SIZE;
+
+
+}
 
 //Funcion que toma lo que envio el Kernel y lo convierte en el PCB.
 t_pcb* deserializarPCB(char* buffer){
