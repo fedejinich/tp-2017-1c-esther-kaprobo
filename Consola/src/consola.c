@@ -106,6 +106,7 @@ void limpiarMensajes(){
 
 //Funcion que es creada con un hiloPrograma
 void hiloNuevoPrograma(){
+	timeAct t_ini, t_fin;
 	int programaFinalizado = 1;
 	printf("Ingrese el nombre del archivo\n");
 	scanf("%s",&nomArchi);
@@ -133,6 +134,8 @@ void hiloNuevoPrograma(){
 
 	//envio paquete con codigo 101 y el script a ejecutar al Kernel
 	enviar(kernel, 101, strlen(script),scriptParaEnviar);
+	t_ini = fechaYHora();
+
 	free(scriptParaEnviar);
 
 
@@ -177,3 +180,19 @@ char * leerArchivo(FILE *archivo){
 	script[fsize] = '\0';
 	return script;
 }
+
+timeAct fechaYHora(){
+	timeAct tiempoActual;
+	time_t tiempo = time(0);
+	struct tm * tlocal = localtime(&tiempo);
+	char fecha[128];
+	strftime(fecha,128, "%d/%m/%y %H:%M:%S", tlocal);
+	tiempoActual.y = tlocal->tm_year;
+	tiempoActual.m = tlocal->tm_mon;
+	tiempoActual.d = tlocal->tm_mday;
+	tiempoActual.H = tlocal->tm_hour;
+	tiempoActual.M = tlocal->tm_min;
+	tiempoActual.S = tlocal->tm_sec;
+	return tiempoActual;
+}
+

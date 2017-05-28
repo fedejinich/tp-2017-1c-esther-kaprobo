@@ -3,6 +3,7 @@
 
 #include "src/Commons_Kaprobo.h"
 #include <pthread.h>
+#include <time.h>
 
 #define ARCHIVOLOG "Consola.log"
 
@@ -17,6 +18,23 @@ t_log * log;
 char* script;
 FILE* archivo;
 char nomArchi[50];
+
+//estadisticas
+typedef struct{
+	char * fechaYHoraInicio;
+	char * fechaYHoraFin;
+	int impresiones;
+	int tiempo;
+}estadisticas;
+
+typedef struct{
+	int d;
+	int m;
+	int y;
+	int H;
+	int M;
+	int S;
+}timeAct;
 
 //Hilos
 pthread_t threadNewProgram;
@@ -40,6 +58,7 @@ void desconectarConsola();
 void limpiarMensajes();
 void hiloNuevoPrograma();
 char * leerArchivo(FILE *archivo);
+timeAct fechaYHora();
 
 
 //Funciones Sockets
