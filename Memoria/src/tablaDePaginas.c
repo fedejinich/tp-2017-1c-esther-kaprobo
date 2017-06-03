@@ -57,7 +57,7 @@ t_entradaTablaDePaginas* getEntradaTablaDePaginas(int entrada) {
 	entradaTablaPointer = &memoria[numeroDeFrame];
 
 	return &entradaTablaPointer[numeroDeEntradaEnFrame];
-}
+} //NO HACE FALTA ESCRIBIR 21 ENTRADAS POR FRAME, SE PUEDEN ESCRIBIR LAS QUE SE ME CANTE EL ORTO: ME OLVIO DE LOS FRAMES PARA ESTE PUNTO.
 
 void escribirTablaDePaginas(t_entradaTablaDePaginas*  entrada) {
 	int nroDeEntradaEnFrame = numeroDeEntradaEnFrameBy(entrada->frame);
