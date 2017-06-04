@@ -5,7 +5,9 @@
 #include <pthread.h>
 #include <time.h>
 
+
 #define ARCHIVOLOG "Consola.log"
+#define MAXPID 300
 
 //Configuracion
 char* ip_kernel;
@@ -19,13 +21,9 @@ char* script;
 FILE* archivo;
 char nomArchi[50];
 
-//estadisticas
-typedef struct{
-	char * fechaYHoraInicio;
-	char * fechaYHoraFin;
-	int impresiones;
-	int tiempo;
-}estadisticas;
+//matriz
+
+int matriz[MAXPID];
 
 typedef struct{
 	int d;
@@ -35,6 +33,16 @@ typedef struct{
 	int M;
 	int S;
 }timeAct;
+
+//estadisticas
+typedef struct{
+	timeAct fechaYHoraInicio;
+	timeAct fechaYHoraFin;
+	int impresiones;
+	int tiempo;
+}estadisticas;
+
+
 
 //Hilos
 pthread_t threadNewProgram;
@@ -59,6 +67,7 @@ void limpiarMensajes();
 void hiloNuevoPrograma();
 char * leerArchivo(FILE *archivo);
 timeAct fechaYHora();
+void mostrarEstadisticas(estadisticas estadisticasPrograma, int pid);
 
 
 //Funciones Sockets
