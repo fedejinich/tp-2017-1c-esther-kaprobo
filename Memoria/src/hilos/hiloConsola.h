@@ -20,7 +20,9 @@ void inicializarVariables();
 char* comando;
 
 bool esFlush(char* comando);
-bool esDump(char* comando);
+bool esDumpTabla(char* comando);
+bool esDumpCache(char* comando);
+bool esDumpPID(char* comando);
 bool esSize(char* comando);
 bool esRetardo(char* comando);
 bool esRetardoSolo(char* comando);
@@ -30,7 +32,9 @@ char* retardoCommand;
 void flush();
 void size();
 void retardo(char* comando);
-void dump();
+void dumpTabla();
+void dumpCache();
+void dumpPID();
 
 bool isNumber(char* palabra);
 

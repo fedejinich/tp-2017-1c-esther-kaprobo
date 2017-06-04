@@ -75,3 +75,7 @@ int getFrameDisponible() {
 
 	return frameDisponible;
 }
+
+int getTablaDePaginasSize() {
+	return frames;
+}

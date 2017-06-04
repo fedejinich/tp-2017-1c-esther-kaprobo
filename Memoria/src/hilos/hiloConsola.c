@@ -26,6 +26,12 @@ void* hiloConsolaMemoria() {
 			retardo(comando);
 		else if(esRetardoSolo(comando))
 			log_info(logger,"Retardo de memoria: %i milisegundos.", retardo_memoria);
+		else if(esDumpTabla(comando))
+			dumpTabla();
+		else if(esDumpCache(comando))
+			dumpCache();
+		else if(esDumpPID(comando))
+			dumpPID(comando);
 	}
 
 }
@@ -45,17 +51,42 @@ bool esRetardoSolo(char* comando) {
 	return string_equals_ignore_case(posibleRetardo, string_substring(retardoCommand, 0, (string_length(retardoCommand) - 1)));
 }
 
-bool esDump(char* comando) {
-	//implementar piola
-
-	return string_equals_ignore_case(comando,"dump");
+bool esDumpTabla(char* comando) {
+	return string_equals_ignore_case(comando, "dump tabla\n");
 }
 
-void dump() {
+bool esDumpCache(char* comando) {
+	return false;
+}
+
+bool esDumpPID(char* comando) {
+	return false;
+}
+
+void dumpTabla() {
+	//QUE ES LO DE LISTADO DE PROCESOS ACTIVOS?
+	remove("dumpTabla.log");
+	t_log* logDumpTabla = log_create("dumpTabla.log", "Memoria", false, LOG_LEVEL_TRACE);
+
+	log_warning(logger, "Iniciando dump tabla...");
+	log_info(logDumpTabla, "Cantidad de filas: %i", getTablaDePaginasSize());
+
+	int i;
+	for(i = 0; i <= getTablaDePaginasSize(); i++) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		log_info(logDumpTabla, "Frame: %i, PID: %i, Pagina: %i", entrada->frame, entrada->pid, entrada->pagina);
+	}
 
 
-	printf("Implementa dump, pajero");
+	log_warning(logger, "Dump tabla realizado correctamente.");
+}
 
+void dumpCache() {
+	printf("Implemnta dump Cache, pajero\n");
+}
+
+void dumpPID(char* comando) {
+	printf("Implemnta dump PID, pajero\n");
 }
 
 void flush() {
