@@ -96,13 +96,17 @@ void iniciarPrograma(){
 }
 
 void finalizarPrograma(){
-	int n,soc;
+	int n;
+	signed int soc;
 	printf("Finalizar Programa\n\n");
 	printf("Ingrese el PID a finalizar: \n");
 	scanf("%i",&n);
 	soc = matriz[n];
 	//Tendria que informarle a Kernel por algun motivo que lo finalizo?
-	close(soc);
+	if(soc > 0)
+		close(soc);
+	else
+		printf("El pid %d ya no se encuentra conectado al Kernel\n");
 	return;
 }
 
@@ -116,6 +120,7 @@ void desconectarConsola(){
 			matriz[i] = 0;
 		}
 	}
+
 	return;
 }
 
@@ -152,7 +157,7 @@ void hiloNuevoPrograma(){
 		script = leerArchivo(archivo);
 		fclose(archivo);
 		printf("enviando a ejecutar programa AnSISOP\n");
-		printf("el script es: %s\n",script);
+		printf("el script es: \n%s\n",script);
 	}
 	char* scriptParaEnviar = malloc(strlen(script));
 	memcpy(scriptParaEnviar, script, strlen(script));
@@ -191,6 +196,7 @@ void hiloNuevoPrograma(){
 			mostrarEstadisticas(estadisticasPrograma, pid);
 			programaFinalizado=0;
 			close(kernel);
+			matriz[pid]=0;
 
 			break;
 
@@ -234,6 +240,7 @@ void hiloNuevoPrograma(){
 			printf("CONSOLA: Kernel se desconecto\n");
 			close(kernel);
 			liberar_paquete(paquete);
+			return;
 		}
 	}
 }
@@ -300,7 +307,7 @@ void mostrarEstadisticas(estadisticas estadisticasPrograma, int pid){
 	printf("Estadisticas del PID: %d \n\n",pid);
 	printf("Fecha y hora de inicio: %i/%i/%i - %i:%i:%i\n", ini.d,ini.m,ini.y, ini.H, ini.M, ini.S);
 	printf("Fecha y hora de fin: %i/%i/%i - %i:%i:%i\n", fin.d,fin.m,fin.y, fin.H, fin.M, fin.S);
-	printf("Cantidad de impresiones: %d", estadisticasPrograma.impresiones);
+	printf("Cantidad de impresiones: %d \n", estadisticasPrograma.impresiones);
 	int retardo = (fin.M - ini.M)*60 + fin.S - ini.S;
-	printf("Tiempo total de ejecución: &d", retardo);
+	printf("Tiempo total de ejecución: %d \n\n", retardo);
 }
