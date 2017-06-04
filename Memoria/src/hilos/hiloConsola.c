@@ -16,8 +16,8 @@ void* hiloConsolaMemoria() {
 			dump();
 		else if(string_equals_ignore_case(comando,"flush"))
 			flush();
-		else if(string_equals_ignore_case(comando,"size"))
-			size();
+		else if(string_equals_ignore_case(comando,"size memory"))
+			sizeMemory();
 		else if(string_equals_ignore_case(comando,"retardo"))
 			retardo();
 	}
@@ -36,7 +36,7 @@ void flush() {
 
 }
 
-void size() {
+void sizeMemory() {
 
 	printf("Implementa size, pajero");
 

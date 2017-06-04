@@ -18,5 +18,17 @@ void escribir_frame(int frame, int offset, int tamanio, void * contenido) {
 
 }
 
+int cantidadDeFramesOcupados() {
+	int i;
+	int cantidad = 0;
+	for(i = 0; i <= frames; i++) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		if(entrada->pid != -1)
+			cantidad++;
+	}
+
+	return cantidad;
+}
+
 
 

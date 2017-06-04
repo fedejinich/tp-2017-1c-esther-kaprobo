@@ -21,9 +21,15 @@ int main(int argc, char **argv){
 
 	//iniciarSeniales();
 	cargarConfiguracion();
-	grandMalloc(); //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
+	grandMalloc();
 	inicializarTablaDePaginas();
-	iniciarHilos();
+
+	int i;
+	for(i = 0; i <= frames; i++) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		log_info(logger, "Frame = %i, PID = %i, Pagina = %i",entrada->frame, entrada->pid, entrada->pagina);
+	}
+	//iniciarHilos();
 
 	return EXIT_SUCCESS;
 }
@@ -62,7 +68,6 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 
 	tamanioMemoria = frames * frame_size;
 	memoria = malloc(tamanioMemoria);
-
 
 	if (memoria == NULL) {
 		log_error(logger,"No se pudo otorgar la memoria solicitada.");
