@@ -72,11 +72,14 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 }
 
 void iniciarHilos() {
-	//pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
+	log_info(logger, "Inicializando hilos...");
+
+	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
 	pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
 	pthread_create(&consolaMemoria, NULL, hiloConsolaMemoria, NULL);
 
-	//pthread_join(servidorConexionesCPU, NULL);
+	pthread_join(servidorConexionesCPU, NULL);
 	pthread_join(servidorConexionesKernel, NULL);
+	pthread_join(consolaMemoria, NULL);
 }
 
