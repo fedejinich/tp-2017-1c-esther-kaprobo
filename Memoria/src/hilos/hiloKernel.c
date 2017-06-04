@@ -36,16 +36,16 @@ void* hiloServidorKernel(void* arg) {
 void* hiloConexionKernel(void* socketKernel) {
 	log_info(logger,"Iniciando hilo conexion kernel");
 
-	t_paquete * paquete_nuevo;
+	t_paquete * paqueteRecibido;
 	int pid, paginasRequeridas, tamanioCodigo;
 
 	while (1) {
-		paquete_nuevo = recibir(socketKernel);
+		paqueteRecibido = recibir(socketKernel);
 
-		switch (paquete_nuevo->codigo_operacion) {
+		switch (paqueteRecibido->codigo_operacion) {
 			case PEDIDO_DE_PAGINAS:
-				paginasRequeridas = ((t_pedidoDePaginas*)(paquete_nuevo->data))->paginasAPedir;
-				pid = ((t_pedidoDePaginas*)(paquete_nuevo->data))->pid;
+				paginasRequeridas = ((t_pedidoDePaginas*)(paqueteRecibido->data))->paginasAPedir;
+				pid = ((t_pedidoDePaginas*)(paqueteRecibido->data))->pid;
 
 				log_info(logger,"Se piden %i paginas para el proceso %i.",paginasRequeridas, pid);
 
@@ -65,12 +65,11 @@ void* hiloConexionKernel(void* socketKernel) {
 
 					enviar(socketKernel, PEDIDO_DE_PAGINAS_OK, sizeof(int), paginasRequeridas);
 
-					log_info(logger,"Se otorgaron %i paginas al proceso %i.",paginasRequeridas, pid);
+					log_info(logger,"Se otorgaron %i paginas al proceso %i.", paginasRequeridas, pid);
 				} else {
 					enviar(socketKernel, PEDIDO_DE_PAGINAS_FALLO, sizeof(int), -1); //EL TAMANIO Y DATA ESTAN AL PEDO PERO BUEN
 					log_warning(logger, "El proceso %i no se pudo inicializar.", pid);
 				}
-
 			break;
 
 

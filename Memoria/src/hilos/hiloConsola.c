@@ -10,6 +10,7 @@
 void* hiloConsolaMemoria() {
 	log_info(logger,"Inicio del hilo Consola");
 	while(1) {
+		int tiempo = 0;
 		scanf("%s",&comando);
 		//opciones para consola memoria
 		if(string_equals_ignore_case(comando,"dump"))
@@ -19,7 +20,7 @@ void* hiloConsolaMemoria() {
 		else if(string_equals_ignore_case(comando,"size memory"))
 			sizeMemory();
 		else if(string_equals_ignore_case(comando,"retardo"))
-			retardo();
+			retardo(tiempo);
 	}
 
 }
@@ -42,7 +43,7 @@ void sizeMemory() {
 
 }
 
-void retardo() {
+void retardo(int retardo) {
 
 	printf("Implementa retardo, pajero");
 

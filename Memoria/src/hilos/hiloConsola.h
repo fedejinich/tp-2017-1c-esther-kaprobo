@@ -16,7 +16,7 @@ char comando[50];
 
 void flush();
 void size();
-void retardo();
+void retardo(int retardo);
 void dump();
 
 #endif /* HILOS_HILOCONSOLA_H_ */

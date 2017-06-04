@@ -23,13 +23,7 @@ int main(int argc, char **argv){
 	cargarConfiguracion();
 	grandMalloc();
 	inicializarTablaDePaginas();
-
-	int i;
-	for(i = 0; i <= frames; i++) {
-		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
-		log_info(logger, "Frame = %i, PID = %i, Pagina = %i",entrada->frame, entrada->pid, entrada->pagina);
-	}
-	//iniciarHilos();
+	iniciarHilos();
 
 	return EXIT_SUCCESS;
 }
