@@ -17,7 +17,7 @@ typedef struct {
 	int pagina;
 } t_entradaTablaDePaginas;
 
-t_entradaTablaDePaginas* entradaTablaPointer;
+t_entradaTablaDePaginas* tablaDePaginas;
 
 typedef struct {
 	int pid;
