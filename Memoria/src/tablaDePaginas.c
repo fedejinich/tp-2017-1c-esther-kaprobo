@@ -76,6 +76,22 @@ int getFrameDisponible() {
 	return frameDisponible;
 }
 
+int getCantidadFramesDisponibles() {
+	int i;
+	int framesDisponibles = 0;
+	for(i = 0; i < frames; i++) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		if(entrada->pid == -1)
+			framesDisponibles++;
+	}
+
+	return framesDisponibles;
+}
+
+int getCantidadFramesOcupados() {
+	return frames - getCantidadFramesDisponibles();
+}
+
 int getTablaDePaginasSize() {
 	return frames;
 }

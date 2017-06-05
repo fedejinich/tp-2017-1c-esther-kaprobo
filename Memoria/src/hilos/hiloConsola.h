@@ -23,14 +23,14 @@ bool esFlush(char* comando);
 bool esDumpTabla(char* comando);
 bool esDumpCache(char* comando);
 bool esDumpPID(char* comando);
-bool esSize(char* comando);
+bool esSizeMemory(char* comando);
 bool esRetardo(char* comando);
 bool esRetardoSolo(char* comando);
 
 char* retardoCommand;
 
 void flush();
-void size();
+void sizeMemory();
 void retardo(char* comando);
 void dumpTabla();
 void dumpCache();

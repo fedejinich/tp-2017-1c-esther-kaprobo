@@ -32,6 +32,8 @@ void* hiloConsolaMemoria() {
 			dumpCache();
 		else if(esDumpPID(comando))
 			dumpPID(comando);
+		else if(esSizeMemory(comando))
+			sizeMemory();
 	}
 
 }
@@ -63,6 +65,23 @@ bool esDumpPID(char* comando) {
 	return false;
 }
 
+bool esSizeMemory(char* comando) {
+	return string_equals_ignore_case(comando, "size memory\n");
+}
+
+void retardo(char* comando) {
+	char* nuevoRetardoString = string_substring(comando, string_length(retardoCommand), string_length(comando));
+	if(isNumber(nuevoRetardoString)) {
+		log_warning(logger, "Cambiando retardo de memoria...");
+		log_warning(logger, "Retardo de memoria viejo: %i milisegundos.", retardo_memoria);
+		int nuevoRetardo = atoi(nuevoRetardoString);
+		retardo_memoria = nuevoRetardo;
+		log_warning(logger, "Nuevo retardo de memoria: %i milisegundos.", retardo_memoria);
+	} else {
+		log_error(logger, "Escriba el comando nuevamente.");
+	}
+}
+
 void dumpTabla() {
 	//QUE ES LO DE LISTADO DE PROCESOS ACTIVOS?
 	remove("dumpTabla.log");
@@ -89,29 +108,16 @@ void dumpPID(char* comando) {
 	printf("Implemnta dump PID, pajero\n");
 }
 
+void sizeMemory() {
+	framesLibres = getCantidadFramesDisponibles();
+	framesOcupados = getCantidadFramesOcupados();
+	log_warning(logger, "Cantidad de frames: %i, frames libres: %i, frames ocupados: %i", frames, framesLibres, framesOcupados);
+}
+
 void flush() {
 
 	printf("Implementa flush, pajero");
 
-}
-
-void sizeMemory() {
-
-	printf("Implementa size, pajero");
-
-}
-
-void retardo(char* comando) {
-	char* nuevoRetardoString = string_substring(comando, string_length(retardoCommand), string_length(comando));
-	if(isNumber(nuevoRetardoString)) {
-		log_warning(logger, "Cambiando retardo de memoria...");
-		log_warning(logger, "Retardo de memoria viejo: %i milisegundos.", retardo_memoria);
-		int nuevoRetardo = atoi(nuevoRetardoString);
-		retardo_memoria = nuevoRetardo;
-		log_warning(logger, "Nuevo retardo de memoria: %i milisegundos.", retardo_memoria);
-	} else {
-		log_error(logger, "Escriba el comando nuevamente.");
-	}
 }
 
 bool isNumber(char* palabra) {
