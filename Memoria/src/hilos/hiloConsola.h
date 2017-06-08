@@ -19,15 +19,18 @@ void* hiloConsolaMemoria();
 void inicializarVariables();
 char* comando;
 
-bool esFlush(char* comando);
+
+bool esRetardo(char* comando);
+bool esRetardoSolo(char* comando);
 bool esDumpTabla(char* comando);
 bool esDumpCache(char* comando);
 bool esDumpPID(char* comando);
 bool esSizeMemory(char* comando);
-bool esRetardo(char* comando);
-bool esRetardoSolo(char* comando);
+bool esSizePID(char* comando);
+bool esFlush(char* comando);
 
 char* retardoCommand;
+char* sizePIDCommand;
 
 void flush();
 void sizeMemory();

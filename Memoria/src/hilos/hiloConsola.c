@@ -41,6 +41,8 @@ void* hiloConsolaMemoria() {
 void inicializarVariables() {
 	retardoCommand = malloc(sizeof(string_length("retardo ")));
 	retardoCommand = "retardo ";
+	sizePIDCommand = malloc(sizeof(string_length("size ")));
+	sizePIDCommand = "size ";
 }
 
 bool esRetardo(char* comando) {
@@ -67,6 +69,11 @@ bool esDumpPID(char* comando) {
 
 bool esSizeMemory(char* comando) {
 	return string_equals_ignore_case(comando, "size memory\n");
+}
+
+bool esSizePID(char* comando) {
+	char* posibleSizePID = string_substring(comando, 0, string_length(sizePIDCommand));
+	return string_equals_ignore_case(posibleSizePID, sizePIDCommand);
 }
 
 void retardo(char* comando) {
@@ -113,6 +120,7 @@ void sizeMemory() {
 	framesOcupados = getCantidadFramesOcupados();
 	log_warning(logger, "Cantidad de frames: %i, frames libres: %i, frames ocupados: %i", frames, framesLibres, framesOcupados);
 }
+
 
 void flush() {
 

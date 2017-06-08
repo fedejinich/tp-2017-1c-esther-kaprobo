@@ -50,7 +50,7 @@ t_entradaTablaDePaginas* getEntradaTablaDePaginas(int index) {
 	return &tablaDePaginas[index];
 }
 
-bool espacioDisponible(int paginasRequeridas, int tamanioCodigo) {
+bool paginasDisponibles(int paginasRequeridas) {
 	int i;
 	for(i = 1; i <= paginasRequeridas; i++) {
 		if(getFrameDisponible() == -1) {
@@ -95,3 +95,5 @@ int getCantidadFramesOcupados() {
 int getTablaDePaginasSize() {
 	return frames;
 }
+
+

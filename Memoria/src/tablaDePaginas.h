@@ -28,10 +28,10 @@ typedef struct {
 void inicializarTablaDePaginas();
 //t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada);
 void escribirTablaDePaginas(t_entradaTablaDePaginas*  entrada);
-bool espacioDisponible(int paginasRequeridas, int tamanioCodigo);
 int getFrameDisponible();
 int getTablaDePaginasSize();
 int getCantidadFramesDisponibles();
 int getCantidadFramesOcupados();
+bool paginasDisponibles(int paginasRequeridas);
 
 #endif /* TABLADEPAGINAS_H_ */

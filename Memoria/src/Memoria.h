@@ -14,6 +14,7 @@
 #include "hilos/hiloConsola.h"
 #include "funcionesAuxiliares/funcionesAuxiliares.h"
 #include "tablaDePaginas.h"
+#include "operaciones.h"
 
 
 /*
