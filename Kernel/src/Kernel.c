@@ -13,15 +13,8 @@
 
 int main(int argc, char **argv) {
 	int i;
-	cantidadDeProgramas = 0;
 
-	//Crear Log
-	logger = log_create("kernel.log","Kernel",0,LOG_LEVEL_INFO);
-
-	cargarConfiguracion();
-	mostrarConfiguracion();
-
-	prepararSocketsServidores();
+	inicializar();
 
 	while(1){
 		//elimina todos los clientes que hayan cerrado conexion
@@ -58,7 +51,7 @@ int main(int argc, char **argv) {
 				//verifica codigo de operacion, si es -1 se desconecto
 				if(paqueteRecibido->codigo_operacion > 0){
 					printf("Me envio datos\n");
-					procesarPaqueteRecibido(paqueteRecibido);
+					procesarPaqueteRecibido(paqueteRecibido, socketCliente[i]);
 				}
 				else {
 					printf("El cliente %d se desconecto\n",i+1);
@@ -72,6 +65,23 @@ int main(int argc, char **argv) {
 		verSiHayNuevosClientes();
 	}
 	return EXIT_SUCCESS;
+}
+
+void inicializar(){
+	cantidadDeProgramas = 0;
+
+	list_create(colaNew);
+	list_create(colaReady);
+	list_create(colaExec);
+	list_create(colaExit);
+
+	//Crear Log
+	logger = log_create("kernel.log","Kernel",0,LOG_LEVEL_INFO);
+
+	cargarConfiguracion();
+	//mostrarConfiguracion();
+
+	prepararSocketsServidores();
 }
 
 void cargarConfiguracion() {
@@ -196,37 +206,73 @@ void nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 	return;
 }
 
-void procesarPaqueteRecibido(t_paquete* paqueteRecibido){
+void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo){
 	switch(paqueteRecibido->codigo_operacion){
-		//Codigo 101: Ejecutar Script Ansisop
+		//Codigo 101: Crear Script Ansisop
 		case 101:
-			crearProcesoAnsisop();
+			crearProcesoAnsisop(socketActivo);
 			break;
 		default:
 			break;
 	}
 }
 
-void crearProcesoAnsisop(){
+void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
+	printf("Creando nuevo proceso Ansisop\n");
+	log_info(logger, "Creando nuevo proceso Ansisop");
+
+	t_proceso* nuevoProcesoAnsisop = malloc(sizeof(nuevoProcesoAnsisop));
+
 	//Creo PCB para el proceso en cuestion
+	printf("Creando PCB del nuevo proceso Ansisop\n");
+	log_info(logger, "Creando PCB del nuevo proceso Ansisop");
 	t_pcb* pcb = malloc(sizeof(t_pcb));
 	cantidadDeProgramas++;
-	pcb->pid = cantidadDeProgramas;
+	nuevoProcesoAnsisop->pcb = pcb;
+	nuevoProcesoAnsisop->pcb->pid = cantidadDeProgramas;
+	nuevoProcesoAnsisop->socketConsola = socketQueMandoElProceso;
 
+	//Envio a consola el PID del nuevo proceso
+	//EnvioPIDDeNuevoProceso 107
+	enviar(nuevoProcesoAnsisop->socketConsola, 107, sizeof(int), nuevoProcesoAnsisop->pcb->pid);
 
-	//Pido paginas a memoria y memoria me dice si le alcanzan
-	int resultadoPedidoPaginas = pedirPaginasParaProceso(cantidadDeProgramas);
+	list_add(colaNew, nuevoProcesoAnsisop->pcb);
 
+	if(grado_multiprog < cantidadDeProgramas){
+		//SI PERMITE, PASA DE NEW A READY
+		//Pido paginas a memoria y memoria me dice si le alcanzan
+		int resultadoPedidoPaginas = pedirPaginasParaProceso(cantidadDeProgramas);
 
-	//Si la memoria devolvio OK, asigno la cantidad de paginas al PCB. Si no devolvió OK, ????
-	if(resultadoPedidoPaginas > 0){
-		pcb->pageCounter = resultadoPedidoPaginas;
+		//Si la memoria devolvio OK, asigno la cantidad de paginas al PCB. Si no devolvió OK, lo finalizo con error por falta de memoria
+		if(resultadoPedidoPaginas > 0){
+			pcb->pageCounter = resultadoPedidoPaginas;
 
-		//TODO El programa ya esta listo para ejecutarse, ver tema de planificación
+			//FALTA ELIMINAR DE NEW
+
+			list_add(colaReady, nuevoProcesoAnsisop->pcb);
+		}
+		else {
+			finalizarProceso(nuevoProcesoAnsisop,-1);
+		}
 	}
-	else {
-		//????
+
+}
+
+void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode){
+	procesoAFinalizar->pcb->exitCode = exitCode;
+	list_add(colaExit, procesoAFinalizar->pcb);
+	//Aviso a la Consola correspondiente que el Kernel aborto el proceso
+	int codigoDeFinalizacion;
+	if(exitCode == 0){
+		//Codigo de Finzalicacion correcta del proceso
+		codigoDeFinalizacion = 102;
 	}
+	else{
+		//Codigo Kernel Aborto Proceso
+		codigoDeFinalizacion = 106;
+	}
+
+	enviar(procesoAFinalizar->socketConsola, codigoDeFinalizacion, sizeof(int), NULL);
 }
 
 int pedirPaginasParaProceso(int pid){
@@ -234,19 +280,16 @@ int pedirPaginasParaProceso(int pid){
 	//Calculo paginas de memoria que necesito pedir de memoria para este script
 	int paginasAPedir = ceil(paqueteRecibido->tamanio/TAMANIODEPAGINA);
 
-	//ENUMS, NADA DE CODIGOS!
 	t_pedidoDePaginasKernel* pedidoDePaginas = malloc(sizeof(t_pedidoDePaginasKernel));
 	pedidoDePaginas->pid = pid;
 	pedidoDePaginas->paginasAPedir = paginasAPedir;
 
-
-	//Envio a
+	//Envio a memoria el pedido de paginas
 	enviar(memoria, 201, sizeof(t_pedidoDePaginasKernel),pedidoDePaginas);//VA ACA EL 201 O EN EL PAQUETE?
 
 	free(pedidoDePaginas);
 
 	//Tengo que esperar a que vuelva la respuesta del pedido. Si esta OK, devuelve la cantidad de paginas, sino devuelve -1
-
 	t_paquete* respuestaAPedidoDePaginas;
 	respuestaAPedidoDePaginas = recibir(memoria);
 

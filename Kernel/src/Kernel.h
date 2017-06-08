@@ -21,6 +21,12 @@ typedef struct __attribute__((packed))t_pcb{
 	int exitCode;
 }t_pcb;
 
+typedef struct __attribute__((packed))t_proceso{
+	t_pcb* pcb;
+	un_socket socketConsola;
+	un_socket socketCPU;
+}t_proceso;
+
 //Logger
 t_log* logger;
 
@@ -47,6 +53,7 @@ char* shared_vars[2];
 int stack_size;
 
 //FUNCIONES
+void inicializar();
 void cargarConfiguracion();
 void mostrarConfiguracion();
 
@@ -85,6 +92,20 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido);
 int pedirPaginasParaProceso(int pid);
 un_socket conectarConLaMemoria();
 
+/*
+ *
+ * COLAS
+ *
+ */
+t_list* colaNew;
 
+t_list* colaReady;
 
+t_list* colaExec;
 
+t_list* colaExit;
+
+/*
+ * ERRORES
+ */
+void informarAConsolaDeError(int resultadoPedidoPaginas);
