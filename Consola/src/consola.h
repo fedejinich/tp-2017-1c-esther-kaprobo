@@ -47,9 +47,7 @@ typedef struct{
 //Hilos
 pthread_t threadNewProgram;
 
-//Sockets
-signed int kernel;
-t_paquete *paqueteRecibido;
+
 
 //Variables Consola
 int ejecuta;

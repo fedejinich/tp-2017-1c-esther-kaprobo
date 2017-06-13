@@ -134,6 +134,7 @@ void limpiarMensajes(){
 //Funcion que es creada con un hiloPrograma
 void hiloNuevoPrograma(){
 	//Variables de cada hilo
+	signed int kernel;
 	char* info_cadena;
 	t_paquete* newPid;
 	t_paquete* paquete;
@@ -162,8 +163,28 @@ void hiloNuevoPrograma(){
 	char* scriptParaEnviar = malloc(strlen(script));
 	memcpy(scriptParaEnviar, script, strlen(script));
 
-	//Abro conexion con Kernel, realizo Handshake dentro
-	kernel = conectarConElKernel();
+	//Abro conexion con Kernel, realizo Handshake
+	printf("Inicio de conexion con Kernel\n");
+	// funcion deSockets
+	kernel = conectar_a(ip_kernel,puerto_kernel);
+
+	if (kernel==0){
+		printf("CONSOLA: No se pudo conectar con el Kernel\n");
+		exit (EXIT_FAILURE);
+	}
+	printf("CONSOLA: Kernel recibio nuestro pedido de conexion\n");
+
+	printf("CONSOLA: Iniciando Handshake\n");
+	bool resultado = realizar_handshake(kernel, 11);
+	if (resultado){
+	printf("Handshake exitoso! Conexion establecida\n");
+
+	}
+	else{
+		printf("Fallo en el handshake, se aborta conexion\n");
+		exit (EXIT_FAILURE);
+		}
+	//kernel = conectarConElKernel(kernel);
 
 	//Inicio ejecución estadistica
 	estadisticasPrograma.fechaYHoraInicio = fechaYHora();
@@ -246,27 +267,8 @@ void hiloNuevoPrograma(){
 }
 
 //funcion que conecta Consola con Kernel utilizando sockets
-int conectarConElKernel(){
-	printf("Inicio de conexion con Kernel\n");
-	// funcion deSockets
-	kernel = conectar_a(ip_kernel,puerto_kernel);
+int conectarConElKernel(int kernel){
 
-	if (kernel==0){
-		printf("CONSOLA: No se pudo conectar con el Kernel\n");
-		exit (EXIT_FAILURE);
-	}
-	printf("CONSOLA: Kernel recibio nuestro pedido de conexion\n");
-
-	printf("CONSOLA: Iniciando Handshake\n");
-	bool resultado = realizar_handshake(kernel, 11);
-	if (resultado){
-		printf("Handshake exitoso! Conexion establecida\n");
-		return kernel;
-	}
-	else{
-		printf("Fallo en el handshake, se aborta conexion\n");
-		exit (EXIT_FAILURE);
-	}
 
 
 
