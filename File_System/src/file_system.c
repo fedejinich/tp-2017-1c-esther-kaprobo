@@ -1,27 +1,47 @@
 
 #include "file_system.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+int main() {
 
-#define KernelValidacion 11
+	crearArchivoLog();
+	cargarConfiguracion();
 
-int main(int argc, char **argv) {
+	fileSystemServer = socket_escucha(ipFileSystem,puerto);
+	listen(fileSystemServer, 1);
+	log_info(logger,"Socket %d creado y escuchando", socketKernel);
+	socketKernel = aceptar_conexion(fileSystemServer);
 
-	logger= iniciarLog("file_system.log", "File_System");
+	bool resultado = esperar_handshake(socketKernel,KernelValidacion);
 
-	printf("%s", "\n\n====== INICIO FILE SYSTEM ======\n\n");
-	cargarConfiguracion(argv[0]);
+	if(resultado){
+		log_info(logger,"Conexión aceptada del KERNEL %d!!", socketKernel);
+		printf("Conexion aceptada del KERNEL %d \n",socketKernel);
+	}
+	else
+	{
+		log_info(logger,"Handshake fallo, se aborta conexion\n");
+		printf("Conexion abortada\n");
+		exit (EXIT_FAILURE);
+	}
+	while(1){
+		//Aca tenemos que recibir pedidos de Kernel, se puede hacer switch de codigo de operacion
+		paquete = recibir(socketKernel);
+	}
 
-	pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
-	pthread_join(servidorConexionesKernel, NULL);
+
+	//Variante HILOS
+	//pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
+	//pthread_join(servidorConexionesKernel, NULL);
 
 	return 0;
 }
 
+void crearArchivoLog(){
+		logger = iniciarLog(ARCHIVOLOG,"File_System");
+		log_info(logger, "Iniciando File_System. \n");
+	}
 
-
-void cargarConfiguracion(char* pathconf) {
+void cargarConfiguracion() {
 
 	log_info(logger,"Cargando archivo de configuracion 'file_system.config'...\n");
 	t_config* config = config_create(getenv("archivo_configuracion_fs"));
@@ -39,7 +59,7 @@ void cargarConfiguracion(char* pathconf) {
 	}
 }
 
-
+/*
 void* hiloServidorKernel(void *arg) {
 
 	log_info(logger,"Hilo Servidor KERNEL\n");
@@ -87,3 +107,4 @@ void* hiloConexionKernel(void* socket) {
 
 	return 0;
 }
+*/

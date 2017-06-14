@@ -9,6 +9,9 @@
 #include <commons/log.h>
 
 
+#define ARCHIVOLOG "File_System.log"
+#define KernelValidacion 11
+
 /**
  * Variables
  */
@@ -18,11 +21,12 @@
 
 	//Configuracion
 
-	char* ipFileSystem = "127.0.0.2";
+	char* ipFileSystem = "127.0.0.1";
 	int puerto;
 	char* puntoMontaje;
 
 	//Sockets
+	t_paquete* paquete;
 
 	un_socket fileSystemServer; //identificador del socket del file_system que recibe conexiones
 	un_socket socketKernel;
@@ -37,7 +41,10 @@
 
 	//Configuracion
 
-	void cargarConfiguracion(char* pathconf);
+	void cargarConfiguracion();
+
+	//Log
+	void crearArchivoLog();
 
 	//Sockets
 

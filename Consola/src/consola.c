@@ -11,7 +11,7 @@
 #include "consola.h"
 //Comentar para entregas todos los printf
 
-int ejecuta = 1;
+
 
 int main(int argc, char **argv) {
 
@@ -61,7 +61,13 @@ int main(int argc, char **argv) {
 }
 
 void iniciarConsola(){
+	int i;
 	printf("%s", "\n\n====== INICIO CONSOLA ======\n\n");
+
+	//Inicio matriz de PID y Sockets en 0 todo
+	for(i=0;i<= MAXPID; i++){
+		matriz[i] = 0;
+	}
 
 }
 
@@ -90,24 +96,52 @@ void iniciarPrograma(){
 }
 
 void finalizarPrograma(){
+	int n;
+	signed int soc;
 	printf("Finalizar Programa\n\n");
+	printf("Ingrese el PID a finalizar: \n");
+	scanf("%i",&n);
+	soc = matriz[n];
+	//Tendria que informarle a Kernel por algun motivo que lo finalizo?
+	if(soc > 0)
+		close(soc);
+	else
+		printf("El pid %d ya no se encuentra conectado al Kernel\n");
 	return;
 }
 
 void desconectarConsola(){
-	printf("Desconectar Consola\n\n");
+	int i;
+	log_info(log, "Desconectar Consola\n\n");
+	for( i= 0; i< MAXPID; i++){
+		if (matriz[i] > 0){
+			close(matriz[i]);
+			printf("Se cierra pid: %d \n", i);
+			matriz[i] = 0;
+		}
+	}
+
 	return;
 }
 
 void limpiarMensajes(){
+
 	printf("Limpiar Mensajes\n\n");
+	system("clear");
 	return;
 }
 
 //Funcion que es creada con un hiloPrograma
 void hiloNuevoPrograma(){
-	timeAct t_ini, t_fin;
-	int programaFinalizado = 1;
+	//Variables de cada hilo
+	signed int kernel;
+	char* info_cadena;
+	t_paquete* newPid;
+	t_paquete* paquete;
+	int programaFinalizado = 1, pid;
+	estadisticas estadisticasPrograma;
+	estadisticasPrograma.impresiones = 0;
+
 	printf("Ingrese el nombre del archivo\n");
 	scanf("%s",&nomArchi);
 
@@ -124,29 +158,12 @@ void hiloNuevoPrograma(){
 		script = leerArchivo(archivo);
 		fclose(archivo);
 		printf("enviando a ejecutar programa AnSISOP\n");
-		printf("el script es: %s\n",script);
+		printf("el script es: \n%s\n",script);
 	}
 	char* scriptParaEnviar = malloc(strlen(script));
 	memcpy(scriptParaEnviar, script, strlen(script));
 
-	//Abro conexion con Kernel, realizo Handshake dentro
-	kernel = conectarConElKernel();
-
-	//envio paquete con codigo 101 y el script a ejecutar al Kernel
-	enviar(kernel, 101, strlen(script),scriptParaEnviar);
-	t_ini = fechaYHora();
-
-	free(scriptParaEnviar);
-
-
-
-}
-
-
-
-
-//funcion que conecta Consola con Kernel utilizando sockets
-int conectarConElKernel(){
+	//Abro conexion con Kernel, realizo Handshake
 	printf("Inicio de conexion con Kernel\n");
 	// funcion deSockets
 	kernel = conectar_a(ip_kernel,puerto_kernel);
@@ -160,17 +177,104 @@ int conectarConElKernel(){
 	printf("CONSOLA: Iniciando Handshake\n");
 	bool resultado = realizar_handshake(kernel, 11);
 	if (resultado){
-		printf("Handshake exitoso! Conexion establecida\n");
-		return kernel;
+	printf("Handshake exitoso! Conexion establecida\n");
+
 	}
 	else{
 		printf("Fallo en el handshake, se aborta conexion\n");
 		exit (EXIT_FAILURE);
+		}
+	//kernel = conectarConElKernel(kernel);
+
+	//Inicio ejecución estadistica
+	estadisticasPrograma.fechaYHoraInicio = fechaYHora();
+
+	//envio paquete con codigo 101 y el script a ejecutar al Kernel
+	enviar(kernel, 101, strlen(script),scriptParaEnviar);
+
+
+	newPid = recibir(kernel);
+	pid = *(int*)newPid->data;
+
+	//me guardo el pid y el socket en la matriz para tener referencia siempre
+	matriz[pid]= kernel;
+	printf("Se envío a ejecutar %d PID, en el socket %d \n",pid,kernel);
+
+	//libero paquete y script
+	liberar_paquete(newPid);
+	free(scriptParaEnviar);
+
+	//mientras el programa se ejecute, espero instrucciones de Kernel
+
+	while(programaFinalizado){
+		paquete = recibir(kernel);
+
+		switch(paquete->codigo_operacion){
+
+		//Programa Finalizado
+		case 102:
+			estadisticasPrograma.fechaYHoraFin = fechaYHora();
+			mostrarEstadisticas(estadisticasPrograma, pid);
+			programaFinalizado=0;
+			close(kernel);
+			matriz[pid]=0;
+
+			break;
+
+		//Imprimir texto
+		case 103:
+			memcpy(&info_cadena, &paquete->data, paquete->tamanio);
+			printf("Cadena: %s\n", info_cadena);
+			estadisticasPrograma.impresiones ++;
+			break;
+
+		//imprimir valor
+		case 104:
+			printf("Valor: %d\n", *(int*) paquete->data);
+			estadisticasPrograma.impresiones ++;
+			break;
+
+		//Programa sin espacio en memoria
+		case 105:
+			printf("Programa sin espacio en memoria\n");
+			/* Se muestran?
+			estadisticasPrograma.fechaYHoraFin = fechaYHora();
+			mostrarEstadisticas(estadisticasPrograma, pid);
+			*/
+			programaFinalizado=0;
+			close(kernel);
+			break;
+
+		//Programa abortado por Kernel
+		case 106:
+			printf("Programa Abortado por Kernel");
+			/* Se muestran?
+			estadisticasPrograma.fechaYHoraFin = fechaYHora();
+			mostrarEstadisticas(estadisticasPrograma, pid);
+						*/
+			programaFinalizado = 0;
+			close(kernel);
+			break;
+
+		case -1:
+
+			printf("CONSOLA: Kernel se desconecto\n");
+			close(kernel);
+			liberar_paquete(paquete);
+			return;
+		}
 	}
+}
+
+//funcion que conecta Consola con Kernel utilizando sockets
+int conectarConElKernel(int kernel){
+
 
 
 
 }
+
+//Funcion leer archivo y armar script
 char * leerArchivo(FILE *archivo){
 	fseek(archivo, 0, SEEK_END);
 	long fsize = ftell(archivo);
@@ -181,14 +285,15 @@ char * leerArchivo(FILE *archivo){
 	return script;
 }
 
+//Devuelve fecha y hora actual en estructura timeAct
 timeAct fechaYHora(){
 	timeAct tiempoActual;
 	time_t tiempo = time(0);
 	struct tm * tlocal = localtime(&tiempo);
 	char fecha[128];
 	strftime(fecha,128, "%d/%m/%y %H:%M:%S", tlocal);
-	tiempoActual.y = tlocal->tm_year;
-	tiempoActual.m = tlocal->tm_mon;
+	tiempoActual.y = tlocal->tm_year+1900;
+	tiempoActual.m = tlocal->tm_mon+1;
 	tiempoActual.d = tlocal->tm_mday;
 	tiempoActual.H = tlocal->tm_hour;
 	tiempoActual.M = tlocal->tm_min;
@@ -196,3 +301,15 @@ timeAct fechaYHora(){
 	return tiempoActual;
 }
 
+//Funcion que muestra las estadisticas de determinado pid
+void mostrarEstadisticas(estadisticas estadisticasPrograma, int pid){
+	timeAct ini = estadisticasPrograma.fechaYHoraInicio;
+	timeAct fin = estadisticasPrograma.fechaYHoraFin;
+
+	printf("Estadisticas del PID: %d \n\n",pid);
+	printf("Fecha y hora de inicio: %i/%i/%i - %i:%i:%i\n", ini.d,ini.m,ini.y, ini.H, ini.M, ini.S);
+	printf("Fecha y hora de fin: %i/%i/%i - %i:%i:%i\n", fin.d,fin.m,fin.y, fin.H, fin.M, fin.S);
+	printf("Cantidad de impresiones: %d \n", estadisticasPrograma.impresiones);
+	int retardo = (fin.M - ini.M)*60 + fin.S - ini.S;
+	printf("Tiempo total de ejecución: %d \n\n", retardo);
+}

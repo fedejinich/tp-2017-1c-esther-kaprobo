@@ -21,7 +21,7 @@ int main(int argc, char **argv){
 
 	//iniciarSeniales();
 	cargarConfiguracion();
-	grandMalloc(); //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
+	grandMalloc();
 	inicializarTablaDePaginas();
 	iniciarHilos();
 
@@ -63,7 +63,6 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 	tamanioMemoria = frames * frame_size;
 	memoria = malloc(tamanioMemoria);
 
-
 	if (memoria == NULL) {
 		log_error(logger,"No se pudo otorgar la memoria solicitada.");
 		exit(EXIT_FAILURE);
@@ -73,11 +72,14 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 }
 
 void iniciarHilos() {
-	//pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
+	log_info(logger, "Inicializando hilos...");
+
+	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
 	pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
 	pthread_create(&consolaMemoria, NULL, hiloConsolaMemoria, NULL);
 
-	//pthread_join(servidorConexionesCPU, NULL);
+	pthread_join(servidorConexionesCPU, NULL);
 	pthread_join(servidorConexionesKernel, NULL);
+	pthread_join(consolaMemoria, NULL);
 }
 

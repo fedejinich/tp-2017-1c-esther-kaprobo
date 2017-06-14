@@ -17,7 +17,7 @@ typedef struct {
 	int pagina;
 } t_entradaTablaDePaginas;
 
-t_entradaTablaDePaginas* entradaTablaPointer;
+t_entradaTablaDePaginas* tablaDePaginas;
 
 typedef struct {
 	int pid;
@@ -28,7 +28,10 @@ typedef struct {
 void inicializarTablaDePaginas();
 //t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada);
 void escribirTablaDePaginas(t_entradaTablaDePaginas*  entrada);
-bool espacioDisponible(int paginasRequeridas, int tamanioCodigo);
 int getFrameDisponible();
+int getTablaDePaginasSize();
+int getCantidadFramesDisponibles();
+int getCantidadFramesOcupados();
+bool paginasDisponibles(int paginasRequeridas);
 
 #endif /* TABLADEPAGINAS_H_ */

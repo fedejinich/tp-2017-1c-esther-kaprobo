@@ -9,14 +9,36 @@
 #define HILOS_HILOCONSOLA_H_
 
 #include "../Memoria.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <ctype.h>
+#include <string.h>
 
 void* hiloConsolaMemoria();
+void inicializarVariables();
+char* comando;
 
-char comando[50];
+
+bool esRetardo(char* comando);
+bool esRetardoSolo(char* comando);
+bool esDumpTabla(char* comando);
+bool esDumpCache(char* comando);
+bool esDumpPID(char* comando);
+bool esSizeMemory(char* comando);
+bool esSizePID(char* comando);
+bool esFlush(char* comando);
+
+char* retardoCommand;
+char* sizePIDCommand;
 
 void flush();
-void size();
-void retardo();
-void dump();
+void sizeMemory();
+void retardo(char* comando);
+void dumpTabla();
+void dumpCache();
+void dumpPID();
+
+bool isNumber(char* palabra);
 
 #endif /* HILOS_HILOCONSOLA_H_ */

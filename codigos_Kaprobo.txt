@@ -1,3 +1,6 @@
+-- Codigo de mensajes:
+	-1 : Desconexión (siempre)
+
 --Codigos de Hanshake
 
 	11 : Consola -> Kernel
@@ -5,3 +8,15 @@
 	13 : Kernel -> Memoria
 	14 : Kernel -> File System
 	15 : CPU -> Memoria
+
+--Consola -> Kernel:
+	
+	101: Envío Script a ejecutar
+
+	Recepcion:
+		102: Programa finalizado correctamente
+		103: Imprimir texto
+		104: imprimir
+		105: Programa abortado por espacio en Memoria
+		106: Programa abortado por Kernel
+	

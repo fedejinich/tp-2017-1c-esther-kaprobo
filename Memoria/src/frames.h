@@ -14,6 +14,9 @@ typedef struct {
 	char data[256];
 } t_frame;
 
+int framesLibres;
+int framesOcupados;
+
 t_frame* memoria;
 
 void escribir_frame(int frame, int offset, int tamanio, void * contenido);

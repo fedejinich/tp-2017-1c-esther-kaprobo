@@ -36,44 +36,34 @@ void* hiloServidorKernel(void* arg) {
 void* hiloConexionKernel(void* socketKernel) {
 	log_info(logger,"Iniciando hilo conexion kernel");
 
-	t_paquete * paquete_nuevo;
-	int pid, paginasRequeridas, tamanioCodigo;
+	t_paquete * paqueteRecibido;
+
+	int pid, paginasRequeridas, pagina, tamanio, offset, tamanioCodigo;
+	void* buffer;
 
 	while (1) {
-		paquete_nuevo = recibir(socketKernel);
+		paqueteRecibido = recibir(socketKernel);
 
-		switch (paquete_nuevo->codigo_operacion) {
-			case PEDIDO_DE_PAGINAS:
-				paginasRequeridas = ((t_pedidoDePaginas*)(paquete_nuevo->data))->paginasAPedir;
-				pid = ((t_pedidoDePaginas*)(paquete_nuevo->data))->pid;
-
-				log_info(logger,"Se piden %i paginas para el proceso %i.",paginasRequeridas, pid);
-
-				if(espacioDisponible(paginasRequeridas, tamanioCodigo)) {
-					int i;
-					for(i = 1; i <= paginasRequeridas; i++) {
-						int frameDisponible = getFrameDisponible();
-
-						t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
-						entrada->frame = frameDisponible;
-						entrada->pid = pid;
-						entrada->pagina = i;
-
-						escribirTablaDePaginas(entrada);
-						free(entrada);
-					}
-
-					enviar(socketKernel, PEDIDO_DE_PAGINAS_OK, sizeof(int), paginasRequeridas);
-
-					log_info(logger,"Se otorgaron %i paginas al proceso %i.",paginasRequeridas, pid);
-				} else {
-					enviar(socketKernel, PEDIDO_DE_PAGINAS_FALLO, sizeof(int), -1); //EL TAMANIO Y DATA ESTAN AL PEDO PERO BUEN
-					log_warning(logger, "El proceso %i no se pudo inicializar.", pid);
-				}
-
-			break;
-
-
+		switch (paqueteRecibido->codigo_operacion) {
+			case INICIALIZAR_PROCESO:
+				paginasRequeridas = ((t_pedidoDePaginas*)(paqueteRecibido->data))->paginasAPedir;
+				pid = ((t_pedidoDePaginas*)(paqueteRecibido->data))->pid;
+				inicializarProceso(pid, paginasRequeridas);
+				break;
+			case ASIGNAR_PAGINAS:
+				paginasRequeridas = ((t_pedidoDePaginas*)(paqueteRecibido->data))->paginasAPedir;
+				pid = ((t_pedidoDePaginas*)(paqueteRecibido->data))->pid;
+				asignarPaginasAProceso(pid, paginasRequeridas);
+				break;
+			case FINALIZAR_PROCESO:
+				finalizarProceso(pid);
+				break;
+			case SOLICITAR_BYTES:
+				solicitarBytesDePagina(pid, pagina, offset, tamanio);
+				break;
+			case ALMACENAR_BYTES:
+				almacenarBytesEnPagina(pid, pagina, offset, tamanio, buffer);
+				break;
 			default:
 				break;
 		}
