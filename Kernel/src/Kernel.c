@@ -284,7 +284,7 @@ int pedirPaginasParaProceso(int pid){
 	pedidoDePaginas->pid = pid;
 	pedidoDePaginas->paginasAPedir = paginasAPedir;
 
-	//Envio a memoria el pedido de paginas
+	//Envio a memoria el pedido de pagina
 	enviar(memoria, 201, sizeof(t_pedidoDePaginasKernel),pedidoDePaginas);//VA ACA EL 201 O EN EL PAQUETE?
 
 	free(pedidoDePaginas);
