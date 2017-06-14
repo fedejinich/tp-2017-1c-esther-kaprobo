@@ -106,6 +106,11 @@ t_list* colaExec;
 t_list* colaExit;
 
 /*
- * ERRORES
+ *
+ * CPU
+ *
  */
-void informarAConsolaDeError(int resultadoPedidoPaginas);
+int indiceCPUsConectadas = 0;
+un_socket cpusConectadas[1000]; //DEFINIR ESTE NUMERO
+int indiceCPUsDisponibles = 0;
+un_socket cpusDisponibles[1000];

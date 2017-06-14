@@ -168,6 +168,11 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 	if(resultado_CPU){
 		log_info(logger, "Handshake OK, pedido de conexion aceptado");
 		printf ("Aceptado cliente %d\n", *nClientes);
+		cpusConectadas[indiceCPUsConectadas] = servidor;
+		indiceCPUsConectadas++;
+		cpusDisponibles[indiceCPUsDisponibles] = servidor;
+		indiceCPUsDisponibles++;
+		intentarMandarProcesoACPU();
 	}
 	else{
 		log_error(logger, "Handshake fallo, pedido de conexion rechazado");
@@ -212,6 +217,9 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 		case 101:
 			crearProcesoAnsisop(socketActivo);
 			break;
+		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
+			finalizarProcesoCPU(paqueteRecibido, socketActivo);
+			break;
 		default:
 			break;
 	}
@@ -250,12 +258,22 @@ void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
 			//FALTA ELIMINAR DE NEW
 
 			list_add(colaReady, nuevoProcesoAnsisop->pcb);
+			intentarMandarProcesoACPU(nuevoProcesoAnsisop->pcb);
 		}
 		else {
+			//FALTA ELIMINAR DE NEW
 			finalizarProceso(nuevoProcesoAnsisop,-1);
 		}
 	}
 
+}
+
+void finalizarProcesoCPU(t_paquete* paquete, un_socket socketCPU){
+	//Desarmar paquete para ver codigo de finalizacion
+	int pid = 0; //CAMBIAR POR PID DEL PAQUETE
+	int codigoDeFinalizacion = 0; //CAMBIAR POR CODIGO DEL PAQUETE
+	finalizarProceso(pid, codigoDeFinalizacion);
+	intentarMandarProcesoACPU();
 }
 
 void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode){
@@ -294,6 +312,21 @@ int pedirPaginasParaProceso(int pid){
 	respuestaAPedidoDePaginas = recibir(memoria);
 
 	return respuestaAPedidoDePaginas->data;
+}
+
+void intentarMandarProcesoACPU(int pid){
+	//SI HAY CPUS DISPONIBLES, Y TENGO ALGUN PROCESO EN LA COLA DE READY, MANDO UN PROCESO A CPU
+	if(){
+		un_socket socketCPU = cpusDisponibles[0];
+		int pid = 0; //ACA EN REALIDAD VIENE UN POP DE LA COLA DE READY, VER SI RODRI SOLUCIONO
+		enviarUnProcesoACPU(socketCPU, pid);
+	}
+}
+
+void enviarUnProcesoACPU(un_socket socketCPU, int pid){
+	 //PASO EL PROCESO A EXEC Y LO MANDO A LA CPU CORRESPONDIENTE
+
+
 }
 
 int conectarConLaMemoria(){
