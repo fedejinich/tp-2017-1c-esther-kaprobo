@@ -58,12 +58,6 @@ void* hiloConexionKernel(void* socketKernel) {
 			case FINALIZAR_PROCESO:
 				finalizarProceso(pid);
 				break;
-			case SOLICITAR_BYTES:
-				solicitarBytesDePagina(pid, pagina, offset, tamanio);
-				break;
-			case ALMACENAR_BYTES:
-				almacenarBytesEnPagina(pid, pagina, offset, tamanio, buffer);
-				break;
 			default:
 				break;
 		}

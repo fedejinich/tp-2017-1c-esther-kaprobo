@@ -17,6 +17,10 @@ void inicializarProceso(int pid, int paginasRequeridas) {
 	//KERNEL ME PIDE INICIALIZAR UN PROCESO
 }
 
+void finalizarProceso(int pid) {
+	//KERNEL PIDE FINALIZAR UN PROCESO
+}
+
 void asignarPaginasAProceso(int pid, int paginasRequeridas) {
 	//KERNEL PIDE ASIGNAR PAGINAS A UN PROCESO
 
@@ -35,6 +39,7 @@ void asignarPaginasAProceso(int pid, int paginasRequeridas) {
 			escribirTablaDePaginas(entrada);
 			free(entrada);
 		}
+
 		enviar(socketKernel, PEDIDO_DE_PAGINAS_OK, sizeof(int), paginasRequeridas);
 
 		log_info(logger,"Se otorgaron %i paginas al proceso %i.", paginasRequeridas, pid);
@@ -44,9 +49,6 @@ void asignarPaginasAProceso(int pid, int paginasRequeridas) {
 	}
 }
 
-void finalizarProceso(int pid) {
-	//KERNEL PIDE FINALIZAR UN PROCESO
-}
 
 
 

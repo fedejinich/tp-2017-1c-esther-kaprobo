@@ -26,8 +26,6 @@ typedef struct {
 } t_paquete;
 
 
-
-
 //Variables
 
 typedef int un_socket;
@@ -106,6 +104,36 @@ bool esperar_handshake(un_socket socket_del_cliente, int codigo);
 
 
 
+//CODIGOS DE OPERACION MEMORIA-KERNEL
 
+typedef enum {
+	INICIALIZAR_PROCESO,
+	INICIALIZAR_PROCESO_OK,
+	INICIALIZAR_PROCESO_FALLO,
+
+	FINALIZAR_PROCESO,
+	FINALIZAR_PROCESO_OK,
+	FINALIZAR_PROCESO_FALLO,
+
+	ASIGNAR_PAGINAS,
+	ASIGNAR_PAGINAS_OK,
+	ASIGNAR_PAGINAS_FALLO
+} codigosMemoriaKernel;
+
+//CODIGOS DE OPERACION MEMORIA-CPU
+
+typedef enum {
+	SOLICITAR_BYTES,
+	SOLICITAR_BYTES_OK,
+	SOLICITAR_BYTES_FALLO,
+
+	ALMACENAR_BYTES,
+	ALMACENAR_BYTES_OK,
+	ALMACENAR_BYTES_FALLO
+} codigosMemoriaCPU;
+
+typedef enum {
+
+}
 
 #endif /* COMMONS_KAPROBO_H_ */
