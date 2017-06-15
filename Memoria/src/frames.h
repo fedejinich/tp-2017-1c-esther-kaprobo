@@ -19,6 +19,7 @@ int framesOcupados;
 
 t_frame* memoria;
 
-void escribir_frame(int frame, int offset, int tamanio, void * contenido);
+void escribirFrame(int frame, int offset, int tamanio, void * contenido);
+void liberarFrame(int frame);
 
 #endif /* FRAMES_H_ */

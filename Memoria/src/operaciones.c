@@ -40,11 +40,11 @@ void asignarPaginasAProceso(int pid, int paginasRequeridas) {
 			free(entrada);
 		}
 
-		enviar(socketKernel, PEDIDO_DE_PAGINAS_OK, sizeof(int), paginasRequeridas);
+		enviar(socketKernel, ASIGNAR_PAGINAS_OK, sizeof(int), paginasRequeridas);
 
 		log_info(logger,"Se otorgaron %i paginas al proceso %i.", paginasRequeridas, pid);
 	} else {
-		enviar(socketKernel, PEDIDO_DE_PAGINAS_FALLO, sizeof(int), -1); //EL TAMANIO Y DATA ESTAN AL PEDO PERO BUEN
+		enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), -1); //EL TAMANIO Y DATA ESTAN AL PEDO PERO BUEN
 		log_warning(logger, "El proceso %i no se pudo inicializar.", pid);
 	}
 }

@@ -132,8 +132,6 @@ typedef enum {
 	ALMACENAR_BYTES_FALLO
 } codigosMemoriaCPU;
 
-typedef enum {
 
-}
 
 #endif /* COMMONS_KAPROBO_H_ */

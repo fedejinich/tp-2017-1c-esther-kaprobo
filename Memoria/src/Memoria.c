@@ -19,6 +19,7 @@ int main(int argc, char **argv){
 
 	printf("%s", "\n====== INICIO MEMORIA ======\n\n");
 
+
 	//iniciarSeniales();
 	cargarConfiguracion();
 	grandMalloc();
