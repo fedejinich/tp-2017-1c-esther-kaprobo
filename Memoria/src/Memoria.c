@@ -61,8 +61,9 @@ void cargarConfiguracion(){
 void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas`
 
 	log_info(logger,"Reservando bloque de memoria contigua...");
-
-	tamanioMemoria = frames * frame_size;
+	int tablaDePaginasSize = (frames * sizeof(t_entradaTablaDePaginas));
+	tamanioMemoria = (frames * frame_size) + (tablaDePaginasSize); //VER SI MI TABLA DE PAGINAS OCUPA LUGAR DENTRO DE MI MEMORIA
+	//SI LLEGA A OCUPAR LUGAR, TENGO QUE RESERVAR LOS N PRIMEROS LUGARES DE MI TABLA DE PAGIAS INVERTIDA
 	memoria = malloc(tamanioMemoria);
 
 	if (memoria == NULL) {
