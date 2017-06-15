@@ -24,6 +24,7 @@ int main(int argc, char **argv){
 	cargarConfiguracion();
 	grandMalloc();
 	inicializarTablaDePaginas();
+	inicializarFramePointer();
 	iniciarHilos();
 
 	return EXIT_SUCCESS;

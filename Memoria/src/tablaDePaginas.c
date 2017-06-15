@@ -32,7 +32,6 @@ void inicializarTablaDePaginas() {
 		free(entradaTablaDePaginas);
 	}
 
-
 	log_info(logger,"Tabla de paginas inicializada.");
 }
 
