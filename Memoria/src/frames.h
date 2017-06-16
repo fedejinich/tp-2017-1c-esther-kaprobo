@@ -18,7 +18,11 @@ int framesLibres;
 int framesOcupados;
 
 t_frame* memoria;
+t_frame* framePointer;
 
-void escribir_frame(int frame, int offset, int tamanio, void * contenido);
+void escribirFrame(int frame, int offset, int tamanio, void * contenido);
+void liberarFrame(int frame);
+int getFirstFrame();
+void inicializarFramePointer();
 
 #endif /* FRAMES_H_ */

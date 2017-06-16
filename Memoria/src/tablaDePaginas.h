@@ -25,13 +25,14 @@ typedef struct {
 } t_pedidoDePaginas; //DESPUES HAY QUE HACER UN FIX DE ESTO Y DEFINIR ESTE STRUCT SOLO EN ESTRUCTURAS.H
 //PERO AHORA EL PUTO DE C NO C PORQUE NO ME ESTA DEJANDO
 
+
 void inicializarTablaDePaginas();
-//t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada);
 void escribirTablaDePaginas(t_entradaTablaDePaginas*  entrada);
 int getFrameDisponible();
 int getTablaDePaginasSize();
 int getCantidadFramesDisponibles();
 int getCantidadFramesOcupados();
 bool paginasDisponibles(int paginasRequeridas);
+t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada);
 
 #endif /* TABLADEPAGINAS_H_ */

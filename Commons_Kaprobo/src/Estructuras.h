@@ -13,10 +13,5 @@ typedef struct __attribute__((packed))t_pcb{
 	int exitCode;
 }t_pcb;
 
-enum {
-	PEDIDO_DE_PAGINAS,
-	PEDIDO_DE_PAGINAS_OK,
-	PEDIDO_DE_PAGINAS_FALLO
-} mensajesKernelMemoria;
 
 #endif

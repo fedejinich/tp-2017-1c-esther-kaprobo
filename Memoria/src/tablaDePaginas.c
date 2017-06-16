@@ -32,7 +32,6 @@ void inicializarTablaDePaginas() {
 		free(entradaTablaDePaginas);
 	}
 
-
 	log_info(logger,"Tabla de paginas inicializada.");
 }
 
@@ -43,7 +42,7 @@ void escribirTablaDePaginas(t_entradaTablaDePaginas*  entrada) {
 t_entradaTablaDePaginas* getEntradaTablaDePaginas(int index) {
 
 	if(index > frames) {
-		log_error(logger,"Se solicito una index inexistente");
+		log_error(logger,"Se solicito una entrada inexistente");
 		return EXIT_FAILURE;
 	}
 
