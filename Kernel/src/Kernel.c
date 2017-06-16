@@ -12,56 +12,11 @@
 
 
 int main(int argc, char **argv) {
-	int i;
 
 	inicializar();
 
 	while(1){
-		//elimina todos los clientes que hayan cerrado conexion
-		compactaClaves(socketCliente, &numeroClientes);
-
-		//se inicia descriptor lectura
-		FD_ZERO (&fds_activos);
-
-		//se agrega para select el servidor
-		FD_SET (socketCPU, &fds_activos);
-		FD_SET (socketConsola, &fds_activos);
-
-		//se agregan para el select los clientes ya conectados
-		for (i=0; i<numeroClientes; i++)
-			FD_SET (socketCliente[i],&fds_activos);
-
-		//el valor del descriptor mas grande, si no hay, retorna 0
-		socketMasGrande = dameSocketMasGrande(socketCliente, numeroClientes);
-
-		if(socketMasGrande < socketConsola){
-			socketMasGrande = socketConsola;
-		}
-
-		//esperamos hasta que haya un cambio
-		printf("Antes Select\n");
-		select(socketMasGrande +1, &fds_activos, NULL, NULL, NULL);
-		printf("Hubo cambios en Sockets, verificando...\n\n");
-
-		/* Se comprueba si algún cliente ya conectado ha enviado algo */
-		for (i=0; i<numeroClientes; i++){
-			printf("verificando cliente %d \n", i+1);
-			if(FD_ISSET(socketCliente[i],&fds_activos)){
-				paqueteRecibido = recibir(socketCliente[i]);
-				//verifica codigo de operacion, si es -1 se desconecto
-				if(paqueteRecibido->codigo_operacion > 0){
-					printf("Me envio datos\n");
-					procesarPaqueteRecibido(paqueteRecibido, socketCliente[i]);
-				}
-				else {
-					printf("El cliente %d se desconecto\n",i+1);
-					log_info(logger, "El cliente %d se desconecto\n",i+1);
-					socketCliente[i] = -1;
-				}
-
-			}
-			else printf("No hubo cambios en cliente %d, continua \n\n",i+1);
-		}
+		manejarSockets();
 		verSiHayNuevosClientes();
 	}
 	return EXIT_SUCCESS;
@@ -82,6 +37,10 @@ void inicializar(){
 	//mostrarConfiguracion();
 
 	prepararSocketsServidores();
+
+	memoria = conectarConLaMemoria();
+
+	fileSystem = conectarConFileSystem();
 }
 
 void cargarConfiguracion() {
@@ -134,19 +93,62 @@ void prepararSocketsServidores(){
 	log_info(logger, "Sockets escuchando");
 }
 
+void manejarSockets(){
+	//elimina todos los clientes que hayan cerrado conexion
+	compactaClaves(socketCliente, &numeroClientes);
+
+	//se inicia descriptor lectura
+	FD_ZERO (&fds_activos);
+
+	//se agrega para select el servidor
+	FD_SET (socketCPU, &fds_activos);
+	FD_SET (socketConsola, &fds_activos);
+
+	//se agregan para el select los clientes ya conectados
+	for (int i=0; i<numeroClientes; i++)
+		FD_SET (socketCliente[i],&fds_activos);
+
+	//el valor del descriptor mas grande, si no hay, retorna 0
+	socketMasGrande = dameSocketMasGrande(socketCliente, numeroClientes);
+
+	if(socketMasGrande < socketConsola){
+		socketMasGrande = socketConsola;
+	}
+
+	//esperamos hasta que haya un cambio
+	select(socketMasGrande +1, &fds_activos, NULL, NULL, NULL);
+
+	/* Se comprueba si algún cliente ya conectado ha enviado algo */
+	for (i=0; i<numeroClientes; i++){
+		log_info(logger, "Verificando cliente %d", i+1);
+		if(FD_ISSET(socketCliente[i],&fds_activos)){
+			paqueteRecibido = recibir(socketCliente[i]);
+
+			//verifica codigo de operacion, si es -1 se desconecto
+			if(paqueteRecibido->codigo_operacion > 0){
+				log_info(logger, "Me envio datos el socket %i", socketCliente[i]);
+				procesarPaqueteRecibido(paqueteRecibido, socketCliente[i]);
+			}
+			else {
+				log_info(logger, "El cliente %d se desconecto",i+1);
+				socketCliente[i] = -1;
+			}
+
+		}
+		else log_info(logger, "No hubo cambios en cliente %d, continua",i+1);
+	}
+}
+
 void verSiHayNuevosClientes(){
 	if(FD_ISSET (socketCPU, &fds_activos)){
-		printf("Nuevo pedido de conexion CPU\n");
 		log_info(logger, "Nuevo pedido de conexion CPU");
 		nuevoClienteCPU(socketCPU, socketCliente, &numeroClientes);
 	}
 	if(FD_ISSET (socketConsola, &fds_activos)){
-		printf("Nuevo pedido de conexion Consola\n");
 		log_info(logger, "Nuevo pedido de conexion Consola");
 		nuevoClienteConsola(socketConsola, socketCliente, &numeroClientes);
 	}
 }
-//Ver si hay una mejor manera de corregir esto, repite codigo
 
 void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 {
@@ -164,10 +166,10 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 	}
 
 	bool resultado_CPU = esperar_handshake(clientes[*nClientes - 1], 12);
+
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
 	if(resultado_CPU){
-		log_info(logger, "Handshake OK, pedido de conexion aceptado");
-		printf ("Aceptado cliente %d\n", *nClientes);
+		log_info(logger, "Handshake OK, pedido de conexion cliente %d aceptado", *nClientes);
 		cpusConectadas[indiceCPUsConectadas] = servidor;
 		indiceCPUsConectadas++;
 		cpusDisponibles[indiceCPUsDisponibles] = servidor;
@@ -200,12 +202,10 @@ void nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 	bool resultado_Consola = esperar_handshake(clientes[*nClientes - 1], 11);
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
 	if(resultado_Consola){
-		log_info(logger, "Handshake OK, pedido de conexion aceptado");
-		printf ("Aceptado cliente %d\n", *nClientes);
+		log_info(logger, "Handshake OK, pedido de conexion cliente %d aceptado", *nClientes);
 	}
 	else{
-		log_error(logger, "Handshake fallo, pedido de conexion rechazado");
-		printf ("Handshake rechazado\n");
+		log_error(logger, "Handshake fallo, pedido de conexion cliente %d rechazado", *nClientes);
 	}
 
 	return;
@@ -226,13 +226,11 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 }
 
 void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
-	printf("Creando nuevo proceso Ansisop\n");
 	log_info(logger, "Creando nuevo proceso Ansisop");
 
 	t_proceso* nuevoProcesoAnsisop = malloc(sizeof(nuevoProcesoAnsisop));
 
 	//Creo PCB para el proceso en cuestion
-	printf("Creando PCB del nuevo proceso Ansisop\n");
 	log_info(logger, "Creando PCB del nuevo proceso Ansisop");
 	t_pcb* pcb = malloc(sizeof(t_pcb));
 	cantidadDeProgramas++;
@@ -244,7 +242,7 @@ void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
 	//EnvioPIDDeNuevoProceso 107
 	enviar(nuevoProcesoAnsisop->socketConsola, 107, sizeof(int), nuevoProcesoAnsisop->pcb->pid);
 
-	list_add(colaNew, nuevoProcesoAnsisop->pcb);
+	pasarProcesoALista(nuevoProcesoAnsisop->pcb, ListaNew, ListaNull);
 
 	if(grado_multiprog < cantidadDeProgramas){
 		//SI PERMITE, PASA DE NEW A READY
@@ -255,9 +253,8 @@ void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
 		if(resultadoPedidoPaginas > 0){
 			pcb->pageCounter = resultadoPedidoPaginas;
 
-			//FALTA ELIMINAR DE NEW
+			pasarProcesoAlista(nuevoProcesoAnsisop->pcb, ListaReady, ListaNew);
 
-			list_add(colaReady, nuevoProcesoAnsisop->pcb);
 			intentarMandarProcesoACPU(nuevoProcesoAnsisop->pcb);
 		}
 		else {
@@ -272,14 +269,13 @@ void finalizarProcesoCPU(t_paquete* paquete, un_socket socketCPU){
 	//Desarmar paquete para ver codigo de finalizacion
 	int pid = 0; //CAMBIAR POR PID DEL PAQUETE
 	int codigoDeFinalizacion = 0; //CAMBIAR POR CODIGO DEL PAQUETE
-	finalizarProceso(pid, codigoDeFinalizacion);
+	finalizarProceso(pid, codigoDeFinalizacion, ListaExec);
 	intentarMandarProcesoACPU();
 }
 
-void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode){
+void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode, int listaDondeEstaba){
 	procesoAFinalizar->pcb->exitCode = exitCode;
-	list_add(colaExit, procesoAFinalizar->pcb);
-	//Aviso a la Consola correspondiente que el Kernel aborto el proceso
+	pasarProcesoALista(procesoAFinalizar->pcb, ListaExit, listaDondeEstaba);
 	int codigoDeFinalizacion;
 	if(exitCode == 0){
 		//Codigo de Finzalicacion correcta del proceso
@@ -294,7 +290,6 @@ void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode){
 }
 
 int pedirPaginasParaProceso(int pid){
-	memoria = conectarConLaMemoria();
 	//Calculo paginas de memoria que necesito pedir de memoria para este script
 	int paginasAPedir = ceil(paqueteRecibido->tamanio/TAMANIODEPAGINA);
 
@@ -317,43 +312,123 @@ int pedirPaginasParaProceso(int pid){
 void intentarMandarProcesoACPU(int pid){
 	//SI HAY CPUS DISPONIBLES, Y TENGO ALGUN PROCESO EN LA COLA DE READY, MANDO UN PROCESO A CPU
 	if(){
-		un_socket socketCPU = cpusDisponibles[0];
-		int pid = 0; //ACA EN REALIDAD VIENE UN POP DE LA COLA DE READY, VER SI RODRI SOLUCIONO
-		enviarUnProcesoACPU(socketCPU, pid);
+		//Elijo una CPU del listado de CPUs disponibles y la saco del listado de disponibles
+		un_socket socketCPU = cpusDisponibles[indiceCPUsDisponibles];
+		cpusDisponibles[indiceCPUsDisponibles] = -1;
+		indiceCPUsDisponibles--;
+
+		//Evaluacion del algoritmo de planficacion a utilizar
+		if(){
+			//FIFO
+			int pid = 0; //ACA EN REALIDAD VIENE UN POP DE LA COLA DE READY, VER SI RODRI SOLUCIONO
+			enviarUnProcesoACPU(socketCPU, pid);
+		}
+		else{
+			//ROUND ROBIN
+
+		}
+
 	}
 }
 
 void enviarUnProcesoACPU(un_socket socketCPU, int pid){
-	 //PASO EL PROCESO A EXEC Y LO MANDO A LA CPU CORRESPONDIENTE
+	//PASO EL PROCESO A EXEC Y LO MANDO A LA CPU CORRESPONDIENTE
 
+	t_proceso* proceso = buscarProcesoEnReadySegunPID(pid);
 
+	pasarProcesoALista(proceso, ListaExec, ListaReady);
+
+	//51651 VER CODIGO DE PROCESO A EJECUTAR EN CPU
+	enviar(socketCPU, 51651, sizeof(t_proceso), proceso);
+}
+
+t_proceso buscarProcesoEnReadySegunPID(int pid){
+	t_proceso* proceso = malloc(sizeof(t_proceso));
+
+	//BUSCAR EN LISTA READY SEGUN PID
+
+	return proceso;
 }
 
 int conectarConLaMemoria(){
-	printf("Inicio de conexion con la Memoria\n");
-	log_info(logger, "Inicio de conexion con la Memoria");
-	memoria = conectar_a(ip_memoria,puerto_memoria);
+	log_info(logger, "MEMORIA: Inicio de conexion");
+	un_socket socketMemoria = conectar_a(ip_memoria, puerto_memoria);
 
-	if (memoria==0){
-		printf("No se pudo conectar con la Memoria\n");
+	if (socketMemoria == 0){
+		log_error(logger, "MEMORIA: No se pudo conectar");
+		exit (EXIT_FAILURE);
+	}
+
+	log_info(logger, "MEMORIA: Recibio pedido de conexion de Kernel");
+
+	log_info(logger, "MEMORIA: Iniciando Handshake");
+	bool resultado = realizar_handshake(socketMemoria , 13);
+	if (resultado){
+		log_info(logger, "MEMORIA: Handshake exitoso! Conexion establecida");
+		return socketMemoria ;
+	}
+	else{
+		log_error(logger, "MEMORIA: Fallo en el handshake, se aborta conexion");
+		exit (EXIT_FAILURE);
+	}
+}
+
+int conectarConFileSystem(){
+	log_info(logger, "FILESYSTEM: Inicio de conexion");
+	un_socket socketFileSystem = conectar_a(ip_fs, puerto_fs);
+
+	if (socketFileSystem == 0){
 		log_error(logger, "No se pudo conectar con la Memoria");
 		exit (EXIT_FAILURE);
 	}
 
-	printf("MEMORIA: Recibio pedido de conexion de Kernel\n");
-	log_info(logger, "MEMORIA: Recibio pedido de conexion de Kernel");
+	log_info(logger, "FILESYSTEM: Recibio pedido de conexion de Kernel");
 
-	printf("MEMORIA: Iniciando Handshake\n");
-	bool resultado = realizar_handshake(memoria, 13);
+	log_info(logger, "FILESYSTEM: Iniciando Handshake");
+	bool resultado = realizar_handshake(socketFileSystem, 13);
 	if (resultado){
-		printf("MEMORIA: Handshake exitoso! Conexion establecida\n");
-		log_info(logger, "MEMORIA: Handshake exitoso! Conexion establecida");
-		return memoria;
+		log_info(logger, "FILESYSTEM: Handshake exitoso! Conexion establecida");
+		return socketFileSystem;
 	}
 	else{
-		printf("MEMORIA: Fallo en el handshake, se aborta conexion\n");
-		log_error(logger, "MEMORIA: Fallo en el handshake, se aborta conexion");
+		log_error(logger, "FILESYSTEM: Fallo en el handshake, se aborta conexion");
 		exit (EXIT_FAILURE);
+	}
+}
+
+void pasarProcesoALista(t_proceso* procesoAMover, int listaAMover, int listaAEliminar){
+	switch (listaAMover){
+		case ListaNew:
+			list_add(colaNew,procesoAMover->pcb);
+			break;
+		case ListaReady:
+			list_add(colaReady,procesoAMover->pcb);
+			break;
+		case ListaExec:
+			list_add(colaExec,procesoAMover->pcb);
+			break;
+		case ListaExit:
+			list_add(colaExit,procesoAMover->pcb);
+			break;
+	}
+
+	//ESTO O VER COMO ELIMINAR DE LA LISTA DONDE ESTABA, SI ES CON PUSH/POP O QUE
+	switch (listaAEliminar){
+		case ListaNew:
+
+			break;
+		case ListaReady:
+
+			break;
+		case ListaExec:
+
+			break;
+		case ListaExit:
+
+			break;
+		case ListaNull:
+			//No hay que eliminarla de ninguna lista, nuevo proceso
+			break;
 	}
 }
 
@@ -392,4 +467,3 @@ void compactaClaves (int *tabla, int *n) {
 
 	*n = j;
 }
-

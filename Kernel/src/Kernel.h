@@ -11,6 +11,12 @@
 #define MAX_CLIENTES 3
 #define TAMANIODEPAGINA 256
 
+#define ListaNull -1
+#define ListaNew 0
+#define ListaReady 1
+#define ListaExec 2
+#define ListaExit 3
+
 int cantidadDeProgramas;
 
 typedef struct __attribute__((packed))t_pcb{
