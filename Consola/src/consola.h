@@ -4,6 +4,7 @@
 #include "src/Commons_Kaprobo.h"
 #include <pthread.h>
 #include <time.h>
+#include <ctype.h>
 
 
 #define ARCHIVOLOG "Consola.log"
@@ -21,9 +22,14 @@ char* script;
 FILE* archivo;
 char nomArchi[50];
 
+
+//Semaforo
+pthread_mutex_t mutexConexion;
+pthread_mutex_t mutexEjecuta;
 //matriz
 
 int matriz[MAXPID];
+pthread_t matrizHilos[MAXPID];
 
 typedef struct{
 	int d;
@@ -63,6 +69,7 @@ void finalizarPrograma();
 void desconectarConsola();
 void limpiarMensajes();
 void hiloNuevoPrograma();
+void mostrarMenu();
 char * leerArchivo(FILE *archivo);
 timeAct fechaYHora();
 void mostrarEstadisticas(estadisticas estadisticasPrograma, int pid);
