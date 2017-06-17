@@ -7,9 +7,23 @@
 #include <pthread.h>
 #include <commons/log.h>
 #include <math.h>
+#include <semaphore.h>
+#include <linux/inotify.h>
+#include <event.h>
+
+#include <commons/collections/node.h>
+#include <commons/collections/queue.h>
+#include <commons/collections/list.h>
+#include <parser/metadata_program.h>
+#include <signal.h>
+
+
 
 #define MAX_CLIENTES 3
-#define TAMANIODEPAGINA 256
+#define TAMANIODEPAGINA 256 //ESTE DATO LO TRAE DE MEMORIA
+#define CONFIG_KERNEL_SOLO "kernel.config"
+#define CONFIG_KERNEL "../configuracion/kernel.config"
+#define CONFIG_PATH "../configuracion/"
 
 #define ListaNull -1
 #define ListaNew 0
@@ -58,10 +72,22 @@ int sem_inits[3];
 char* shared_vars[2];
 int stack_size;
 
+
+//HILO NOTIFY
+
+pthread_t hiloNotify;
+//Propias Configuracion KERNEL
+int TAMPAG;
+
+//SEMAFOROS
+pthread_mutex_t mutex_config;
+
 //FUNCIONES
 void inicializar();
 void cargarConfiguracion();
 void mostrarConfiguracion();
+void verNotify();
+void borrarArchivos();
 
 /*
  *
@@ -94,7 +120,7 @@ int dameSocketMasGrande (int *tabla, int n);
 void prepararSocketsServidores();
 void verSiHayNuevosClientes();
 void nuevoCliente (int servidor, int *clientes, int *nClientes);
-void procesarPaqueteRecibido(t_paquete* paqueteRecibido);
+void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo);
 int pedirPaginasParaProceso(int pid);
 un_socket conectarConLaMemoria();
 
@@ -102,7 +128,7 @@ un_socket conectarConLaMemoria();
  *
  * COLAS
  *
- */
+
 t_list* colaNew;
 
 t_list* colaReady;
@@ -110,7 +136,7 @@ t_list* colaReady;
 t_list* colaExec;
 
 t_list* colaExit;
-
+*/
 /*
  *
  * CPU

@@ -12,7 +12,8 @@
 
 
 int main(int argc, char **argv) {
-
+	pthread_create(&hiloNotify, NULL, verNotify, NULL);
+	borrarArchivos();
 	inicializar();
 
 	while(1){
@@ -20,35 +21,47 @@ int main(int argc, char **argv) {
 		verSiHayNuevosClientes();
 	}
 	return EXIT_SUCCESS;
+
+}
+
+void borrarArchivos(){
+	remove("kernel.log");
 }
 
 void inicializar(){
 	cantidadDeProgramas = 0;
+	pthread_mutex_init(&mutex_config, NULL);
 
+	/*
 	list_create(colaNew);
 	list_create(colaReady);
 	list_create(colaExec);
 	list_create(colaExit);
-
+*/
 	//Crear Log
 	logger = log_create("kernel.log","Kernel",0,LOG_LEVEL_INFO);
 
 	cargarConfiguracion();
-	//mostrarConfiguracion();
+	mostrarConfiguracion();
+
+
+	//fileSystem = conectarConFileSystem();
+	//memoria = conectarConLaMemoria();
 
 	prepararSocketsServidores();
 
-	memoria = conectarConLaMemoria();
 
-	fileSystem = conectarConFileSystem();
+
 }
 
 void cargarConfiguracion() {
+	pthread_mutex_lock(&mutex_config);
 
 	printf("Cargando archivo de configuracion 'kernel.config'\n\n");
 	log_info(logger, "Cargando archivo de configuracion 'kernel.config'");
 
-	t_config* config = config_create(getenv("archivo_configuracion_kernel"));
+	t_config* config = config_create(CONFIG_KERNEL);
+
 	puerto_prog = config_get_int_value(config, "PUERTO_PROG");
 	puerto_cpu = config_get_int_value(config, "PUERTO_CPU");
 	ip_memoria = config_get_string_value(config, "IP_MEMORIA");
@@ -65,6 +78,7 @@ void cargarConfiguracion() {
 	stack_size = config_get_int_value(config, "STACK_SIZE");
 
 	log_info(logger, "Archivo de configuración cargado");
+	pthread_mutex_unlock(&mutex_config);
 }
 
 void mostrarConfiguracion(){
@@ -94,6 +108,7 @@ void prepararSocketsServidores(){
 }
 
 void manejarSockets(){
+	int i;
 	//elimina todos los clientes que hayan cerrado conexion
 	compactaClaves(socketCliente, &numeroClientes);
 
@@ -105,10 +120,13 @@ void manejarSockets(){
 	FD_SET (socketConsola, &fds_activos);
 
 	//se agregan para el select los clientes ya conectados
-	for (int i=0; i<numeroClientes; i++)
+
+	for ( i = 0; i < numeroClientes; ++i){
 		FD_SET (socketCliente[i],&fds_activos);
+	}
 
 	//el valor del descriptor mas grande, si no hay, retorna 0
+
 	socketMasGrande = dameSocketMasGrande(socketCliente, numeroClientes);
 
 	if(socketMasGrande < socketConsola){
@@ -127,7 +145,7 @@ void manejarSockets(){
 			//verifica codigo de operacion, si es -1 se desconecto
 			if(paqueteRecibido->codigo_operacion > 0){
 				log_info(logger, "Me envio datos el socket %i", socketCliente[i]);
-				procesarPaqueteRecibido(paqueteRecibido, socketCliente[i]);
+				 procesarPaqueteRecibido(paqueteRecibido, socketCliente[i]);
 			}
 			else {
 				log_info(logger, "El cliente %d se desconecto",i+1);
@@ -174,7 +192,7 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 		indiceCPUsConectadas++;
 		cpusDisponibles[indiceCPUsDisponibles] = servidor;
 		indiceCPUsDisponibles++;
-		intentarMandarProcesoACPU();
+		//intentarMandarProcesoACPU();
 	}
 	else{
 		log_error(logger, "Handshake fallo, pedido de conexion rechazado");
@@ -211,6 +229,8 @@ void nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 	return;
 }
 
+
+
 void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo){
 	switch(paqueteRecibido->codigo_operacion){
 		//Codigo 101: Crear Script Ansisop
@@ -224,6 +244,8 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			break;
 	}
 }
+
+
 
 void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
 	log_info(logger, "Creando nuevo proceso Ansisop");
@@ -242,7 +264,7 @@ void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
 	//EnvioPIDDeNuevoProceso 107
 	enviar(nuevoProcesoAnsisop->socketConsola, 107, sizeof(int), nuevoProcesoAnsisop->pcb->pid);
 
-	pasarProcesoALista(nuevoProcesoAnsisop->pcb, ListaNew, ListaNull);
+	//pasarProcesoALista(nuevoProcesoAnsisop->pcb, ListaNew, ListaNull);
 
 	if(grado_multiprog < cantidadDeProgramas){
 		//SI PERMITE, PASA DE NEW A READY
@@ -253,9 +275,9 @@ void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
 		if(resultadoPedidoPaginas > 0){
 			pcb->pageCounter = resultadoPedidoPaginas;
 
-			pasarProcesoAlista(nuevoProcesoAnsisop->pcb, ListaReady, ListaNew);
+			//pasarProcesoAlista(nuevoProcesoAnsisop->pcb, ListaReady, ListaNew);
 
-			intentarMandarProcesoACPU(nuevoProcesoAnsisop->pcb);
+			//intentarMandarProcesoACPU(nuevoProcesoAnsisop->pcb);
 		}
 		else {
 			//FALTA ELIMINAR DE NEW
@@ -270,12 +292,12 @@ void finalizarProcesoCPU(t_paquete* paquete, un_socket socketCPU){
 	int pid = 0; //CAMBIAR POR PID DEL PAQUETE
 	int codigoDeFinalizacion = 0; //CAMBIAR POR CODIGO DEL PAQUETE
 	finalizarProceso(pid, codigoDeFinalizacion, ListaExec);
-	intentarMandarProcesoACPU();
+	//intentarMandarProcesoACPU();
 }
 
 void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode, int listaDondeEstaba){
 	procesoAFinalizar->pcb->exitCode = exitCode;
-	pasarProcesoALista(procesoAFinalizar->pcb, ListaExit, listaDondeEstaba);
+	//pasarProcesoALista(procesoAFinalizar->pcb, ListaExit, listaDondeEstaba);
 	int codigoDeFinalizacion;
 	if(exitCode == 0){
 		//Codigo de Finzalicacion correcta del proceso
@@ -308,7 +330,7 @@ int pedirPaginasParaProceso(int pid){
 
 	return respuestaAPedidoDePaginas->data;
 }
-
+/*
 void intentarMandarProcesoACPU(int pid){
 	//SI HAY CPUS DISPONIBLES, Y TENGO ALGUN PROCESO EN LA COLA DE READY, MANDO UN PROCESO A CPU
 	if(){
@@ -331,6 +353,9 @@ void intentarMandarProcesoACPU(int pid){
 	}
 }
 
+
+*/
+/*
 void enviarUnProcesoACPU(un_socket socketCPU, int pid){
 	//PASO EL PROCESO A EXEC Y LO MANDO A LA CPU CORRESPONDIENTE
 
@@ -342,6 +367,7 @@ void enviarUnProcesoACPU(un_socket socketCPU, int pid){
 	enviar(socketCPU, 51651, sizeof(t_proceso), proceso);
 }
 
+
 t_proceso buscarProcesoEnReadySegunPID(int pid){
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 
@@ -350,12 +376,17 @@ t_proceso buscarProcesoEnReadySegunPID(int pid){
 	return proceso;
 }
 
+
+*/
 int conectarConLaMemoria(){
+	t_paquete * paquete;
+	pthread_mutex_lock(&mutex_config);
 	log_info(logger, "MEMORIA: Inicio de conexion");
 	un_socket socketMemoria = conectar_a(ip_memoria, puerto_memoria);
 
 	if (socketMemoria == 0){
 		log_error(logger, "MEMORIA: No se pudo conectar");
+		pthread_mutex_unlock(&mutex_config);
 		exit (EXIT_FAILURE);
 	}
 
@@ -365,10 +396,15 @@ int conectarConLaMemoria(){
 	bool resultado = realizar_handshake(socketMemoria , 13);
 	if (resultado){
 		log_info(logger, "MEMORIA: Handshake exitoso! Conexion establecida");
+		paquete = recibir(socketMemoria);
+		TAMPAG = *((int*)paquete->data);
+		log_info(logger, "KERNEL: Tamano pagina de Memoria %d",TAMPAG);
+		pthread_mutex_unlock(&mutex_config);
 		return socketMemoria ;
 	}
 	else{
 		log_error(logger, "MEMORIA: Fallo en el handshake, se aborta conexion");
+		pthread_mutex_unlock(&mutex_config);
 		exit (EXIT_FAILURE);
 	}
 }
@@ -396,6 +432,7 @@ int conectarConFileSystem(){
 	}
 }
 
+/*
 void pasarProcesoALista(t_proceso* procesoAMover, int listaAMover, int listaAEliminar){
 	switch (listaAMover){
 		case ListaNew:
@@ -432,6 +469,9 @@ void pasarProcesoALista(t_proceso* procesoAMover, int listaAMover, int listaAEli
 	}
 }
 
+
+
+*/
 /*
  * Función que devuelve el valor máximo en la tabla.
  * Supone que los valores válidos de la tabla son positivos y mayores que 0.
@@ -466,4 +506,40 @@ void compactaClaves (int *tabla, int *n) {
 	}
 
 	*n = j;
+}
+
+
+void verNotify(){
+	printf("HILO NOTIFY\n");
+	int file_descriptor = inotify_init();
+	if(file_descriptor < 0) perror("inotify_init");
+	int watch_descriptor = inotify_add_watch(file_descriptor, CONFIG_PATH, IN_MODIFY);
+	char buffer[1000];
+
+
+	while(1){
+		int length = read(file_descriptor, buffer, 1000);
+		int offset = 0;
+		while (offset < length){
+			struct inotify_event * event = (struct inotify_evento*) &buffer[offset];
+			if (event->len){
+				if(event->mask & IN_MODIFY){
+					if(!(event->mask & IN_ISDIR)){
+						if(strcmp(event->name, CONFIG_KERNEL_SOLO)==0){
+
+							log_info(logger, "KERNEL: cambio el archivo config");
+							usleep(500*1000);
+							cargarConfiguracion();
+							mostrarConfiguracion();
+						}
+					}
+				}
+			}
+		offset += sizeof (struct inotify_event) + event->len;
+		}
+	}
+
+
+
+
 }
