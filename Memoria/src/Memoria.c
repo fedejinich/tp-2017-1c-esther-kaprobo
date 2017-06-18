@@ -74,6 +74,8 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 
 }
 
+
+
 void iniciarHilos() {
 	log_info(logger, "Inicializando hilos...");
 

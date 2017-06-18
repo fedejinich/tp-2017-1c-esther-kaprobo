@@ -15,6 +15,7 @@
 #include "funcionesAuxiliares/funcionesAuxiliares.h"
 #include "tablaDePaginas.h"
 #include "operaciones.h"
+#include "funcionHash.h"
 
 
 /*
