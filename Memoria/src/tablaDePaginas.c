@@ -27,7 +27,7 @@ void inicializarTablaDePaginas() {
 		entradaTablaDePaginas->pid = pid;
 		entradaTablaDePaginas->pagina = pagina;
 
-		escribirTablaDePaginas(entradaTablaDePaginas);
+		memcpy(&tablaDePaginas[entradaTablaDePaginas->frame], entradaTablaDePaginas, sizeof(t_entradaTablaDePaginas));
 
 		free(entradaTablaDePaginas);
 	}
@@ -35,8 +35,10 @@ void inicializarTablaDePaginas() {
 	log_info(logger,"Tabla de paginas inicializada.");
 }
 
-void escribirTablaDePaginas(t_entradaTablaDePaginas*  entrada) {
-	memcpy(&tablaDePaginas[entrada->frame], entrada, sizeof(t_entradaTablaDePaginas));
+void escribirTablaDePaginas(int frame, int pid, int pagina) {
+	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(frame);
+	entrada->pid = pid;
+	entrada->pagina = pagina;
 }
 
 t_entradaTablaDePaginas* getEntradaTablaDePaginas(int index) {

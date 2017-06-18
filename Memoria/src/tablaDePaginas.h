@@ -27,7 +27,7 @@ typedef struct {
 
 
 void inicializarTablaDePaginas();
-void escribirTablaDePaginas(t_entradaTablaDePaginas*  entrada);
+void escribirTablaDePaginas(int frame, int pid, int pagina);
 int getFrameDisponible();
 int getTablaDePaginasSize();
 int getCantidadFramesDisponibles();

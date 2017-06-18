@@ -8,7 +8,7 @@
 #ifndef FUNCIONHASH_H_
 #define FUNCIONHASH_H_
 
-#include "Memoria.h"
+#include "../Memoria.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,5 +21,6 @@ void inicializarOverflow(int cantidad_de_marcos);
 void agregarSiguienteEnOverflow(int pos_inicial, int nro_frame);
 int buscarEnOverflow(int indice, int pid, int pagina);
 void borrarDeOverflow(int pos_inicial, int frame);
+int esPaginaCorrecta(int pos_candidata, int pid, int pagina);
 
 #endif /* FUNCIONHASH_H_ */

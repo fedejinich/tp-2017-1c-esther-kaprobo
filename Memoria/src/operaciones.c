@@ -31,13 +31,7 @@ void asignarPaginasAProceso(int pid, int paginasRequeridas) {
 		for(i = 1; i <= paginasRequeridas; i++) {
 			int frameDisponible = getFrameDisponible();
 
-			t_entradaTablaDePaginas* entrada = malloc(sizeof(t_entradaTablaDePaginas));
-			entrada->frame = frameDisponible;
-			entrada->pid = pid;
-			entrada->pagina = i;
-
-			escribirTablaDePaginas(entrada);
-			free(entrada);
+			escribirTablaDePaginas(frameDisponible, pid, i);
 		}
 
 		enviar(socketKernel, ASIGNAR_PAGINAS_OK, sizeof(int), paginasRequeridas);

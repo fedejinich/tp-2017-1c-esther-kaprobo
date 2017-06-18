@@ -15,7 +15,7 @@
 #include "funcionesAuxiliares/funcionesAuxiliares.h"
 #include "tablaDePaginas.h"
 #include "operaciones.h"
-#include "funcionHash.h"
+#include "funcionHash/funcionHash.h"
 
 
 /*
@@ -60,6 +60,8 @@ void cargarConfiguracion();
 //Funciones
 void iniciarSeniales();
 void iniciarHilos();
+
+void testFuncionHash();
 
 
 

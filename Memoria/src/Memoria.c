@@ -25,7 +25,8 @@ int main(int argc, char **argv){
 	grandMalloc();
 	inicializarTablaDePaginas();
 	inicializarFramePointer();
-	iniciarHilos();
+	//iniciarHilos();
+	testFuncionHash();
 
 	return EXIT_SUCCESS;
 }
@@ -88,3 +89,26 @@ void iniciarHilos() {
 	pthread_join(consolaMemoria, NULL);
 }
 
+void testFuncionHash() {
+	CANTIDAD_DE_MARCOS = 10;
+	inicializarOverflow(CANTIDAD_DE_MARCOS);
+
+
+	int pid=5;
+	int pagina=5;
+
+	/* Obtengo el numero de frame candidato con la función hash. */
+	int posicion_candidata = calcularPosicion(pid,pagina);
+
+	int posOk = (posicion_candidata == 5);
+	printf("Posicion candidata ok? %i\n", posOk);
+
+
+	int i;
+	for(i = 0; i < CANTIDAD_DE_MARCOS; i++) {
+		list_destroy(overflow[i]);
+	}
+	free(overflow);
+
+
+}
