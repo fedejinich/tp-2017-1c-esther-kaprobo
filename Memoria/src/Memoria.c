@@ -25,8 +25,9 @@ int main(int argc, char **argv){
 	grandMalloc();
 	inicializarTablaDePaginas();
 	inicializarFramePointer();
-	//iniciarHilos();
-	testFuncionHash();
+	iniciarHilos();
+
+	//testFuncionHashObtengoPosicionCandidataOk();
 
 	return EXIT_SUCCESS;
 }
@@ -89,10 +90,10 @@ void iniciarHilos() {
 	pthread_join(consolaMemoria, NULL);
 }
 
-void testFuncionHash() {
+void testFuncionHashObtengoPosicionCandidataOk() {
 	CANTIDAD_DE_MARCOS = 10;
 	inicializarOverflow(CANTIDAD_DE_MARCOS);
-
+	escribirTablaDePaginas(5, 5, 5);
 
 	int pid=5;
 	int pagina=5;
@@ -103,12 +104,13 @@ void testFuncionHash() {
 	int posOk = (posicion_candidata == 5);
 	printf("Posicion candidata ok? %i\n", posOk);
 
+	int posCandidataPerf = esPaginaCorrecta(posicion_candidata, 5, 5);
+	printf("Es pagina correcta: %i\n", posCandidataPerf);
 
 	int i;
 	for(i = 0; i < CANTIDAD_DE_MARCOS; i++) {
 		list_destroy(overflow[i]);
 	}
 	free(overflow);
-
-
 }
+

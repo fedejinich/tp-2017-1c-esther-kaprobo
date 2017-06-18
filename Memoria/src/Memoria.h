@@ -61,7 +61,7 @@ void cargarConfiguracion();
 void iniciarSeniales();
 void iniciarHilos();
 
-void testFuncionHash();
+void testFuncionHashObtengoPosicionCandidataOk();
 
 
 
