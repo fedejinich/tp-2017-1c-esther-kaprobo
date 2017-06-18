@@ -201,14 +201,15 @@ void hiloNuevoPrograma(){
 	printf("CONSOLA: Iniciando Handshake\n");
 	bool resultado = realizar_handshake(kernel, 11);
 	if (resultado){
-	printf("Handshake exitoso! Conexion establecida\n");
+		printf("Handshake exitoso! Conexion establecida\n");
+
 
 	}
 	else{
 		printf("Fallo en el handshake, se aborta conexion\n");
 		exit (EXIT_FAILURE);
 		}
-	//kernel = conectarConElKernel(kernel);
+
 
 	//Inicio ejecución estadistica
 	estadisticasPrograma.fechaYHoraInicio = fechaYHora();
@@ -218,12 +219,13 @@ void hiloNuevoPrograma(){
 	pthread_mutex_lock(&mutexConexion);
 
 	enviar(kernel, 101, strlen(script),scriptParaEnviar);
-
 	newPid = recibir(kernel);
 	pid = *(int*)newPid->data;
 	//me guardo el pid y el socket en la matriz para tener referencia siempre
 	matriz[pid]= kernel;
 	matrizHilos[pid] = pthread_self();
+
+
 	printf("Se envío a ejecutar %d PID, en el socket %d \n",pid,kernel);
 
 	pthread_mutex_unlock(&mutexConexion);
@@ -308,6 +310,21 @@ void hiloNuevoPrograma(){
 			close(kernel);
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
+		//Error por multiprogramacion
+		case 108:
+			pthread_mutex_lock(&mutexEjecuta);
+
+			printf("Grado de multiprogramacion maximo\n");
+			/* Se muestran?
+			estadisticasPrograma.fechaYHoraFin = fechaYHora();
+			mostrarEstadisticas(estadisticasPrograma, pid);
+			*/
+			programaFinalizado=0;
+			close(kernel);
+			mostrarMenu();
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+
 
 		case -1:
 			pthread_mutex_lock(&mutexEjecuta);

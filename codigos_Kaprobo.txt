@@ -19,4 +19,6 @@
 		104: imprimir
 		105: Programa abortado por espacio en Memoria
 		106: Programa abortado por Kernel
+		107_ PID ENVIADO DE KERNEL A CONSOLA
+		108: Programa abortado por grado de Multiprogramacion
 	

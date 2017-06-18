@@ -10,7 +10,6 @@
 #include <semaphore.h>
 #include <linux/inotify.h>
 #include <event.h>
-
 #include <commons/collections/node.h>
 #include <commons/collections/queue.h>
 #include <commons/collections/list.h>
@@ -18,6 +17,7 @@
 #include <signal.h>
 
 
+//DEFINE
 
 #define MAX_CLIENTES 3
 #define TAMANIODEPAGINA 256 //ESTE DATO LO TRAE DE MEMORIA
@@ -31,7 +31,7 @@
 #define ListaExec 2
 #define ListaExit 3
 
-int cantidadDeProgramas;
+//ESTRUCTURAS
 
 typedef struct __attribute__((packed))t_pcb{
 	int pid;
@@ -47,16 +47,21 @@ typedef struct __attribute__((packed))t_proceso{
 	un_socket socketCPU;
 }t_proceso;
 
+
+//VARIABLES
+
+//Globales
+
+//PID dando vueltas
+int cantidadDeProgramas  = 0;
+//Numero pid a asignar a cada programa, no confundir
+
+int pidcounter = 0;
 //Logger
 t_log* logger;
 
-/*
- *
- * CONFIGURACION
- *
- * */
+//CONFIGURACION
 
-//VARIABLES
 int puerto_prog;
 int puerto_cpu;
 char* ip_memoria;
@@ -72,15 +77,39 @@ int sem_inits[3];
 char* shared_vars[2];
 int stack_size;
 
+//Propias Configuracion KERNEL
+int TAMPAG;
 
 //HILO NOTIFY
 
 pthread_t hiloNotify;
-//Propias Configuracion KERNEL
-int TAMPAG;
+pthread_t hiloEjecuta;
 
 //SEMAFOROS
+sem_t sem_new;
+sem_t sem_ready;
+sem_t sem_cpu;
+
 pthread_mutex_t mutex_config;
+
+pthread_mutex_t mutex_new, mutex_ready, mutex_exec;
+
+
+
+//COLAS
+
+t_queue * cola_new;
+t_queue * cola_exit;
+
+t_queue * cola_exec;
+t_queue * cola_ready;
+t_queue * cola_block;
+
+t_queue** colas_ios;
+
+t_queue** colas_semaforos;
+
+t_queue * cola_CPU_libres;
 
 //FUNCIONES
 void inicializar();
@@ -88,6 +117,9 @@ void cargarConfiguracion();
 void mostrarConfiguracion();
 void verNotify();
 void borrarArchivos();
+void hiloEjecutador();
+void mandarAEjecutar(t_proceso* proceso, int socket);
+int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso);
 
 /*
  *
@@ -103,7 +135,6 @@ fd_set fds_activos; //Almacena los sockets a ser monitoreados por el select
 un_socket socketCliente[MAX_CLIENTES];
 un_socket socketMasGrande;
 int numeroClientes = 0;
-t_paquete* paqueteRecibido;
 un_socket memoria;
 
 typedef struct {
@@ -119,10 +150,13 @@ void compactaClaves(int *tabla, int *n);
 int dameSocketMasGrande (int *tabla, int n);
 void prepararSocketsServidores();
 void verSiHayNuevosClientes();
-void nuevoCliente (int servidor, int *clientes, int *nClientes);
+int nuevoClienteConsola (int servidor, int *clientes, int *nClientes);
 void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo);
 int pedirPaginasParaProceso(int pid);
 un_socket conectarConLaMemoria();
+void * nalloc(int tamanio);
+t_proceso* crearPrograma(int socket);
+void nuevoProgramaAnsisop(t_paquete* paquete, un_socket socket);
 
 /*
  *

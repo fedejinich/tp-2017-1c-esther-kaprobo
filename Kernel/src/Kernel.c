@@ -13,7 +13,10 @@
 
 int main(int argc, char **argv) {
 	pthread_create(&hiloNotify, NULL, verNotify, NULL);
+	pthread_create(&hiloEjecuta, NULL, hiloEjecutador, NULL);
+
 	borrarArchivos();
+
 	inicializar();
 
 	while(1){
@@ -29,8 +32,15 @@ void borrarArchivos(){
 }
 
 void inicializar(){
-	cantidadDeProgramas = 0;
+
+	//Semaforos
 	pthread_mutex_init(&mutex_config, NULL);
+	pthread_mutex_init(&mutex_new,NULL);
+	pthread_mutex_init(&mutex_ready,NULL);
+
+	sem_init(&sem_new,0,0);
+	sem_init(&sem_ready,0,0);
+	sem_init(&sem_cpu,0,0);
 
 	/*
 	list_create(colaNew);
@@ -41,14 +51,25 @@ void inicializar(){
 	//Crear Log
 	logger = log_create("kernel.log","Kernel",0,LOG_LEVEL_INFO);
 
+	//Configuracion
 	cargarConfiguracion();
 	mostrarConfiguracion();
 
+	//Sockets
 
 	//fileSystem = conectarConFileSystem();
 	//memoria = conectarConLaMemoria();
-
 	prepararSocketsServidores();
+
+	//Colas
+	cola_new = queue_create();
+	cola_exec = queue_create();
+	cola_ready = queue_create();
+
+	cola_block = queue_create();
+	cola_exit = queue_create();
+	cola_CPU_libres = queue_create();
+
 
 
 
@@ -138,6 +159,7 @@ void manejarSockets(){
 
 	/* Se comprueba si algún cliente ya conectado ha enviado algo */
 	for (i=0; i<numeroClientes; i++){
+		t_paquete* paqueteRecibido;
 		log_info(logger, "Verificando cliente %d", i+1);
 		if(FD_ISSET(socketCliente[i],&fds_activos)){
 			paqueteRecibido = recibir(socketCliente[i]);
@@ -164,7 +186,8 @@ void verSiHayNuevosClientes(){
 	}
 	if(FD_ISSET (socketConsola, &fds_activos)){
 		log_info(logger, "Nuevo pedido de conexion Consola");
-		nuevoClienteConsola(socketConsola, socketCliente, &numeroClientes);
+		int res = nuevoClienteConsola(socketConsola, socketCliente, &numeroClientes);
+		//Ver que pasa si no puede conectar
 	}
 }
 
@@ -202,10 +225,12 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 	return;
 }
 
-void nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
+int nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 {
+	int resultado;
 	/* Acepta la conexión con el cliente, guardándola en el array */
 	clientes[*nClientes] = aceptar_conexion(servidor);
+
 	(*nClientes)++;
 
 	/* Si se ha superado el maximo de clientes, se cierra la conexión,
@@ -214,19 +239,25 @@ void nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 	if ((*nClientes) > MAX_CLIENTES) {
 		close (clientes[(*nClientes) -1]);
 		(*nClientes)--;
-		return;
+		resultado = 0 ;
 	}
 
 	bool resultado_Consola = esperar_handshake(clientes[*nClientes - 1], 11);
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
+
+	//VER ESTO, que pasa si falla HANDSHAKE, que debo informar a Consola?
 	if(resultado_Consola){
+		//Cuando acepta el cliente, ya voy a crear la estructura del programa y le envío el PID
 		log_info(logger, "Handshake OK, pedido de conexion cliente %d aceptado", *nClientes);
+		resultado = 1;
+
 	}
 	else{
 		log_error(logger, "Handshake fallo, pedido de conexion cliente %d rechazado", *nClientes);
+		resultado = 0;
 	}
 
-	return;
+	return resultado;
 }
 
 
@@ -235,7 +266,7 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 	switch(paqueteRecibido->codigo_operacion){
 		//Codigo 101: Crear Script Ansisop
 		case 101:
-			crearProcesoAnsisop(socketActivo);
+			nuevoProgramaAnsisop(socketActivo,paqueteRecibido );
 			break;
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
 			finalizarProcesoCPU(paqueteRecibido, socketActivo);
@@ -246,7 +277,78 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 }
 
 
+void nuevoProgramaAnsisop(t_paquete* paquete, un_socket socket){
+	int exito;
+	t_proceso* proceso;
+	t_proceso* procesoin;
+	proceso = crearPrograma(socket);
 
+	log_info(logger, "KERNEL: Creando proceso %d", proceso->pcb->pid);
+
+
+	//ENVIO PID A CONSOLA
+	enviar(socket,107, sizeof(int), proceso->pcb->pid);
+	//envio cola NEW
+	pthread_mutex_lock(&mutex_new);
+	queue_push(cola_new,proceso);
+	sem_post(&sem_new); // capaz que no es necesario, para que saque siempre 1, y no haga lio
+	pthread_mutex_unlock(&mutex_new);
+
+	if(cantidadDeProgramas > grado_multiprog){
+		//No puedo pasar a Ready, aviso a Consola
+		enviar(socket,108, sizeof(int), NULL );
+		//Lo tendria que sacar de NEW para no hacer cagada
+	}
+
+	//Envio todos los datos a Memoria y espero respuesta
+	exito = enviarCodigoAMemoria(paquete->data, paquete->tamanio, proceso);
+
+	if(exito ==1){
+	//Hay espacio asignado
+		cantidadDeProgramas++; //sumo un pid mas en ejecucion
+
+		//SACO DE NEW Y MANDO A READY
+		sem_wait(&sem_new);
+		pthread_mutex_lock(&mutex_new);
+		procesoin = queue_pop(cola_new);
+		pthread_mutex_unlock(&mutex_new);
+
+		log_info(logger, "NUCLEO: saco proceso %d de NEW mando a READY", procesoin->pcb->pid);
+
+		pthread_mutex_lock(&mutex_ready);
+		queue_push(cola_ready,procesoin);
+		pthread_mutex_unlock(&mutex_ready);
+		sem_post(&sem_ready);
+
+
+	}
+	else{
+		log_info(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
+		//ENVIO A CONSOLA ERROR POR MEMORIA
+		enviar(socket, 105, sizeof(int), NULL);
+
+	}
+
+
+
+
+
+
+	liberar_paquete(paquete);
+}
+t_proceso* crearPrograma(int socketC){
+	t_proceso* procesoNuevo;
+	t_pcb * pcb;
+	pcb = nalloc(sizeof(t_pcb));
+	procesoNuevo = nalloc(sizeof(t_proceso));
+	procesoNuevo->pcb = pcb;
+	procesoNuevo->pcb->pid = pidcounter;
+	procesoNuevo->socketConsola = socketC;
+	pidcounter ++;
+	return procesoNuevo;
+}
+
+/*
 void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
 	log_info(logger, "Creando nuevo proceso Ansisop");
 
@@ -286,7 +388,7 @@ void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
 	}
 
 }
-
+*/
 void finalizarProcesoCPU(t_paquete* paquete, un_socket socketCPU){
 	//Desarmar paquete para ver codigo de finalizacion
 	int pid = 0; //CAMBIAR POR PID DEL PAQUETE
@@ -311,6 +413,7 @@ void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode, int listaDonde
 	enviar(procesoAFinalizar->socketConsola, codigoDeFinalizacion, sizeof(int), NULL);
 }
 
+/*
 int pedirPaginasParaProceso(int pid){
 	//Calculo paginas de memoria que necesito pedir de memoria para este script
 	int paginasAPedir = ceil(paqueteRecibido->tamanio/TAMANIODEPAGINA);
@@ -330,6 +433,7 @@ int pedirPaginasParaProceso(int pid){
 
 	return respuestaAPedidoDePaginas->data;
 }
+*/
 /*
 void intentarMandarProcesoACPU(int pid){
 	//SI HAY CPUS DISPONIBLES, Y TENGO ALGUN PROCESO EN LA COLA DE READY, MANDO UN PROCESO A CPU
@@ -538,7 +642,53 @@ void verNotify(){
 		offset += sizeof (struct inotify_event) + event->len;
 		}
 	}
+}
 
+void * nalloc(int tamanio){
+	int i;void * retorno = malloc(tamanio);
+	for(i=0;i<tamanio;i++) ((char*)retorno)[i]=0;
+	return retorno;
+}
+
+int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso){
+	return 1;
+}
+
+void hiloEjecutador(){
+	printf("hilo Ejecutador\n");
+	t_proceso*proceso;
+	int socketCPULibre;
+
+	while(1){
+		sem_wait(&sem_ready);//El signal lo tengo cuando envio de New a Ready
+		sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
+
+		pthread_mutex_lock(&mutex_config); //Como envio despues datos para ejecutar, necesito mutex
+		socketCPULibre = (int)queue_pop(cola_CPU_libres);
+		pthread_mutex_lock(&mutex_ready);
+		proceso = queue_pop(cola_ready);
+		pthread_mutex_unlock(&cola_ready);
+
+		log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
+
+		mandarAEjecutar(proceso, socketCPULibre);
+		pthread_mutex_unlock(&mutex_config);
+
+	}
+}
+
+void mandarAEjecutar(t_proceso* proceso, int socket){
+	//Serializar PCB
+
+	proceso->socketCPU = socket;
+
+	pthread_mutex_lock(&mutex_exec);
+	queue_push(cola_exec, proceso);
+	pthread_mutex_unlock(&mutex_exec);
+
+	//preparar datos de Kernel
+	//enviar primero datos
+	//enviar paquete serializado
 
 
 
