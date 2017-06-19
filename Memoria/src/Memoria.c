@@ -25,6 +25,7 @@ int main(int argc, char **argv){
 	grandMalloc();
 	inicializarTablaDePaginas();
 	inicializarFramePointer();
+	inicializarCache();
 	iniciarHilos();
 
 	//testFuncionHashObtengoPosicionCandidataOk();
@@ -89,6 +90,8 @@ void iniciarHilos() {
 	pthread_join(servidorConexionesKernel, NULL);
 	pthread_join(consolaMemoria, NULL);
 }
+
+
 
 void testFuncionHashObtengoPosicionCandidataOk() {
 	CANTIDAD_DE_MARCOS = 10;

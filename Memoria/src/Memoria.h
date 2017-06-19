@@ -16,6 +16,7 @@
 #include "tablaDePaginas.h"
 #include "operaciones.h"
 #include "funcionHash/funcionHash.h"
+#include "cache.h"
 
 
 /*
