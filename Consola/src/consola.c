@@ -220,11 +220,15 @@ void hiloNuevoPrograma(){
 
 	enviar(kernel, 101, strlen(script),scriptParaEnviar);
 	newPid = recibir(kernel);
-	pid = *(int*)newPid->data;
-	//me guardo el pid y el socket en la matriz para tener referencia siempre
-	matriz[pid]= kernel;
-	matrizHilos[pid] = pthread_self();
-
+	if(newPid->codigo_operacion == 107){
+		printf("OK PID\n");
+		pid = *(int*)newPid->data;
+		//me guardo el pid y el socket en la matriz para tener referencia siempre
+		matriz[pid]= kernel;
+		matrizHilos[pid] = pthread_self();
+	}
+	else
+		printf("fallo envio pid\n");
 
 	printf("Se envío a ejecutar %d PID, en el socket %d \n",pid,kernel);
 
@@ -246,13 +250,11 @@ void hiloNuevoPrograma(){
 			estadisticasPrograma.fechaYHoraFin = fechaYHora();
 			pthread_mutex_lock(&mutexEjecuta);
 
-			printf("\nFINALIZO EL PID %d \n",pid);
+			printf("\nFINALIZO EL PID %d \n",*(int*)paquete->data);
 			mostrarEstadisticas(estadisticasPrograma, pid);
 			programaFinalizado=0;
 			close(kernel);
 			matriz[pid]=0;
-
-
 			mostrarMenu();
 			pthread_mutex_unlock(&mutexEjecuta);
 			pthread_exit(PTHREAD_CANCELED);

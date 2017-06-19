@@ -43,8 +43,8 @@ typedef struct __attribute__((packed))t_pcb{
 
 typedef struct __attribute__((packed))t_proceso{
 	t_pcb* pcb;
-	un_socket socketConsola;
-	un_socket socketCPU;
+	int socketConsola;
+	int socketCPU;
 }t_proceso;
 
 
@@ -156,7 +156,8 @@ int pedirPaginasParaProceso(int pid);
 un_socket conectarConLaMemoria();
 void * nalloc(int tamanio);
 t_proceso* crearPrograma(int socket);
-void nuevoProgramaAnsisop(t_paquete* paquete, un_socket socket);
+
+void nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
 
 /*
  *

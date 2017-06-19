@@ -124,7 +124,7 @@ void prepararSocketsServidores(){
 	listen(socketCPU,1);
 	socketConsola = socket_escucha("127.0.0.1",puerto_prog);
 	listen(socketConsola,1);
-	printf("Estoy Escuchando\n");
+
 	log_info(logger, "Sockets escuchando");
 }
 
@@ -277,7 +277,8 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 }
 
 
-void nuevoProgramaAnsisop(t_paquete* paquete, un_socket socket){
+void nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
+
 	int exito;
 	t_proceso* proceso;
 	t_proceso* procesoin;
@@ -285,22 +286,26 @@ void nuevoProgramaAnsisop(t_paquete* paquete, un_socket socket){
 
 	log_info(logger, "KERNEL: Creando proceso %d", proceso->pcb->pid);
 
-
 	//ENVIO PID A CONSOLA
-	enviar(socket,107, sizeof(int), proceso->pcb->pid);
+	enviar(proceso->socketConsola,107, sizeof(int), &proceso->pcb->pid);
 	//envio cola NEW
+
 	pthread_mutex_lock(&mutex_new);
+
 	queue_push(cola_new,proceso);
+
 	sem_post(&sem_new); // capaz que no es necesario, para que saque siempre 1, y no haga lio
 	pthread_mutex_unlock(&mutex_new);
 
 	if(cantidadDeProgramas > grado_multiprog){
 		//No puedo pasar a Ready, aviso a Consola
 		enviar(socket,108, sizeof(int), NULL );
+
 		//Lo tendria que sacar de NEW para no hacer cagada
 	}
 
 	//Envio todos los datos a Memoria y espero respuesta
+
 	exito = enviarCodigoAMemoria(paquete->data, paquete->tamanio, proceso);
 
 	if(exito ==1){
@@ -318,7 +323,9 @@ void nuevoProgramaAnsisop(t_paquete* paquete, un_socket socket){
 		pthread_mutex_lock(&mutex_ready);
 		queue_push(cola_ready,procesoin);
 		pthread_mutex_unlock(&mutex_ready);
+
 		sem_post(&sem_ready);
+
 
 
 	}
@@ -329,13 +336,10 @@ void nuevoProgramaAnsisop(t_paquete* paquete, un_socket socket){
 
 	}
 
-
-
-
-
-
 	liberar_paquete(paquete);
 }
+
+
 t_proceso* crearPrograma(int socketC){
 	t_proceso* procesoNuevo;
 	t_pcb * pcb;
@@ -614,7 +618,7 @@ void compactaClaves (int *tabla, int *n) {
 
 
 void verNotify(){
-	printf("HILO NOTIFY\n");
+	//printf("HILO NOTIFY\n");
 	int file_descriptor = inotify_init();
 	if(file_descriptor < 0) perror("inotify_init");
 	int watch_descriptor = inotify_add_watch(file_descriptor, CONFIG_PATH, IN_MODIFY);
@@ -651,28 +655,43 @@ void * nalloc(int tamanio){
 }
 
 int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso){
-	return 1;
+	int salida;
+	salida = 1;
+	return salida;
 }
 
 void hiloEjecutador(){
-	printf("hilo Ejecutador\n");
-	t_proceso*proceso;
+	//printf("hilo Ejecutador\n");
+	t_proceso* proceso;
 	int socketCPULibre;
 
 	while(1){
+		//printf("antes semaforo ready\n");
 		sem_wait(&sem_ready);//El signal lo tengo cuando envio de New a Ready
-		sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
-
+		//sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
+		//printf("dentro while ejecuta\n");
 		pthread_mutex_lock(&mutex_config); //Como envio despues datos para ejecutar, necesito mutex
-		socketCPULibre = (int)queue_pop(cola_CPU_libres);
+		//socketCPULibre = (int)queue_pop(cola_CPU_libres);
 		pthread_mutex_lock(&mutex_ready);
 		proceso = queue_pop(cola_ready);
-		pthread_mutex_unlock(&cola_ready);
+		pthread_mutex_unlock(&mutex_ready);
 
 		log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
 
 		mandarAEjecutar(proceso, socketCPULibre);
+
+
+		//SIMULACION DE EJECUCION PARA PRUEBAS!!!
+
+		printf("Estaria EJECUTANDO\n");
+		sleep(4);
+		printf("Termine de ejecutar\n");
+
+		//Pruebo envio codigo 102 programa finalizado
+		enviar(proceso->socketConsola,102, sizeof(int), &proceso->pcb->pid);
+		//dejar MUTEX
 		pthread_mutex_unlock(&mutex_config);
+
 
 	}
 }
