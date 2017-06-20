@@ -19,6 +19,30 @@
 
 //Estructuras
 
+
+typedef enum {
+	HandshakeConsolaKernel = 11,
+	HandshakeCPUKernel = 12,
+	HandshakeMemoriaKernel = 13,
+	HandshakeFileSystemKernel = 14,
+	EnvioFinalizacionAConsola = 102,
+	EnvioErrorAConsola = 105,
+	EnvioPIDAConsola = 107
+}Kernel;
+
+typedef enum {
+	FaltaDeMemoria = -1,
+	ArchvioInexistente = -2,
+	IntentoDeLecturaSinPermisos = -3,
+	IntentoDeEscrituraSinPermisos = -4,
+	ExcepcionDeMemoria = -5,
+	DesconexionDeConsola = -6,
+	FinalizacionPorConsolaDeKernel = -7,
+	IntentoDeReservaDeMemoriaErroneo = -8,
+	NoSePuedenAsignarMasPaginas = -9,
+	ErrorSinDefinicion = -20
+}ExitCodes;
+
 typedef struct {
 	int codigo_operacion;
 	int tamanio;

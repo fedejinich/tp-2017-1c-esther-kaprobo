@@ -18,24 +18,21 @@
 
 
 //DEFINE
-
 #define MAX_CLIENTES 3
 #define TAMANIODEPAGINA 256 //ESTE DATO LO TRAE DE MEMORIA
 #define CONFIG_KERNEL_SOLO "kernel.config"
 #define CONFIG_KERNEL "../configuracion/kernel.config"
 #define CONFIG_PATH "../configuracion/"
 
-#define ListaNull -1
-#define ListaNew 0
-#define ListaReady 1
-#define ListaExec 2
-#define ListaExit 3
 
-//ESTRUCTURAS
-
+/*
+ *
+ * ESTRUCTURAS
+ *
+ * */
 typedef struct __attribute__((packed))t_pcb{
 	int pid;
-	int pageCounter;
+	int programCounter;
 	//Falta referencia a tabla
 	int stackPosition;
 	int exitCode;
@@ -54,13 +51,18 @@ typedef struct __attribute__((packed))t_proceso{
 
 //PID dando vueltas
 int cantidadDeProgramas  = 0;
-//Numero pid a asignar a cada programa, no confundir
 
+//Numero pid a asignar a cada programa, no confundir
 int pidcounter = 0;
+
 //Logger
 t_log* logger;
 
-//CONFIGURACION
+/*
+ *
+ * CONFIGURACION
+ *
+ * */
 
 int puerto_prog;
 int puerto_cpu;
@@ -70,7 +72,7 @@ char* ip_fs;
 int puerto_fs;
 int quantum;
 int quantum_sleep;
-char* algoritmo;
+int algoritmo;
 int grado_multiprog;
 char* sem_ids[3];
 int sem_inits[3];
@@ -89,10 +91,11 @@ pthread_t hiloEjecuta;
 sem_t sem_new;
 sem_t sem_ready;
 sem_t sem_cpu;
+sem_t sem_exit;
 
 pthread_mutex_t mutex_config;
 
-pthread_mutex_t mutex_new, mutex_ready, mutex_exec;
+pthread_mutex_t mutex_new, mutex_ready, mutex_exec, mutex_exit;
 
 
 
@@ -143,8 +146,6 @@ typedef struct {
 } t_pedidoDePaginasKernel; //DESPUES HAY QUE HACER UN FIX DE ESTO Y DEFINIR ESTE STRUCT SOLO EN ESTRUCTURAS.H
 //PERO AHORA EL PUTO DE C NO C PORQUE NO ME ETA DEJANDO
 
-//struct timeval timeout;
-
 //FUNCIONES
 void compactaClaves(int *tabla, int *n);
 int dameSocketMasGrande (int *tabla, int n);
@@ -159,19 +160,6 @@ t_proceso* crearPrograma(int socket);
 
 void nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
 
-/*
- *
- * COLAS
- *
-
-t_list* colaNew;
-
-t_list* colaReady;
-
-t_list* colaExec;
-
-t_list* colaExit;
-*/
 /*
  *
  * CPU
