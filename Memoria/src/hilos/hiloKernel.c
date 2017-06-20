@@ -25,6 +25,10 @@ void* hiloServidorKernel(void* arg) {
 			log_info(logger,"Handshake fallo, se aborta conexion");
 			exit (EXIT_FAILURE);
 		}
+
+		enviar(socketKernel, TAMANIO_PAGINA, sizeof(int), frame_size);
+
+
 		socketClienteTemp = malloc(sizeof(int));
 		*socketClienteTemp = socketCliente;
 		pthread_t conexionKernel;

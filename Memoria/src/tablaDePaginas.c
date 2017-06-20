@@ -51,6 +51,64 @@ t_entradaTablaDePaginas* getEntradaTablaDePaginas(int index) {
 	return &tablaDePaginas[index];
 }
 
+void escribirTablaDePaginasHash(int pid, int pagina) {
+	int posiblePosicion = calcularPosicion(pid, pagina);
+	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(posiblePosicion);
+	if(entrada->pid != -1) {
+		entrada->pid = pid;
+		entrada->pagina = pagina;
+	}
+	else {
+		int i;
+		for(i = posiblePosicion; i <= tablaDePaginasSize(); i++) {
+			t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+			if(entrada->pid != -1) {
+				entrada->pid = pid;
+				entrada->pagina = pagina;
+			}
+		}
+	}
+	int j;
+	for(j = posiblePosicion; j >= 0; j--) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(j);
+		if(entrada->pid != -1) {
+			entrada->pid = pid;
+			entrada->pagina = pagina;
+		}
+	}
+
+};
+
+t_entradaTablaDePaginas* getEntradaTablaDePaginasHash(int pid, int pagina) {
+	int posiblePosicion = calcularPosicion(pid, pagina);
+	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(posiblePosicion);
+	if(entrada->pid == pid && entrada->pagina == pagina) {
+		log_info(logger, "Se encontro la entrada a la tabla de paginas para el PID: %i , Pagina: %i", pid, pagina);
+		return entrada;
+	}
+	else {
+		int i;
+		for(i = posiblePosicion; i <= tablaDePaginasSize(); i++) {
+			t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+			if(entrada->pid == pid && entrada->pagina == pagina) {
+				log_info(logger, "Se encontro la entrada a la tabla de paginas para el PID: %i , Pagina: %i", pid, pagina);
+				return entrada;
+			}
+		}
+	}
+	int j;
+	for(j = posiblePosicion; j >= 0; j--) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(j);
+		if(entrada->pid == pid && entrada->pagina == pagina) {
+			log_info(logger, "Se encontro la entrada a la tabla de paginas para el PID: %i , Pagina: %i", pid, pagina);
+			return entrada;
+		}
+	}
+
+	log_error(logger, "No se encontro la entrada a la tabla de paginas para el PID: %i, Pagina: %i", pid, pagina);
+	return EXIT_FAILURE;
+}
+
 bool paginasDisponibles(int paginasRequeridas) {
 	int i;
 	for(i = 1; i <= paginasRequeridas; i++) {

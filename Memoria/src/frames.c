@@ -55,9 +55,7 @@ int getFirstFrame() {
 
 void leerFrame(int frame, int offset, int tamanio, void * contenido) {
 	//aca funcion de hash
-	memcpy(&contenido, framePointer[frame] + offset, tamanio);
-
-
+	memcpy(&contenido, &framePointer[frame] + offset, tamanio); //no se si funk bien
 }
 
 

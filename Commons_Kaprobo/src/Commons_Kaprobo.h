@@ -131,6 +131,8 @@ bool esperar_handshake(un_socket socket_del_cliente, int codigo);
 //CODIGOS DE OPERACION MEMORIA-KERNEL
 
 typedef enum {
+	TAMANIO_PAGINA,
+
 	INICIALIZAR_PROCESO,
 	INICIALIZAR_PROCESO_OK,
 	INICIALIZAR_PROCESO_FALLO,

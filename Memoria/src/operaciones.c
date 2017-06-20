@@ -36,7 +36,23 @@ void inicializarProceso(int pid, int paginasRequeridas) {
 void finalizarProceso(int pid) {
 	//KERNEL PIDE FINALIZAR UN PROCESO
 	retardo();
+	log_info(logger, "Finalizando PID: %i...", pid);
 
+	log_info(logger, "Finalizando PID: %i de cache...", pid);
+	liberarProcesoDeCache(pid);
+
+	log_info(logger, "Finalizando PID: %i de memoria principal", pid);
+	int i;
+	for(i = 0; i <= tablaDePaginasSize(); i++) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		if(entrada->pid == pid) {
+			log_info(logger, "Eliminando entrada %i de la tabla de paginas del PID: %i", i, pid);
+			entrada->pid = -1;
+			entrada->pagina = 0;
+		}
+	}
+
+	log_info(logger, "PID %i finalizado", pid);
 }
 
 void asignarPaginasAProceso(int pid, int paginasRequeridas) {
@@ -64,6 +80,8 @@ void asignarPaginasAProceso(int pid, int paginasRequeridas) {
 void solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 	//PEDIDO DE LECTURA POR PARTE DE CPU
 	retardo();
+
+	//leer
 
 }
 
