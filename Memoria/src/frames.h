@@ -21,6 +21,7 @@ t_frame* memoria;
 t_frame* framePointer;
 
 void escribirFrame(int frame, int offset, int tamanio, void * contenido);
+void leerFrame(int frame, int offset, int tamanio, void * contenido);
 void liberarFrame(int frame);
 int getFirstFrame();
 void inicializarFramePointer();

@@ -12,7 +12,7 @@ void escribirFrame(int frame, int offset, int tamanio, void * contenido) {
 
 	//Es el desplazamiento dentro del bloque de memoria principal para luego conseguir el frame en el cual voy a escribir
 	//int desplazamiento = frame * frame_size;
-	sleep(retardo_memoria); //retardo de memoria
+	//sleep(retardo_memoria); //retardo de memoria
 
 	memcpy(&framePointer[frame] + offset, contenido, tamanio);
 
@@ -51,6 +51,13 @@ int getFirstFrame() {
 		index = ((int) (getParteEntera(t)));
 
 	return index;
+}
+
+void leerFrame(int frame, int offset, int tamanio, void * contenido) {
+	//aca funcion de hash
+	memcpy(&contenido, framePointer[frame] + offset, tamanio);
+
+
 }
 
 
