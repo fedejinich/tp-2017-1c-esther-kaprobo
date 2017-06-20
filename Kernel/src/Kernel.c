@@ -60,7 +60,7 @@ void inicializar(){
 	//Sockets
 
 	//fileSystem = conectarConFileSystem();
-	//memoria = conectarConLaMemoria();
+	memoria = conectarConLaMemoria();
 	prepararSocketsServidores();
 
 	//Colas
@@ -323,9 +323,9 @@ void nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 	//Envio todos los datos a Memoria y espero respuesta
 
-	exito = enviarCodigoAMemoria(paquete->data, paquete->tamanio, proceso);
+	exito = enviarCodigoAMemoria(paquete->data, paquete->tamanio, proceso, INICIALIZAR_PROCESO);
 
-	if(exito == 1){
+	if(exito == INICIALIZAR_PROCESO_OK){
 	//Hay espacio asignado
 		cantidadDeProgramas++; //sumo un pid mas en ejecucion
 
@@ -527,8 +527,9 @@ int conectarConLaMemoria(){
 	bool resultado = realizar_handshake(socketMemoria , HandshakeMemoriaKernel);
 	if (resultado){
 		log_info(logger, "MEMORIA: Handshake exitoso! Conexion establecida");
-		paquete = recibir(socketMemoria);
-		TAMPAG = *((int*)paquete->data);
+		//paquete = recibir(socketMemoria);
+		//TAMPAG = *((int*)paquete->data);
+		TAMPAG= 256;
 		log_info(logger, "KERNEL: Tamano pagina de Memoria %d",TAMPAG);
 		pthread_mutex_unlock(&mutex_config);
 		return socketMemoria ;
@@ -638,10 +639,22 @@ void * nalloc(int tamanio){
 	return retorno;
 }
 
-int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso){
-	int salida;
-	salida = 1;
-	return salida;
+int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion){
+	int paginasAPedir = ceil((double)size / (double)TAMPAG);
+	t_pedidoDePaginasKernel* pedidoDePaginas = malloc(sizeof(t_pedidoDePaginasKernel));
+	pedidoDePaginas->pid = proceso->pcb->pid;
+	pedidoDePaginas->paginasAPedir = paginasAPedir;
+
+	//Envio a memoria el pedido de pagina
+	enviar(memoria, codigoOperacion, sizeof(t_pedidoDePaginasKernel),pedidoDePaginas);
+
+	free(pedidoDePaginas);
+
+	//Tengo que esperar a que vuelva la respuesta del pedido. Si esta OK, devuelve la cantidad de paginas, sino devuelve -1
+	t_paquete* respuestaAPedidoDePaginas;
+	respuestaAPedidoDePaginas = recibir(memoria);
+
+	return respuestaAPedidoDePaginas->codigo_operacion;
 }
 
 void hiloEjecutador(){

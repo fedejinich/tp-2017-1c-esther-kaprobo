@@ -16,19 +16,23 @@ void retardo() {
 |KERNEL|
 \******/
 
-void inicializarProceso(int pid, int paginasRequeridas) {
+void inicializarProceso(int* pid, int* paginasRequeridas) {
+
 	//KERNEL ME PIDE INICIALIZAR UN PROCESO
-	retardo();
+	//retardo();
 
 	log_info(logger, "Inicializando proceso: %i", pid);
 	log_info(logger, "Reservando %i paginas para PID: %i...", paginasRequeridas, pid);
 
 	if(paginasDisponibles(paginasRequeridas)) {
+		printf("adentro if paginas disponibles\n");
 		reservarPaginas(pid, paginasRequeridas);
-		enviar(socketKernel, INICIALIZAR_PROCESO_OK, sizeof(int), 1); //EL DATA ESTA AL PEDO PERO BUEN
+		printf("despues de reservar\n");
+		int * basura = 1;
+		enviar(socketClienteKernel, INICIALIZAR_PROCESO_OK, sizeof(int), &basura); //EL DATA ESTA AL PEDO PERO BUEN
 		log_info(logger, "Reservadas %i paginas para PID: %i", paginasRequeridas, pid);
 	} else {
-		enviar(socketKernel, INICIALIZAR_PROCESO_FALLO, sizeof(int), -1); //EL DATA ESTA AL PEDO PERO BUEN
+		enviar(socketClienteKernel, INICIALIZAR_PROCESO_FALLO, sizeof(int), -1); //EL DATA ESTA AL PEDO PERO BUEN
 		log_error(logger, "No se pueden reservar %i paginas para PID: %i", paginasRequeridas, pid);
 	}
 }

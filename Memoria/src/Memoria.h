@@ -48,6 +48,7 @@ pthread_t consolaMemoria;
 //Sockets
 un_socket socketCPU;
 un_socket socketKernel;
+un_socket socketClienteKernel;
 
 /*
  * FUNCIONES

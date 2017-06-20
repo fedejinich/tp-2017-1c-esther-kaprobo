@@ -10,7 +10,7 @@
 
 #include "Memoria.h"
 
-void inicializarProceso(int pid, int paginasRequeridas);
+void inicializarProceso(int* pid, int* paginasRequeridas);
 void solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio);
 void almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer);
 void asignarPaginasAProceso(int pid, int paginasRequeridas);
