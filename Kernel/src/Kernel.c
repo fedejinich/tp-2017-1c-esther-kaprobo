@@ -12,8 +12,6 @@
 
 
 int main(int argc, char **argv) {
-	CACA
-
 	pthread_create(&hiloNotify, NULL, verNotify, NULL);
 	pthread_create(&hiloEjecuta, NULL, hiloEjecutador, NULL);
 

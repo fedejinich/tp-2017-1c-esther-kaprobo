@@ -74,9 +74,9 @@ int quantum;
 int quantum_sleep;
 int algoritmo;
 int grado_multiprog;
-char* sem_ids[3];
-int sem_inits[3];
-char* shared_vars[2];
+char** sem_ids;
+int* sem_inits;
+char** shared_vars;
 int stack_size;
 
 //Propias Configuracion KERNEL
