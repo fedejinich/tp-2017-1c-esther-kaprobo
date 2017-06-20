@@ -26,4 +26,5 @@ bool hayEspacioEnCache(int pid);
 int cantidadDeEntradasPorProceso(int pid);
 void liberarProcesoDeCache(int pid);
 void liberarPaginaDeProcesoDeCache(int pid, int pagina);
+
 #endif /* CACHE_H_ */

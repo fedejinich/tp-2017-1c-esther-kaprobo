@@ -32,7 +32,12 @@ void* hiloServidorCPU(void* arg) {
 }
 
 void* hiloConexionCPU(void* socket) {
+	int pidActual; //para saber que pid esta ejecutando cada hilo
+
+
+
 	while(1) {
+
 		char* buffer = malloc(1000);
 		int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
 		if (bytesRecibidos <= 0) {

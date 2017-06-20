@@ -97,4 +97,12 @@ int getTablaDePaginasSize() {
 	return frames;
 }
 
+void reservarPaginas(int pid, int paginasAReservar) {
+	int i;
+	for(i = 1; i <= paginasAReservar; i++) {
+		int frameDisponible = getFrameDisponible();  //aca va funcion de hash
+		escribirTablaDePaginas(frameDisponible, pid, i);
+	}
+}
+
 

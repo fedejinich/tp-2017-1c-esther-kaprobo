@@ -15,6 +15,17 @@
 
 void inicializarProceso(int pid, int paginasRequeridas) {
 	//KERNEL ME PIDE INICIALIZAR UN PROCESO
+	log_info(logger, "Inicializando proceso: %i", pid);
+	log_info(logger, "Reservando %i paginas para PID: %i...", paginasRequeridas, pid);
+
+	if(paginasDisponibles(paginasRequeridas)) {
+		reservarPaginas(pid, paginasRequeridas);
+		enviar(socketKernel, INICIALIZAR_PROCESO_OK, sizeof(int), 1);
+		log_info(logger, "Reservadas %i paginas para PID: %i", paginasRequeridas, pid);
+	} else {
+		enviar(socketKernel, INICIALIZAR_PROCESO_FALLO, sizeof(int), -1);
+		log_error(logger, "No se pueden reservar %i paginas para PID: %i", paginasRequeridas, pid);
+	}
 }
 
 void finalizarProceso(int pid) {
@@ -27,16 +38,11 @@ void asignarPaginasAProceso(int pid, int paginasRequeridas) {
 	log_info(logger,"Se piden %i paginas para el proceso %i.",paginasRequeridas, pid);
 
 	if(paginasDisponibles(paginasRequeridas)) {
-		int i;
-		for(i = 1; i <= paginasRequeridas; i++) {
-			int frameDisponible = getFrameDisponible();
-
-			escribirTablaDePaginas(frameDisponible, pid, i);
-		}
+		reservarPaginas(pid, paginasRequeridas);
 
 		enviar(socketKernel, ASIGNAR_PAGINAS_OK, sizeof(int), paginasRequeridas);
 
-		log_info(logger,"Se otorgaron %i paginas al proceso %i.", paginasRequeridas, pid);
+		log_info(logger,"Se reservaron %i paginas al proceso %i.", paginasRequeridas, pid);
 	} else {
 		enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), -1); //EL TAMANIO Y DATA ESTAN AL PEDO PERO BUEN
 		log_warning(logger, "El proceso %i no se pudo inicializar.", pid);
