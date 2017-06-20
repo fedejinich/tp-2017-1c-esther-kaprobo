@@ -46,8 +46,41 @@ int main(int argc, char **argv) {
 	kernel = conectarConElKernel();
 	memoria = conectarConMemoria();
 
+	paq_algoritmo = recibir(kernel);
+	if(paq_algoritmo->codigo_operacion  == 201){
+		algoritmo = (int)paq_algoritmo->data;
+		log_info(logger, "Obteniendo algoritmo a utilizar. \n");
+	}
+	liberar_paquete(paq_algoritmo);
+
+
+	while (sigusr1_desactivado){
+		t_paquete* datos_kernel = recibir(kernel);
+		if(algoritmo==1){
+			quantum = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM;
+			quantum_sleep = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM_SLEEP;
+			stack_size = ((t_datos_kernel*)(datos_kernel->data))->STACK_SIZE;
+			log_info(logger, "Cargando datos de Kernel. \n");
+		}
+		liberar_paquete(datos_kernel);
+
+		paquete_recibido = recibir(kernel);
+		pcb = deserializarPCB(paquete_recibido->data);
+		int pid = pcb->pid;
+		liberar_paquete(paquete_recibido);
+		log_info(logger, "Obteniendo PCB. PID %d \n",pid);
+
+		if(algoritmo==0){
+			ejecutarConFIFO();
+		}
+		else{
+			ejecutarConRR(quantum,quantum_sleep,stack_size);
+		}
+	}
+
+
 	//prueboParser();
-	t_paquete* datos_kernel = recibir(kernel);
+	/*t_paquete* datos_kernel = recibir(kernel);
 	algoritmo = ((t_datos_kernel*)(datos_kernel->data))->ALGORITMO;
 
 	//No se que manera ver que algoritmo estamos usando
@@ -58,7 +91,7 @@ int main(int argc, char **argv) {
 	}
 	else{
 		ejecutarConRR(datos_kernel);
-	}
+	}*/
 
 
 	/*
@@ -151,14 +184,16 @@ void sig_handler2(int signo) {
 	return;
 }
 
-void ejecutarConRR(t_paquete* datos_kernel){
-	asignarDatosKernel(datos_kernel);
-	liberar_paquete(datos_kernel);
+void ejecutarConRR(int quantum, int quantum_sleep, int stack_size){
+	int quantum_aux = quantum;
+	//Hay que agregar ademas que el programa no este bloqueado, finalizado, abortado.
+	while(quantum_aux!=0){
 
+	}
 }
 
 void ejecutarConFIFO(){
-
+	//Hay que agregar un while mientras el programa no este bloqueado, finalizado, abortado.
 }
 
 //funcion que conecta CPU con Kernel utilizando sockets
@@ -215,15 +250,6 @@ int conectarConMemoria(){
 		log_info(logger, "Conexion fallida con Memoria. \n");
 		exit (EXIT_FAILURE);
 	}
-}
-
-void asignarDatosKernel(t_paquete * datos_kernel){
-	quantum = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM;
-	// VER // tamanio_pag = ((t_datos_kernel*)(datos_kernel->data))->TAMPAG;
-	quantum_sleep = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM_SLEEP;
-	stack_size = ((t_datos_kernel*)(datos_kernel->data))->STACK_SIZE;
-
-
 }
 
 //Funcion que toma lo que envio el Kernel y lo convierte en el PCB.
