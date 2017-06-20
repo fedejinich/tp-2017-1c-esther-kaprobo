@@ -93,7 +93,7 @@ int getCantidadFramesOcupados() {
 	return frames - getCantidadFramesDisponibles();
 }
 
-int getTablaDePaginasSize() {
+int tablaDePaginasSize() {
 	return frames;
 }
 

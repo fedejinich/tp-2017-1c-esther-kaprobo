@@ -95,10 +95,10 @@ void dumpTabla() {
 	t_log* logDumpTabla = log_create("dumpTabla.log", "Memoria", false, LOG_LEVEL_TRACE);
 
 	log_warning(logger, "Iniciando dump tabla...");
-	log_info(logDumpTabla, "Cantidad de filas: %i", getTablaDePaginasSize());
+	log_info(logDumpTabla, "Cantidad de filas: %i", tablaDePaginasSize());
 
 	int i;
-	for(i = 0; i <= getTablaDePaginasSize(); i++) {
+	for(i = 0; i <= tablaDePaginasSize(); i++) {
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
 		log_info(logDumpTabla, "Frame: %i, PID: %i, Pagina: %i", entrada->frame, entrada->pid, entrada->pagina);
 	}
