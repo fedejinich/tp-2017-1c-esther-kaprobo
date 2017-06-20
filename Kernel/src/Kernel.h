@@ -122,7 +122,7 @@ void verNotify();
 void borrarArchivos();
 void hiloEjecutador();
 void mandarAEjecutar(t_proceso* proceso, int socket);
-int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso);
+int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion);
 
 /*
  *
