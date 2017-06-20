@@ -47,7 +47,8 @@ char* script;
 FILE* archivo;
 char nomArchi[50];
 t_pcb* pcb;
-char* algoritmo;
+int algoritmo;
+t_paquete* paq_algoritmo;
 
 //Variables
 int quantum;

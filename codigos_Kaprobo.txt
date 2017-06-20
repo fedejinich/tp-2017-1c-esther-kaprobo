@@ -21,4 +21,7 @@
 		106: Programa abortado por Kernel
 		107_ PID ENVIADO DE KERNEL A CONSOLA
 		108: Programa abortado por grado de Multiprogramacion
+
+--CPU -> KERNEL
+		201: KERNEL envia valor algoritmo a CPU
 	
