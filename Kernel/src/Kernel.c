@@ -114,8 +114,9 @@ void inicializarSemaforos(){
 }
 
 void inicializarVariablesCompartidas(){
+	int i;
 	int cantidadDeVariablesCompartidas = sizeof(shared_vars) / sizeof(shared_vars[0]);
-	for(int i= 0; i < cantidadDeVariablesCompartidas; i++){
+	for(i = 0; i < cantidadDeVariablesCompartidas; i++){
 		shared_vars[i] = 0;
 	}
 }
@@ -129,7 +130,7 @@ void mostrarConfiguracion(){
 	printf("Puerto File System: %i \n", puerto_fs);
 	printf("Quantum: %i \n", quantum);
 	printf("Quantum Sleep: %i \n", quantum_sleep);
-	printf("Algoritmo: %s \n", algoritmo);
+	printf("Algoritmo: %i \n", algoritmo);
 	printf("Grado Multiprogramacion: %i \n", grado_multiprog);
 
 	//Falta mostrar arrays
@@ -341,9 +342,6 @@ void nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 		pthread_mutex_unlock(&mutex_ready);
 
 		sem_post(&sem_ready);
-
-
-
 	}
 	else{
 		log_info(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
@@ -357,7 +355,6 @@ void nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 		pthread_mutex_unlock(&mutex_new);
 
 		finalizarProceso(procesoin, FaltaDeMemoria);
-
 	}
 
 	liberar_paquete(paquete);
@@ -399,10 +396,10 @@ void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
 	if(grado_multiprog < cantidadDeProgramas){
 		//SI PERMITE, PASA DE NEW A READY
 		//Pido paginas a memoria y memoria me dice si le alcanzan
-		int resultadoPedidoPaginas = pedirPaginasParaProceso(cantidadDeProgramas);
+		bool resultadoPedidoPaginas = pedirPaginasParaProceso(nuevoProcesoAnsisop);
 
 		//Si la memoria devolvio OK, asigno la cantidad de paginas al PCB. Si no devolvió OK, lo finalizo con error por falta de memoria
-		if(resultadoPedidoPaginas > 0){
+		if(resultadoPedidoPaginas){
 			pcb->pageCounter = resultadoPedidoPaginas;
 
 			//pasarProcesoAlista(nuevoProcesoAnsisop->pcb, ListaReady, ListaNew);
@@ -448,16 +445,17 @@ void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode){
 }
 
 /*
-int pedirPaginasParaProceso(int pid){
+bool pedirPaginasParaProceso(t_proceso* proceso){
 	//Calculo paginas de memoria que necesito pedir de memoria para este script
 	int paginasAPedir = ceil(paqueteRecibido->tamanio/TAMANIODEPAGINA);
 
 	t_pedidoDePaginasKernel* pedidoDePaginas = malloc(sizeof(t_pedidoDePaginasKernel));
-	pedidoDePaginas->pid = pid;
+	pedidoDePaginas->pid = proceso->pcb->pid;
 	pedidoDePaginas->paginasAPedir = paginasAPedir;
 
 	//Envio a memoria el pedido de pagina
-	enviar(memoria, 201, sizeof(t_pedidoDePaginasKernel),pedidoDePaginas);//VA ACA EL 201 O EN EL PAQUETE?
+	enviar(memoria, 201, sizeof(t_pedidoDePaginasKernel),pedidoDePaginas);
+	enviar(memoria, CodigoMemoriaKernel.ASIGNARPAGINAS, sizeof(int), paginasAPedir);
 
 	free(pedidoDePaginas);
 
@@ -465,8 +463,14 @@ int pedirPaginasParaProceso(int pid){
 	t_paquete* respuestaAPedidoDePaginas;
 	respuestaAPedidoDePaginas = recibir(memoria);
 
-	return respuestaAPedidoDePaginas->data;
+	if(respuestaAPedidoDePaginas->data == 0){
+		return true;0
+	}
+	else{
+		return false;
+	}
 }
+
 */
 /*
 void intentarMandarProcesoACPU(int pid){
@@ -651,7 +655,7 @@ void hiloEjecutador(){
 		//sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
 		//printf("dentro while ejecuta\n");
 		pthread_mutex_lock(&mutex_config); //Como envio despues datos para ejecutar, necesito mutex
-		//socketCPULibre = (int)queue_pop(cola_CPU_libres);
+		//socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
 		pthread_mutex_lock(&mutex_ready);
 		proceso = queue_pop(cola_ready);
 		pthread_mutex_unlock(&mutex_ready);
