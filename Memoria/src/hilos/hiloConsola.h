@@ -34,7 +34,7 @@ char* sizePIDCommand;
 
 void flush();
 void sizeMemory();
-void retardo(char* comando);
+void retardoUpdate(char* comando);
 void dumpTabla();
 void dumpCache();
 void dumpPID();

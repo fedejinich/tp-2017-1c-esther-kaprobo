@@ -34,5 +34,6 @@ int getCantidadFramesDisponibles();
 int getCantidadFramesOcupados();
 bool paginasDisponibles(int paginasRequeridas);
 t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada);
+void reservarPaginas(int pid, int paginasAReservar);
 
 #endif /* TABLADEPAGINAS_H_ */

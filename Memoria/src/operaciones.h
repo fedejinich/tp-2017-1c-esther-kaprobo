@@ -15,5 +15,6 @@ void solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio);
 void almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer);
 void asignarPaginasAProceso(int pid, int paginasRequeridas);
 void finalizarProceso(int pid);
+void retardo();
 
 #endif /* OPERACIONES_H_ */

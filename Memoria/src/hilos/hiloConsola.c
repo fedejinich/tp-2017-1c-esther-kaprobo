@@ -23,7 +23,7 @@ void* hiloConsolaMemoria() {
 			sizeMemory();
 		else if(string_equals_ignore_case(comando,"retardo"))*/
 		if(esRetardo(comando))
-			retardo(comando);
+			retardoUpdate(comando);
 		else if(esRetardoSolo(comando))
 			log_info(logger,"Retardo de memoria: %i milisegundos.", retardo_memoria);
 		else if(esDumpTabla(comando))
@@ -76,7 +76,7 @@ bool esSizePID(char* comando) {
 	return string_equals_ignore_case(posibleSizePID, sizePIDCommand);
 }
 
-void retardo(char* comando) {
+void retardoUpdate(char* comando) {
 	char* nuevoRetardoString = string_substring(comando, string_length(retardoCommand), string_length(comando));
 	if(isNumber(nuevoRetardoString)) {
 		log_warning(logger, "Cambiando retardo de memoria...");

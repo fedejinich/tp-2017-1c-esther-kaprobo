@@ -53,6 +53,8 @@ void inicializar(){
 
 	//Configuracion
 	cargarConfiguracion();
+	inicializarSemaforos();
+	inicializarVariablesCompartidas();
 	mostrarConfiguracion();
 
 	//Sockets
@@ -69,10 +71,6 @@ void inicializar(){
 	cola_block = queue_create();
 	cola_exit = queue_create();
 	cola_CPU_libres = queue_create();
-
-
-
-
 }
 
 void cargarConfiguracion() {
@@ -91,15 +89,35 @@ void cargarConfiguracion() {
 	puerto_fs = config_get_int_value(config, "PUERTO_FS");
 	quantum = config_get_int_value(config, "QUANTUM");
 	quantum_sleep = config_get_int_value(config, "QUANTUM_SLEEP");
-	algoritmo = config_get_string_value(config, "ALGORITMO");
+
+	char* algor = config_get_string_value(config, "ALGORITMO");
+	if(string_equals_ignore_case(algor, "FIFO")){
+		algoritmo = 0;
+	}
+	else{
+		algoritmo = 1;
+	}
+	free(algor);
+
 	grado_multiprog = config_get_int_value(config, "GRADO_MULTIPROG");
-	//sem_ids = config_get_array_value(config, "SEM_IDS");
-	//sem_inits = config_get_array_value(config, "SEM_INIT");
-	//shared_vars = config_get_array_value(config, "SHARED_VARS");
+	sem_ids = config_get_array_value(config, "SEM_IDS");
+	sem_inits = config_get_array_value(config, "SEM_INIT");
+	shared_vars = config_get_array_value(config, "SHARED_VARS");
 	stack_size = config_get_int_value(config, "STACK_SIZE");
 
 	log_info(logger, "Archivo de configuración cargado");
 	pthread_mutex_unlock(&mutex_config);
+}
+
+void inicializarSemaforos(){
+
+}
+
+void inicializarVariablesCompartidas(){
+	int cantidadDeVariablesCompartidas = sizeof(shared_vars) / sizeof(shared_vars[0]);
+	for(int i= 0; i < cantidadDeVariablesCompartidas; i++){
+		shared_vars[i] = 0;
+	}
 }
 
 void mostrarConfiguracion(){
@@ -206,7 +224,7 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 		return;
 	}
 
-	bool resultado_CPU = esperar_handshake(clientes[*nClientes - 1], 12);
+	bool resultado_CPU = esperar_handshake(clientes[*nClientes - 1], HandshakeCPUKernel);
 
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
 	if(resultado_CPU){
@@ -242,7 +260,7 @@ int nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 		resultado = 0 ;
 	}
 
-	bool resultado_Consola = esperar_handshake(clientes[*nClientes - 1], 11);
+	bool resultado_Consola = esperar_handshake(clientes[*nClientes - 1], HandshakeConsolaKernel);
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
 
 	//VER ESTO, que pasa si falla HANDSHAKE, que debo informar a Consola?
@@ -264,9 +282,8 @@ int nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 
 void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo){
 	switch(paqueteRecibido->codigo_operacion){
-		//Codigo 101: Crear Script Ansisop
-		case 101:
-			nuevoProgramaAnsisop(socketActivo,paqueteRecibido );
+		case 101: //Codigo 101: Crear Script Ansisop
+			nuevoProgramaAnsisop(socketActivo, paqueteRecibido);
 			break;
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
 			finalizarProcesoCPU(paqueteRecibido, socketActivo);
@@ -278,7 +295,6 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 
 
 void nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
-
 	int exito;
 	t_proceso* proceso;
 	t_proceso* procesoin;
@@ -287,7 +303,7 @@ void nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	log_info(logger, "KERNEL: Creando proceso %d", proceso->pcb->pid);
 
 	//ENVIO PID A CONSOLA
-	enviar(proceso->socketConsola,107, sizeof(int), &proceso->pcb->pid);
+	enviar(proceso->socketConsola, EnvioPIDAConsola, sizeof(int), &proceso->pcb->pid);
 	//envio cola NEW
 
 	pthread_mutex_lock(&mutex_new);
@@ -308,7 +324,7 @@ void nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 	exito = enviarCodigoAMemoria(paquete->data, paquete->tamanio, proceso);
 
-	if(exito ==1){
+	if(exito == 1){
 	//Hay espacio asignado
 		cantidadDeProgramas++; //sumo un pid mas en ejecucion
 
@@ -332,7 +348,15 @@ void nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	else{
 		log_info(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
 		//ENVIO A CONSOLA ERROR POR MEMORIA
-		enviar(socket, 105, sizeof(int), NULL);
+		enviar(socket, EnvioErrorAConsola, sizeof(int), NULL);
+
+		//Se pasa de NEW directo a la cola EXIT con ExitCode -1
+		sem_wait(&sem_new);
+		pthread_mutex_lock(&mutex_new);
+		procesoin = queue_pop(cola_new);
+		pthread_mutex_unlock(&mutex_new);
+
+		finalizarProceso(procesoin, FaltaDeMemoria);
 
 	}
 
@@ -397,14 +421,20 @@ void finalizarProcesoCPU(t_paquete* paquete, un_socket socketCPU){
 	//Desarmar paquete para ver codigo de finalizacion
 	int pid = 0; //CAMBIAR POR PID DEL PAQUETE
 	int codigoDeFinalizacion = 0; //CAMBIAR POR CODIGO DEL PAQUETE
-	finalizarProceso(pid, codigoDeFinalizacion, ListaExec);
+	finalizarProceso(pid, codigoDeFinalizacion);
 	//intentarMandarProcesoACPU();
 }
 
-void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode, int listaDondeEstaba){
+void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode){
 	procesoAFinalizar->pcb->exitCode = exitCode;
-	//pasarProcesoALista(procesoAFinalizar->pcb, ListaExit, listaDondeEstaba);
-	int codigoDeFinalizacion;
+
+	//AGREGAR PROCESO A COLA EXIT
+	pthread_mutex_lock(&mutex_exit);
+	queue_push(cola_exit, procesoAFinalizar);
+	sem_post(&sem_exit);
+	pthread_mutex_unlock(&mutex_exit);
+
+	/*int codigoDeFinalizacion;
 	if(exitCode == 0){
 		//Codigo de Finzalicacion correcta del proceso
 		codigoDeFinalizacion = 102;
@@ -414,7 +444,7 @@ void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode, int listaDonde
 		codigoDeFinalizacion = 106;
 	}
 
-	enviar(procesoAFinalizar->socketConsola, codigoDeFinalizacion, sizeof(int), NULL);
+	enviar(procesoAFinalizar->socketConsola, codigoDeFinalizacion, sizeof(int), NULL);*/
 }
 
 /*
@@ -474,17 +504,6 @@ void enviarUnProcesoACPU(un_socket socketCPU, int pid){
 	//51651 VER CODIGO DE PROCESO A EJECUTAR EN CPU
 	enviar(socketCPU, 51651, sizeof(t_proceso), proceso);
 }
-
-
-t_proceso buscarProcesoEnReadySegunPID(int pid){
-	t_proceso* proceso = malloc(sizeof(t_proceso));
-
-	//BUSCAR EN LISTA READY SEGUN PID
-
-	return proceso;
-}
-
-
 */
 int conectarConLaMemoria(){
 	t_paquete * paquete;
@@ -501,7 +520,7 @@ int conectarConLaMemoria(){
 	log_info(logger, "MEMORIA: Recibio pedido de conexion de Kernel");
 
 	log_info(logger, "MEMORIA: Iniciando Handshake");
-	bool resultado = realizar_handshake(socketMemoria , 13);
+	bool resultado = realizar_handshake(socketMemoria , HandshakeMemoriaKernel);
 	if (resultado){
 		log_info(logger, "MEMORIA: Handshake exitoso! Conexion establecida");
 		paquete = recibir(socketMemoria);
@@ -529,7 +548,7 @@ int conectarConFileSystem(){
 	log_info(logger, "FILESYSTEM: Recibio pedido de conexion de Kernel");
 
 	log_info(logger, "FILESYSTEM: Iniciando Handshake");
-	bool resultado = realizar_handshake(socketFileSystem, 13);
+	bool resultado = realizar_handshake(socketFileSystem, HandshakeFileSystemKernel);
 	if (resultado){
 		log_info(logger, "FILESYSTEM: Handshake exitoso! Conexion establecida");
 		return socketFileSystem;
@@ -540,46 +559,6 @@ int conectarConFileSystem(){
 	}
 }
 
-/*
-void pasarProcesoALista(t_proceso* procesoAMover, int listaAMover, int listaAEliminar){
-	switch (listaAMover){
-		case ListaNew:
-			list_add(colaNew,procesoAMover->pcb);
-			break;
-		case ListaReady:
-			list_add(colaReady,procesoAMover->pcb);
-			break;
-		case ListaExec:
-			list_add(colaExec,procesoAMover->pcb);
-			break;
-		case ListaExit:
-			list_add(colaExit,procesoAMover->pcb);
-			break;
-	}
-
-	//ESTO O VER COMO ELIMINAR DE LA LISTA DONDE ESTABA, SI ES CON PUSH/POP O QUE
-	switch (listaAEliminar){
-		case ListaNew:
-
-			break;
-		case ListaReady:
-
-			break;
-		case ListaExec:
-
-			break;
-		case ListaExit:
-
-			break;
-		case ListaNull:
-			//No hay que eliminarla de ninguna lista, nuevo proceso
-			break;
-	}
-}
-
-
-
-*/
 /*
  * Función que devuelve el valor máximo en la tabla.
  * Supone que los valores válidos de la tabla son positivos y mayores que 0.
@@ -649,7 +628,8 @@ void verNotify(){
 }
 
 void * nalloc(int tamanio){
-	int i;void * retorno = malloc(tamanio);
+	int i;
+	void * retorno = malloc(tamanio);
 	for(i=0;i<tamanio;i++) ((char*)retorno)[i]=0;
 	return retorno;
 }
@@ -688,7 +668,7 @@ void hiloEjecutador(){
 		printf("Termine de ejecutar\n");
 
 		//Pruebo envio codigo 102 programa finalizado
-		enviar(proceso->socketConsola,102, sizeof(int), &proceso->pcb->pid);
+		enviar(proceso->socketConsola, EnvioFinalizacionAConsola, sizeof(int), &proceso->pcb->pid);
 		//dejar MUTEX
 		pthread_mutex_unlock(&mutex_config);
 
