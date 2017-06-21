@@ -34,6 +34,7 @@ void inicializarProceso(int* pid, int* paginasRequeridas) {
 	}
 
 
+
 }
 
 void finalizarProceso(int pid) {
