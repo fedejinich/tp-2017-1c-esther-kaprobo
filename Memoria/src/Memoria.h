@@ -18,7 +18,7 @@
 #include "operaciones/memoria-Kernel.h"
 #include "operaciones/memoria-CPU.h"
 #include "funcionHash/funcionHash.h"
-#include "cache.h"
+#include "cache/cache.h"
 
 
 /*
