@@ -19,10 +19,27 @@
 
 //Estructuras
 
-typedef struct {
-	int pid;
-	int paginasAPedir;
-} t_pedidoDePaginasKernel;
+	//Estructuras Memoria - Kernel
+	typedef struct {
+		int pid;
+		int paginasAPedir;
+	} t_pedidoDePaginasKernel;
+
+	//Estructuras Memoria - CPU
+	typedef struct {
+		int pid;
+		int pagina;
+		int offset;
+		int tamanio;
+	} t_solicitudBytes;
+
+	typedef struct {
+		int pid;
+		int pagina;
+		int offset;
+		int tamanio;
+		void* buffer;
+	} t_almacenarBytes;
 
 typedef enum {
 	HandshakeConsolaKernel = 11,
