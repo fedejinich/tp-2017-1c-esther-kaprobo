@@ -21,6 +21,8 @@ void* hiloServidorKernel(void* arg) {
     bool resultado_hand = esperar_handshake(socketClienteKernel,13);
     if(resultado_hand){
         log_info(logger,"Conexión aceptada del Kernel %d!!", socketClienteKernel);
+        printf("frame %d\n", frame_size);
+        enviar(socketClienteKernel,TAMANIO_PAGINA,sizeof(int),&frame_size);
     } else {
         log_info(logger,"Handshake fallo, se aborta conexion");
         exit (EXIT_FAILURE);

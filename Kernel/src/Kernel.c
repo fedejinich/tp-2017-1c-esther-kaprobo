@@ -49,7 +49,7 @@ void inicializar(){
 	list_create(colaExit);
 */
 	//Crear Log
-	logger = log_create("kernel.log","Kernel",0,LOG_LEVEL_INFO);
+	logger = log_create("kernel.log","Kernel",true,LOG_LEVEL_TRACE);
 
 	//Configuracion
 	cargarConfiguracion();
@@ -527,10 +527,16 @@ int conectarConLaMemoria(){
 	bool resultado = realizar_handshake(socketMemoria , HandshakeMemoriaKernel);
 	if (resultado){
 		log_info(logger, "MEMORIA: Handshake exitoso! Conexion establecida");
-		//paquete = recibir(socketMemoria);
-		//TAMPAG = *((int*)paquete->data);
-		TAMPAG= 256;
-		log_info(logger, "KERNEL: Tamano pagina de Memoria %d",TAMPAG);
+		paquete = recibir(socketMemoria);
+		if(paquete->codigo_operacion == TAMANIO_PAGINA){
+			TAMPAG = *((int*)paquete->data);
+			//TAMPAG= 256;
+			log_info(logger, "KERNEL: Tamano pagina de Memoria %d",TAMPAG);
+		}
+		else{
+			//QUE PASA EN ESTE CASO?
+			log_error(logger, "KERNEL: Error en el envio del TAMPAG");
+		}
 		pthread_mutex_unlock(&mutex_config);
 		return socketMemoria ;
 	}
