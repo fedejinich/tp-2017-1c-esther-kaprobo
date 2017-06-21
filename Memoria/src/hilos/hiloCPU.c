@@ -48,7 +48,11 @@ void* hiloConexionCPU(void* socket) {
 
 		switch (paqueteRecibido->codigo_operacion) {
 			case SOLICITAR_BYTES:
-				//pid = paqueteRecibido->data
+				pid = ((t_solicitudBytes*)(paqueteRecibido->data))->pid;
+				pagina = ((t_solicitudBytes*)(paqueteRecibido->data))->pagina;
+				offset = ((t_solicitudBytes*)(paqueteRecibido->data))->offset;
+				tamanio = ((t_solicitudBytes*)(paqueteRecibido->data))->tamanio;
+				solicitarBytesDePagina(pid, pagina, offset, tamanio);
 				break;
 			case ALMACENAR_BYTES:
 
@@ -59,4 +63,6 @@ void* hiloConexionCPU(void* socket) {
 		}
 	}
 }
+
+
 
