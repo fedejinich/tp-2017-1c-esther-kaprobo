@@ -52,7 +52,15 @@ void* hiloConexionCPU(void* socket) {
 				pagina = ((t_solicitudBytes*)(paqueteRecibido->data))->pagina;
 				offset = ((t_solicitudBytes*)(paqueteRecibido->data))->offset;
 				tamanio = ((t_solicitudBytes*)(paqueteRecibido->data))->tamanio;
-				solicitarBytesDePagina(pid, pagina, offset, tamanio);
+				void* bufferAux = solicitarBytesDePagina(pid, pagina, offset, tamanio);
+				if(buffer != NULL) {
+					log_info(logger, "Enviando %i bytes a CPU: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
+					enviar(socket, SOLICITAR_BYTES_OK, tamanio, bufferAux);
+					log_info(logger, "Enviados %i bytes a CPU: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
+				} else {
+					enviar(socket, SOLICITAR_BYTES_FALLO, sizeof(int), -1);
+					log_warning(logger, "No se encontraron los bytes solicitados: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
+				}
 				break;
 			case ALMACENAR_BYTES:
 
