@@ -14,7 +14,9 @@
 #include "hilos/hiloConsola.h"
 #include "funcionesAuxiliares/funcionesAuxiliares.h"
 #include "tablaDePaginas.h"
-#include "operaciones.h"
+#include "operaciones/abstractOperaciones.h"
+#include "operaciones/memoria-Kernel.h"
+#include "operaciones/memoria-CPU.h"
 #include "funcionHash/funcionHash.h"
 #include "cache.h"
 
