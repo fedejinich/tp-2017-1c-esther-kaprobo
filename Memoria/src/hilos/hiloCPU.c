@@ -31,11 +31,12 @@ void* hiloServidorCPU(void* arg) {
 	}
 }
 
+
 void* hiloConexionCPU(void* socket) {
     t_paquete * paqueteRecibido;
 
 
-	int pidActual; //para saber que pid esta ejecutando cada hilo
+	//int pidActual; //para saber que pid esta ejecutando cada hilo
 
 	while(1) {
 		paqueteRecibido = recibir(socket);
@@ -53,7 +54,8 @@ void* hiloConexionCPU(void* socket) {
 				offset = ((t_solicitudBytes*)(paqueteRecibido->data))->offset;
 				tamanio = ((t_solicitudBytes*)(paqueteRecibido->data))->tamanio;
 				void* bufferAux = solicitarBytesDePagina(pid, pagina, offset, tamanio);
-				if(buffer != NULL) {
+				if(bufferAux != NULL) {
+					log_info(logger, "Solicitud de bytes de PID %i OK", pid);
 					log_info(logger, "Enviando %i bytes a CPU: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
 					enviar(socket, SOLICITAR_BYTES_OK, tamanio, bufferAux);
 					log_info(logger, "Enviados %i bytes a CPU: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
@@ -63,7 +65,21 @@ void* hiloConexionCPU(void* socket) {
 				}
 				break;
 			case ALMACENAR_BYTES:
-
+				pid = ((t_almacenarBytes*)(paqueteRecibido->data))->pid;
+				pagina = ((t_almacenarBytes*)(paqueteRecibido->data))->pagina;
+				offset = ((t_almacenarBytes*)(paqueteRecibido->data))->offset;
+				tamanio = ((t_almacenarBytes*)(paqueteRecibido->data))->tamanio;
+				buffer = ((t_almacenarBytes*)(paqueteRecibido->data))->buffer;
+				bool exito = almacenarBytesEnPagina(pid, pagina, offset, tamanio, buffer);
+				if(exito) {
+					int* ok = 1;
+					enviar(socket, ALMACENAR_BYTES_OK, sizeof(int), &ok);
+					log_info(logger, "Almacenados bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
+				} else {
+					int* fallo = -1;
+					enviar(socket, ALMACENAR_BYTES_FALLO, sizeof(int), &fallo);
+					log_warning(logger, "No se pudieron almacenar bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
+				}
 				break;
 			default:
 				exit(EXIT_FAILURE);
