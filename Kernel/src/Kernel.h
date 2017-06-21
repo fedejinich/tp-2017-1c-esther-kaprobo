@@ -140,10 +140,7 @@ un_socket socketMasGrande;
 int numeroClientes = 0;
 un_socket memoria;
 
-typedef struct {
-	int pid;
-	int paginasAPedir;
-} t_pedidoDePaginasKernel; //DESPUES HAY QUE HACER UN FIX DE ESTO Y DEFINIR ESTE STRUCT SOLO EN ESTRUCTURAS.H
+ //DESPUES HAY QUE HACER UN FIX DE ESTO Y DEFINIR ESTE STRUCT SOLO EN ESTRUCTURAS.H
 //PERO AHORA EL PUTO DE C NO C PORQUE NO ME ETA DEJANDO
 
 //FUNCIONES

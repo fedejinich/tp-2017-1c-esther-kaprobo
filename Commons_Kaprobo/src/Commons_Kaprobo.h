@@ -19,6 +19,10 @@
 
 //Estructuras
 
+typedef struct {
+	int pid;
+	int paginasAPedir;
+} t_pedidoDePaginasKernel;
 
 typedef enum {
 	HandshakeConsolaKernel = 11,
