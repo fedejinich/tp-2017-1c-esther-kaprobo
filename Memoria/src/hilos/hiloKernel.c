@@ -21,7 +21,6 @@ void* hiloServidorKernel(void* arg) {
     bool resultado_hand = esperar_handshake(socketClienteKernel,13);
     if(resultado_hand){
         log_info(logger,"Conexión aceptada del Kernel %d!!", socketClienteKernel);
-        printf("frame %d\n", frame_size);
         enviar(socketClienteKernel,TAMANIO_PAGINA,sizeof(int),&frame_size);
     } else {
         log_info(logger,"Handshake fallo, se aborta conexion");
@@ -35,18 +34,14 @@ void* hiloServidorKernel(void* arg) {
 
     while (1) {
         paqueteRecibido = recibir(socketClienteKernel);
+        char * codigoDeOperacion = getCodigoDeOperacion(paqueteRecibido->codigo_operacion);
 
-        printf("codigo %d\n", paqueteRecibido->codigo_operacion);
-
+        log_info(logger, "Codigo de operacion: %s", codigoDeOperacion);
         switch (paqueteRecibido->codigo_operacion) {
             case INICIALIZAR_PROCESO:
                 paginasRequeridas = ((t_pedidoDePaginas*)(paqueteRecibido->data))->paginasAPedir;
                 pid = ((t_pedidoDePaginas*)(paqueteRecibido->data))->pid;
-                printf("3\n");
-                printf("pid %i\n", pid);
-                printf("paginas %i\n", paginasRequeridas);
                 inicializarProceso(pid, paginasRequeridas);
-                printf("4\n");
                 break;
             case ASIGNAR_PAGINAS:
                 paginasRequeridas = ((t_pedidoDePaginas*)(paqueteRecibido->data))->paginasAPedir;
@@ -57,8 +52,10 @@ void* hiloServidorKernel(void* arg) {
                 finalizarProceso(pid);
                 break;
             default:
-                break;
+				break;
         }
+
+
     }
 
 
