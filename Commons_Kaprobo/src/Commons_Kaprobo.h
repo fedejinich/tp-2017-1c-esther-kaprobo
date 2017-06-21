@@ -48,7 +48,6 @@ typedef enum {
 	HandshakeFileSystemKernel = 14,
 	EnvioFinalizacionAConsola = 102,
 	EnvioErrorAConsola = 105,
-	EnvioPIDAConsola = 107
 }Kernel;
 
 typedef enum {
@@ -179,6 +178,15 @@ typedef enum {
 	ALMACENAR_BYTES_FALLO
 } codigosMemoriaCPU;
 
+//CODIGOS DE OPERACION KERNEL-CPU
+typedef enum {
+	ENVIAR_ALGORITMO
+}codigosKernelCPU;
 
+//CODIGOS DE OPERACION CONSOLA-KERNEL
+typedef enum{
+	ENVIAR_SCRIPT = 101,
+	ENVIAR_PID
+};
 
 #endif /* COMMONS_KAPROBO_H_ */

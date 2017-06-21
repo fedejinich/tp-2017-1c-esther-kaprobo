@@ -44,18 +44,21 @@ int main(int argc, char **argv) {
 
 	cargarConfiguracion();
 	kernel = conectarConElKernel();
-	memoria = conectarConMemoria();
+	//memoria = conectarConMemoria();
 
 	paq_algoritmo = recibir(kernel);
-	if(paq_algoritmo->codigo_operacion  == 201){
-		algoritmo = (int)paq_algoritmo->data;
+	if(paq_algoritmo->codigo_operacion  == ENVIAR_ALGORITMO){
+		algoritmo = *(int*)paq_algoritmo->data;
 		log_info(logger, "Obteniendo algoritmo a utilizar. \n");
+
 	}
 	liberar_paquete(paq_algoritmo);
 
 
 	while (sigusr1_desactivado){
+
 		t_paquete* datos_kernel = recibir(kernel);
+
 		if(algoritmo==1){
 			quantum = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM;
 			quantum_sleep = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM_SLEEP;

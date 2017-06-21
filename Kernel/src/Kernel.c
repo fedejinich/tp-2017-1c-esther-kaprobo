@@ -177,7 +177,7 @@ void manejarSockets(){
 			paqueteRecibido = recibir(socketCliente[i]);
 
 			//verifica codigo de operacion, si es -1 se desconecto
-			if(paqueteRecibido->codigo_operacion > 0){
+			if(paqueteRecibido->codigo_operacion > -1){
 				log_info(logger, "Me envio datos el socket %i", socketCliente[i]);
 				 procesarPaqueteRecibido(paqueteRecibido, socketCliente[i]);
 			}
@@ -205,8 +205,11 @@ void verSiHayNuevosClientes(){
 
 void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 {
+	un_socket clienteCPUtmp;
+	int* infoAlgoritmo;
 	/* Acepta la conexión con el cliente, guardándola en el array */
 	clientes[*nClientes] = aceptar_conexion(servidor);
+	clienteCPUtmp = clientes[*nClientes];
 	(*nClientes)++;
 
 	/* Si se ha superado el maximo de clientes, se cierra la conexión,
@@ -223,11 +226,14 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
 	if(resultado_CPU){
 		log_info(logger, "Handshake OK, pedido de conexion cliente %d aceptado", *nClientes);
-		cpusConectadas[indiceCPUsConectadas] = servidor;
-		indiceCPUsConectadas++;
-		cpusDisponibles[indiceCPUsDisponibles] = servidor;
-		indiceCPUsDisponibles++;
-		//intentarMandarProcesoACPU();
+		infoAlgoritmo = algoritmo;
+
+		enviar(clienteCPUtmp,ENVIAR_ALGORITMO,sizeof(int), &infoAlgoritmo);
+
+		//Ponemos la CPU libre en la cola y hacemos Signal del semaforo CPU
+		queue_push(cola_CPU_libres, (void*)clienteCPUtmp);
+		sem_post(&sem_cpu);
+		log_info(logger, "Nueva CPU agregada a lista de CPU_LIBRES");
 	}
 	else{
 		log_error(logger, "Handshake fallo, pedido de conexion rechazado");
@@ -273,7 +279,6 @@ int nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 }
 
 
-
 void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo){
 	int res;
 	switch(paqueteRecibido->codigo_operacion){
@@ -298,7 +303,7 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	log_info(logger, "KERNEL: Creando proceso %d", proceso->pcb->pid);
 
 	//ENVIO PID A CONSOLA
-	enviar(proceso->socketConsola, EnvioPIDAConsola, sizeof(int), &proceso->pcb->pid);
+	enviar(proceso->socketConsola, ENVIAR_PID, sizeof(int), &proceso->pcb->pid);
 
 	//envio cola NEW
 	pthread_mutex_lock(&mutex_new);
@@ -348,6 +353,7 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 		pthread_mutex_unlock(&mutex_ready);
 
 		sem_post(&sem_ready);
+		printf("pase todos semaforos bien \n");
 	}
 	else{
 		log_info(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
@@ -366,7 +372,6 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	liberar_paquete(paquete);
 	return 0;
 }
-
 
 t_proceso* crearPrograma(int socketC){
 	t_proceso* procesoNuevo;
@@ -408,72 +413,6 @@ void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode){
 	enviar(procesoAFinalizar->socketConsola, procesoAFinalizar->pcb->exitCode, sizeof(int), &basura);
 }
 
-/*
-bool pedirPaginasParaProceso(t_proceso* proceso){
-	//Calculo paginas de memoria que necesito pedir de memoria para este script
-	int paginasAPedir = ceil(paqueteRecibido->tamanio/TAMANIODEPAGINA);
-
-	t_pedidoDePaginasKernel* pedidoDePaginas = malloc(sizeof(t_pedidoDePaginasKernel));
-	pedidoDePaginas->pid = proceso->pcb->pid;
-	pedidoDePaginas->paginasAPedir = paginasAPedir;
-
-	//Envio a memoria el pedido de pagina
-	enviar(memoria, 201, sizeof(t_pedidoDePaginasKernel),pedidoDePaginas);
-	enviar(memoria, CodigoMemoriaKernel.ASIGNARPAGINAS, sizeof(int), paginasAPedir);
-
-	free(pedidoDePaginas);
-
-	//Tengo que esperar a que vuelva la respuesta del pedido. Si esta OK, devuelve la cantidad de paginas, sino devuelve -1
-	t_paquete* respuestaAPedidoDePaginas;
-	respuestaAPedidoDePaginas = recibir(memoria);
-
-	if(respuestaAPedidoDePaginas->data == 0){
-		return true;0
-	}
-	else{
-		return false;
-	}
-}
-
-*/
-/*
-void intentarMandarProcesoACPU(int pid){
-	//SI HAY CPUS DISPONIBLES, Y TENGO ALGUN PROCESO EN LA COLA DE READY, MANDO UN PROCESO A CPU
-	if(){
-		//Elijo una CPU del listado de CPUs disponibles y la saco del listado de disponibles
-		un_socket socketCPU = cpusDisponibles[indiceCPUsDisponibles];
-		cpusDisponibles[indiceCPUsDisponibles] = -1;
-		indiceCPUsDisponibles--;
-
-		//Evaluacion del algoritmo de planficacion a utilizar
-		if(){
-			//FIFO
-			int pid = 0; //ACA EN REALIDAD VIENE UN POP DE LA COLA DE READY, VER SI RODRI SOLUCIONO
-			enviarUnProcesoACPU(socketCPU, pid);
-		}
-		else{
-			//ROUND ROBIN
-
-		}
-
-	}
-}
-
-
-*/
-
-/*
-void enviarUnProcesoACPU(un_socket socketCPU, int pid){
-	//PASO EL PROCESO A EXEC Y LO MANDO A LA CPU CORRESPONDIENTE
-
-	t_proceso* proceso = buscarProcesoEnReadySegunPID(pid);
-
-	pasarProcesoALista(proceso, ListaExec, ListaReady);
-
-	//51651 VER CODIGO DE PROCESO A EJECUTAR EN CPU
-	enviar(socketCPU, 51651, sizeof(t_proceso), proceso);
-}
-*/
 
 int conectarConLaMemoria(){
 	t_paquete * paquete;
@@ -644,7 +583,7 @@ void hiloEjecutador(){
 
 		log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
 
-		mandarAEjecutar(proceso, socketCPULibre);
+		//mandarAEjecutar(proceso, socketCPULibre);
 
 
 		/*SIMULACION DE EJECUCION PARA PRUEBAS!!!*/
