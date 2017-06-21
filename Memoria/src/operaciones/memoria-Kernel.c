@@ -23,14 +23,13 @@ void inicializarProceso(int* pid, int* paginasRequeridas) {
 	log_info(logger, "Reservando %i paginas para PID: %i...", paginasRequeridas, pid);
 
 	if(paginasDisponibles(paginasRequeridas)) {
-		printf("adentro if paginas disponibles\n");
 		reservarPaginas(pid, paginasRequeridas);
-		printf("despues de reservar\n");
-		int * basura = 1;
-		enviar(socketClienteKernel, INICIALIZAR_PROCESO_OK, sizeof(int), &basura); //EL DATA ESTA AL PEDO PERO BUEN
+		int * ok = 1; //si saco esto y dejo el 1  en el paquete me tira segmentation fault
+		enviar(socketClienteKernel, INICIALIZAR_PROCESO_OK, sizeof(int), &ok); //EL DATA ESTA AL PEDO PERO BUEN
 		log_info(logger, "Reservadas %i paginas para PID: %i", paginasRequeridas, pid);
 	} else {
-		enviar(socketClienteKernel, INICIALIZAR_PROCESO_FALLO, sizeof(int), -1); //EL DATA ESTA AL PEDO PERO BUEN
+		int * fallo = -1; //si saco esto y dejo el -1  en el paquete me tira segmentation fault
+		enviar(socketClienteKernel, INICIALIZAR_PROCESO_FALLO, sizeof(int), &fallo); //EL DATA ESTA AL PEDO PERO BUEN
 		log_error(logger, "No se pueden reservar %i paginas para PID: %i", paginasRequeridas, pid);
 	}
 
