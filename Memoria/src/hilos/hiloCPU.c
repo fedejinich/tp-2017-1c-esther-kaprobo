@@ -82,6 +82,7 @@ void* hiloConexionCPU(void* socket) {
 				}
 				break;
 			default:
+				log_error(logger,"Exit por hilo CPU");
 				exit(EXIT_FAILURE);
 				break;
 		}
