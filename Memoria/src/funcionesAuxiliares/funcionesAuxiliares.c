@@ -45,3 +45,15 @@ int numeroDeFrameBy(int numeroDeEntradaTablaDePaginas) {
 		return numeroDeFrame - 1;
 	return numeroDeFrame;
 }
+
+char* getCodigoDeOperacion(int codigoInt) {
+	char* codigoString = malloc(50);
+	if(codigoInt == -1) {
+		codigoString = "ERROR";
+		return codigoString;
+	}
+	else if(codigoInt == INICIALIZAR_PROCESO) {
+		codigoString = "INICIALIZAR PROCESO";
+		return codigoString;
+	}
+}
