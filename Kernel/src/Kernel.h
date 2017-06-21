@@ -158,7 +158,7 @@ un_socket conectarConLaMemoria();
 void * nalloc(int tamanio);
 t_proceso* crearPrograma(int socket);
 
-void nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
+int nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
 
 /*
  *
