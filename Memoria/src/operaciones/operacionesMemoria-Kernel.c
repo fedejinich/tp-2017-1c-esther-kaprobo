@@ -8,8 +8,6 @@
 
 #include "operacionesMemoria-Kernel.h"
 
-
-
 /******\
 |KERNEL|
 \******/

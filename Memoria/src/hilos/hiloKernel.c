@@ -51,6 +51,7 @@ void* hiloServidorKernel(void* arg) {
                 finalizarProceso(pid);
                 break;
             default:
+				log_error(logger,"Exit por hilo Kernel");
             	exit(EXIT_FAILURE);
 				break;
         }
