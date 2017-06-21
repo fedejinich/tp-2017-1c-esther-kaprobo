@@ -42,12 +42,6 @@ void inicializar(){
 	sem_init(&sem_ready,0,0);
 	sem_init(&sem_cpu,0,0);
 
-	/*
-	list_create(colaNew);
-	list_create(colaReady);
-	list_create(colaExec);
-	list_create(colaExit);
-*/
 	//Crear Log
 	logger = log_create("kernel.log","Kernel",true,LOG_LEVEL_TRACE);
 
@@ -58,7 +52,6 @@ void inicializar(){
 	mostrarConfiguracion();
 
 	//Sockets
-
 	//fileSystem = conectarConFileSystem();
 	memoria = conectarConLaMemoria();
 	prepararSocketsServidores();
@@ -282,9 +275,10 @@ int nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 
 
 void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo){
+	int res;
 	switch(paqueteRecibido->codigo_operacion){
 		case 101: //Codigo 101: Crear Script Ansisop
-			nuevoProgramaAnsisop(socketActivo, paqueteRecibido);
+			res = nuevoProgramaAnsisop(socketActivo, paqueteRecibido);
 			break;
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
 			finalizarProcesoCPU(paqueteRecibido, socketActivo);
@@ -295,7 +289,7 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 }
 
 
-void nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
+int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	int exito;
 	t_proceso* proceso;
 	t_proceso* procesoin;
@@ -305,28 +299,40 @@ void nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 	//ENVIO PID A CONSOLA
 	enviar(proceso->socketConsola, EnvioPIDAConsola, sizeof(int), &proceso->pcb->pid);
+
 	//envio cola NEW
-
 	pthread_mutex_lock(&mutex_new);
-
-	queue_push(cola_new,proceso);
-
+	queue_push(cola_new, proceso);
 	sem_post(&sem_new); // capaz que no es necesario, para que saque siempre 1, y no haga lio
 	pthread_mutex_unlock(&mutex_new);
 
-	if(cantidadDeProgramas > grado_multiprog){
+	printf("cantidad prog %d\n", cantidadDeProgramas);
+	printf("grado multiprog%d\n", grado_multiprog);
+	if(cantidadDeProgramas >= grado_multiprog){
 		//No puedo pasar a Ready, aviso a Consola
-		enviar(socket,108, sizeof(int), NULL );
+		int* basura = 1;
+		enviar(socket, 108, sizeof(int), &basura);
+		//Lo saco de New, le asigno el exit code, y lo mando a Exit directo
+		pthread_mutex_lock(&mutex_new);
+		t_proceso* proceso = queue_pop(cola_new);
+		sem_wait(&sem_new);
+		pthread_mutex_unlock(&mutex_new);
 
-		//Lo tendria que sacar de NEW para no hacer cagada
+		proceso->pcb->exitCode = -1;
+
+		pthread_mutex_lock(&mutex_exit);
+		queue_push(cola_exit, proceso);
+		sem_post(&sem_exit);
+		pthread_mutex_unlock(&mutex_exit);
+
+		return -1;
 	}
 
 	//Envio todos los datos a Memoria y espero respuesta
-
 	exito = enviarCodigoAMemoria(paquete->data, paquete->tamanio, proceso, INICIALIZAR_PROCESO);
 
 	if(exito == INICIALIZAR_PROCESO_OK){
-	//Hay espacio asignado
+		//Hay espacio asignado
 		cantidadDeProgramas++; //sumo un pid mas en ejecucion
 
 		//SACO DE NEW Y MANDO A READY
@@ -358,6 +364,7 @@ void nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	}
 
 	liberar_paquete(paquete);
+	return 0;
 }
 
 
@@ -373,57 +380,17 @@ t_proceso* crearPrograma(int socketC){
 	return procesoNuevo;
 }
 
-/*
-void crearProcesoAnsisop(un_socket socketQueMandoElProceso){
-	log_info(logger, "Creando nuevo proceso Ansisop");
-
-	t_proceso* nuevoProcesoAnsisop = malloc(sizeof(nuevoProcesoAnsisop));
-
-	//Creo PCB para el proceso en cuestion
-	log_info(logger, "Creando PCB del nuevo proceso Ansisop");
-	t_pcb* pcb = malloc(sizeof(t_pcb));
-	cantidadDeProgramas++;
-	nuevoProcesoAnsisop->pcb = pcb;
-	nuevoProcesoAnsisop->pcb->pid = cantidadDeProgramas;
-	nuevoProcesoAnsisop->socketConsola = socketQueMandoElProceso;
-
-	//Envio a consola el PID del nuevo proceso
-	//EnvioPIDDeNuevoProceso 107
-	enviar(nuevoProcesoAnsisop->socketConsola, 107, sizeof(int), nuevoProcesoAnsisop->pcb->pid);
-
-	//pasarProcesoALista(nuevoProcesoAnsisop->pcb, ListaNew, ListaNull);
-
-	if(grado_multiprog < cantidadDeProgramas){
-		//SI PERMITE, PASA DE NEW A READY
-		//Pido paginas a memoria y memoria me dice si le alcanzan
-		bool resultadoPedidoPaginas = pedirPaginasParaProceso(nuevoProcesoAnsisop);
-
-		//Si la memoria devolvio OK, asigno la cantidad de paginas al PCB. Si no devolvió OK, lo finalizo con error por falta de memoria
-		if(resultadoPedidoPaginas){
-			pcb->pageCounter = resultadoPedidoPaginas;
-
-			//pasarProcesoAlista(nuevoProcesoAnsisop->pcb, ListaReady, ListaNew);
-
-			//intentarMandarProcesoACPU(nuevoProcesoAnsisop->pcb);
-		}
-		else {
-			//FALTA ELIMINAR DE NEW
-			finalizarProceso(nuevoProcesoAnsisop,-1);
-		}
-	}
-
-}
-*/
 void finalizarProcesoCPU(t_paquete* paquete, un_socket socketCPU){
 	//Desarmar paquete para ver codigo de finalizacion
 	int pid = 0; //CAMBIAR POR PID DEL PAQUETE
 	int codigoDeFinalizacion = 0; //CAMBIAR POR CODIGO DEL PAQUETE
 	finalizarProceso(pid, codigoDeFinalizacion);
-	//intentarMandarProcesoACPU();
 }
 
 void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode){
 	procesoAFinalizar->pcb->exitCode = exitCode;
+
+	cantidadDeProgramas --;
 
 	//AGREGAR PROCESO A COLA EXIT
 	pthread_mutex_lock(&mutex_exit);
@@ -431,17 +398,14 @@ void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode){
 	sem_post(&sem_exit);
 	pthread_mutex_unlock(&mutex_exit);
 
-	/*int codigoDeFinalizacion;
-	if(exitCode == 0){
-		//Codigo de Finzalicacion correcta del proceso
-		codigoDeFinalizacion = 102;
-	}
-	else{
-		//Codigo Kernel Aborto Proceso
-		codigoDeFinalizacion = 106;
-	}
 
-	enviar(procesoAFinalizar->socketConsola, codigoDeFinalizacion, sizeof(int), NULL);*/
+	/*
+	 *
+	 *                 HACER QUE LOS CODIGOS DE FINALIZACION QUE RECONOCE CONSOLA SEAN LOS MISMOS, AL PEDO OTROS
+	 *
+	 * */
+	int* basura = 0;
+	enviar(procesoAFinalizar->socketConsola, procesoAFinalizar->pcb->exitCode, sizeof(int), &basura);
 }
 
 /*
@@ -497,6 +461,7 @@ void intentarMandarProcesoACPU(int pid){
 
 
 */
+
 /*
 void enviarUnProcesoACPU(un_socket socketCPU, int pid){
 	//PASO EL PROCESO A EXEC Y LO MANDO A LA CPU CORRESPONDIENTE
@@ -509,6 +474,7 @@ void enviarUnProcesoACPU(un_socket socketCPU, int pid){
 	enviar(socketCPU, 51651, sizeof(t_proceso), proceso);
 }
 */
+
 int conectarConLaMemoria(){
 	t_paquete * paquete;
 	pthread_mutex_lock(&mutex_config);
@@ -552,7 +518,7 @@ int conectarConFileSystem(){
 	un_socket socketFileSystem = conectar_a(ip_fs, puerto_fs);
 
 	if (socketFileSystem == 0){
-		log_error(logger, "No se pudo conectar con la Memoria");
+		log_error(logger, "No se pudo conectar con FileSystem");
 		exit (EXIT_FAILURE);
 	}
 
@@ -605,7 +571,6 @@ void compactaClaves (int *tabla, int *n) {
 
 	*n = j;
 }
-
 
 void verNotify(){
 	//printf("HILO NOTIFY\n");
@@ -669,10 +634,8 @@ void hiloEjecutador(){
 	int socketCPULibre;
 
 	while(1){
-		//printf("antes semaforo ready\n");
 		sem_wait(&sem_ready);//El signal lo tengo cuando envio de New a Ready
 		//sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
-		//printf("dentro while ejecuta\n");
 		pthread_mutex_lock(&mutex_config); //Como envio despues datos para ejecutar, necesito mutex
 		//socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
 		pthread_mutex_lock(&mutex_ready);
@@ -684,18 +647,20 @@ void hiloEjecutador(){
 		mandarAEjecutar(proceso, socketCPULibre);
 
 
-		//SIMULACION DE EJECUCION PARA PRUEBAS!!!
+		/*SIMULACION DE EJECUCION PARA PRUEBAS!!!*/
 
 		printf("Estaria EJECUTANDO\n");
-		sleep(4);
+		sleep(20);
 		printf("Termine de ejecutar\n");
 
 		//Pruebo envio codigo 102 programa finalizado
 		enviar(proceso->socketConsola, EnvioFinalizacionAConsola, sizeof(int), &proceso->pcb->pid);
-		//dejar MUTEX
+		finalizarProceso(proceso, 0);
+
+		/*FIN SIMULACION DE EJECUCION PARA PRUEBAS*/
+
+
 		pthread_mutex_unlock(&mutex_config);
-
-
 	}
 }
 
