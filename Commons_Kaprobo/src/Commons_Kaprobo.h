@@ -20,20 +20,20 @@
 //Estructuras
 
 	//Estructuras Memoria - Kernel
-	typedef struct {
+	typedef struct __attribute__((packed))t_pedidoDePaginasKernel{
 		int pid;
 		int paginasAPedir;
 	} t_pedidoDePaginasKernel;
 
 	//Estructuras Memoria - CPU
-	typedef struct {
+	typedef struct __attribute__((packed))t_solicitudBytes{
 		int pid;
 		int pagina;
 		int offset;
 		int tamanio;
 	} t_solicitudBytes;
 
-	typedef struct {
+	typedef struct __attribute__((packed))t_almacenarBytes{
 		int pid;
 		int pagina;
 		int offset;
