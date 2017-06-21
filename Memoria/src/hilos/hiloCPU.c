@@ -32,21 +32,31 @@ void* hiloServidorCPU(void* arg) {
 }
 
 void* hiloConexionCPU(void* socket) {
+    t_paquete * paqueteRecibido;
+
+
 	int pidActual; //para saber que pid esta ejecutando cada hilo
 
-
-
 	while(1) {
+		paqueteRecibido = recibir(socket);
+		char * codigoDeOperacion = getCodigoDeOperacion(paqueteRecibido->codigo_operacion);
 
-		char* buffer = malloc(1000);
-		int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
-		if (bytesRecibidos <= 0) {
-			log_warning(logger,"El proceso se desconecto");
-			return 1;
+		log_info(logger, "Codigo de operacion Memoria-CPU: %s", codigoDeOperacion);
+
+		int pid, pagina, offset, tamanio;
+		void* buffer;
+
+		switch (paqueteRecibido->codigo_operacion) {
+			case SOLICITAR_BYTES:
+				//pid = paqueteRecibido->data
+				break;
+			case ALMACENAR_BYTES:
+
+				break;
+			default:
+				exit(EXIT_FAILURE);
+				break;
 		}
-		buffer[bytesRecibidos] = '\0';
-		log_info("Me llegaron %d bytes con %s, de la CPU %d", bytesRecibidos, buffer,*(int*)socket);
-		free(buffer);
 	}
 }
 

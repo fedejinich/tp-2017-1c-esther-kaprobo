@@ -6,7 +6,7 @@
  */
 
 
-#include "memoria-Kernel.h"
+#include "operacionesMemoria-Kernel.h"
 
 
 

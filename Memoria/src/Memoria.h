@@ -15,10 +15,10 @@
 #include "funcionesAuxiliares/funcionesAuxiliares.h"
 #include "tablaDePaginas.h"
 #include "operaciones/abstractOperaciones.h"
-#include "operaciones/memoria-Kernel.h"
-#include "operaciones/memoria-CPU.h"
 #include "funcionHash/funcionHash.h"
 #include "cache/cache.h"
+#include "operaciones/operacionesMemoria-CPU.h"
+#include "operaciones/operacionesMemoria-Kernel.h"
 
 
 /*

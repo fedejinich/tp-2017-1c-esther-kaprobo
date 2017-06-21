@@ -30,22 +30,21 @@ void* hiloServidorKernel(void* arg) {
     t_paquete * paqueteRecibido;
     int* pid, paginasRequeridas;
     int  pagina, tamanio, offset, tamanioCodigo;
-    void* buffer;
 
     while (1) {
         paqueteRecibido = recibir(socketClienteKernel);
         char * codigoDeOperacion = getCodigoDeOperacion(paqueteRecibido->codigo_operacion);
 
-        log_info(logger, "Codigo de operacion: %s", codigoDeOperacion);
+        log_info(logger, "Codigo de operacion Memoria-Kernel: %s", codigoDeOperacion);
         switch (paqueteRecibido->codigo_operacion) {
             case INICIALIZAR_PROCESO:
-                paginasRequeridas = ((t_pedidoDePaginas*)(paqueteRecibido->data))->paginasAPedir;
-                pid = ((t_pedidoDePaginas*)(paqueteRecibido->data))->pid;
+                paginasRequeridas = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->paginasAPedir;
+                pid = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->pid;
                 inicializarProceso(pid, paginasRequeridas);
                 break;
             case ASIGNAR_PAGINAS:
-                paginasRequeridas = ((t_pedidoDePaginas*)(paqueteRecibido->data))->paginasAPedir;
-                pid = ((t_pedidoDePaginas*)(paqueteRecibido->data))->pid;
+                paginasRequeridas = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->paginasAPedir;
+                pid = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->pid;
                 asignarPaginasAProceso(pid, paginasRequeridas);
                 break;
             case FINALIZAR_PROCESO:

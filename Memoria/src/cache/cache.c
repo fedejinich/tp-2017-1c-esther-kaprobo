@@ -89,3 +89,6 @@ void liberarProcesoDeCache(int pid) {
 
 }
 
+void leerDeCache(int pid, int pagina) {
+
+}

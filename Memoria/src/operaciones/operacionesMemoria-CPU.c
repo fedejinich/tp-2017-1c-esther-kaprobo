@@ -6,14 +6,17 @@
  */
 
 
-#include "memoria-CPU.h"
+#include "operacionesMemoria-CPU.h"
 
 void solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 	//PEDIDO DE LECTURA POR PARTE DE CPU
 	retardo();
 
-	//leer
+	if(estaEnCache(pid, pagina))
+		leerDeCache(pid, pagina);
+	else {
 
+	}
 }
 
 void almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer) {
