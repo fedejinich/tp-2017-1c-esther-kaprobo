@@ -33,8 +33,6 @@ void inicializarProceso(int* pid, int* paginasRequeridas) {
 		log_error(logger, "No se pueden reservar %i paginas para PID: %i", paginasRequeridas, pid);
 	}
 
-
-
 }
 
 void finalizarProceso(int pid) {

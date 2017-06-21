@@ -52,6 +52,7 @@ void* hiloServidorKernel(void* arg) {
                 finalizarProceso(pid);
                 break;
             default:
+            	exit(EXIT_FAILURE);
 				break;
         }
 
