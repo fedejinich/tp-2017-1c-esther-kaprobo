@@ -6,11 +6,9 @@
  */
 
 
-#include "operaciones.h"
+#include "memoria-Kernel.h"
 
-void retardo() {
-	sleep(retardoUpdate);
-}
+
 
 /******\
 |KERNEL|
@@ -77,21 +75,4 @@ void asignarPaginasAProceso(int pid, int paginasRequeridas) {
 	}
 }
 
-/***\
-|CPU|
-\***/
-
-void solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
-	//PEDIDO DE LECTURA POR PARTE DE CPU
-	retardo();
-
-	//leer
-
-}
-
-void almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer) {
-	//PEDIDO DE ESCRITURA POR PARTE DE CPU
-	retardo();
-
-}
 
