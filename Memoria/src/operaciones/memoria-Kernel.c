@@ -33,6 +33,8 @@ void inicializarProceso(int* pid, int* paginasRequeridas) {
 		enviar(socketClienteKernel, INICIALIZAR_PROCESO_FALLO, sizeof(int), -1); //EL DATA ESTA AL PEDO PERO BUEN
 		log_error(logger, "No se pueden reservar %i paginas para PID: %i", paginasRequeridas, pid);
 	}
+
+
 }
 
 void finalizarProceso(int pid) {
