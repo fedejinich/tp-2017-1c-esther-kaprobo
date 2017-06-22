@@ -182,7 +182,7 @@ void manejarSockets(){
 				 procesarPaqueteRecibido(paqueteRecibido, socketCliente[i]);
 			}
 			else {
-				log_info(logger, "El cliente %d se desconecto",i+1);
+				log_warning(logger, "El cliente %d se desconecto",i+1);
 				socketCliente[i] = -1;
 			}
 
@@ -346,7 +346,7 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 		procesoin = queue_pop(cola_new);
 		pthread_mutex_unlock(&mutex_new);
 
-		log_info(logger, "NUCLEO: saco proceso %d de NEW mando a READY", procesoin->pcb->pid);
+		log_info(logger, "KERNEL: saco proceso %d de NEW mando a READY", procesoin->pcb->pid);
 
 		pthread_mutex_lock(&mutex_ready);
 		queue_push(cola_ready,procesoin);
@@ -356,7 +356,7 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 		printf("pase todos semaforos bien \n");
 	}
 	else{
-		log_info(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
+		log_error(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
 		//ENVIO A CONSOLA ERROR POR MEMORIA
 		enviar(socket, EnvioErrorAConsola, sizeof(int), NULL);
 
@@ -431,7 +431,7 @@ int conectarConLaMemoria(){
 	log_info(logger, "MEMORIA: Iniciando Handshake");
 	bool resultado = realizar_handshake(socketMemoria , HandshakeMemoriaKernel);
 	if (resultado){
-		log_info(logger, "MEMORIA: Handshake exitoso! Conexion establecida");
+		log_debug(logger, "MEMORIA: Handshake exitoso! Conexion establecida");
 		paquete = recibir(socketMemoria);
 		if(paquete->codigo_operacion == TAMANIO_PAGINA){
 			TAMPAG = *((int*)paquete->data);
@@ -466,7 +466,7 @@ int conectarConFileSystem(){
 	log_info(logger, "FILESYSTEM: Iniciando Handshake");
 	bool resultado = realizar_handshake(socketFileSystem, HandshakeFileSystemKernel);
 	if (resultado){
-		log_info(logger, "FILESYSTEM: Handshake exitoso! Conexion establecida");
+		log_debug(logger, "FILESYSTEM: Handshake exitoso! Conexion establecida");
 		return socketFileSystem;
 	}
 	else{
