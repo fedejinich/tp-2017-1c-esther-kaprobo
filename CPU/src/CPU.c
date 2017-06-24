@@ -30,6 +30,7 @@ AnSISOP_funciones primitivas = {
 
 
 AnSISOP_kernel primitivas_kernel = {
+		.AnSISOP_wait				= wait_kernel
 };
 
 int main(int argc, char **argv) {

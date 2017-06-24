@@ -42,6 +42,7 @@ typedef struct __attribute__((packed))t_proceso{
 	t_pcb* pcb;
 	int socketConsola;
 	int socketCPU;
+	bool abortado;
 }t_proceso;
 
 
@@ -162,6 +163,13 @@ void * nalloc(int tamanio);
 t_proceso* crearPrograma(int socket);
 
 int nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
+t_proceso* obtenerProcesoSocketCPU(t_queue *cola, int socketBuscado);
+void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido);
+t_pcb* desserializarPCB(char* serializado);
+void destruirPCB(t_pcb* pcb);
+int* buscarSemaforo(char*semaforo);
+void escribeSemaforo(char* semaforo, int valor);
+
 
 /*
  *

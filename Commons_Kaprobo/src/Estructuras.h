@@ -11,6 +11,7 @@ typedef struct __attribute__((packed))t_pcb{
 	//Falta referencia a tabla
 	int stackPosition;
 	int exitCode;
+
 }t_pcb;
 
 

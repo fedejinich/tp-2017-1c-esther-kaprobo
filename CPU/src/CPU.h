@@ -55,6 +55,7 @@ int quantum;
 int quantum_sleep;
 int stack_size;
 int tamanio_pag;
+int programaBloqueado;
 
 void iniciarCPU();
 void crearArchivoLog();

@@ -44,3 +44,21 @@ void finalizar(){
 	printf("Termino el programa");
 }
 
+void wait_kernel(t_nombre_semaforo identificador_semaforo){
+	log_info(logger,"Tamanio semaforo %d", strlen(identificador_semaforo));
+	char* nombre_semaforo = malloc(strlen(identificador_semaforo)+1);
+	char* barraCero = "\0";
+	memcpy(nombre_semaforo, identificador_semaforo, strlen(identificador_semaforo));
+	memcpy(nombre_semaforo+strlen(identificador_semaforo), barraCero, 1);
+	log_info(logger,"CPU: Pedir semaforo %s de tamanio %d", strlen(nombre_semaforo+1));
+	enviar(kernel,PEDIR_SEMAFORO, strlen(nombre_semaforo)+1, nombre_semaforo);
+	t_paquete* paquete_semaforo;
+	paquete_semaforo= recibir(kernel);
+	memcpy(&programaBloqueado, paquete_semaforo->data, 4); //Me trae un 0 si no bloquea y un 1 si bloquea el proceso
+	log_info(logger, "ProgramaBloqueado = %d", programaBloqueado);
+	free(nombre_semaforo);
+	liberar_paquete(paquete_semaforo);
+	log_info(logger, "Saliendo del wait");
+	return;
+}
+
