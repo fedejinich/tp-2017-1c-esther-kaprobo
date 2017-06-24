@@ -75,12 +75,15 @@ int quantum_sleep;
 int algoritmo;
 int grado_multiprog;
 char** sem_ids;
-int* sem_inits;
+char ** sem_inits;
 char** shared_vars;
 int stack_size;
 
 //Propias Configuracion KERNEL
 int TAMPAG;
+int* valor_semaforos;
+int * valor_shared_vars;
+bool hayConfiguracion = false;
 
 //HILO NOTIFY
 
@@ -110,9 +113,10 @@ t_queue * cola_block;
 
 t_queue** colas_ios;
 
-t_queue** colas_semaforos;
 
 t_queue * cola_CPU_libres;
+
+t_queue ** cola_semaforos;
 
 //FUNCIONES
 void inicializar();
@@ -123,6 +127,8 @@ void borrarArchivos();
 void hiloEjecutador();
 void mandarAEjecutar(t_proceso* proceso, int socket);
 int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion);
+int* convertirConfigEnInt(char** valores_iniciales);
+int* iniciarSharedVars(char** variables_compartidas);
 
 /*
  *

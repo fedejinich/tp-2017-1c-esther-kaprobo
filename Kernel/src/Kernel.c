@@ -47,8 +47,6 @@ void inicializar(){
 
 	//Configuracion
 	cargarConfiguracion();
-	inicializarSemaforos();
-	inicializarVariablesCompartidas();
 	mostrarConfiguracion();
 
 	//Sockets
@@ -67,9 +65,39 @@ void inicializar(){
 }
 
 void cargarConfiguracion() {
+	int j;
+	printf("inicio\n");
+	bool haySemaforos(){
+
+		bool retorno = false;
+
+		int i;
+
+		for(i=0;i<strlen((char*)sem_inits)/sizeof(char*);i++){
+			printf("i: %d\n");
+			if(list_size(cola_semaforos[i]->elements)>0) retorno = true;
+		}
+		printf(4);
+		return retorno;
+	}
+
+	if(hayConfiguracion){
+		bool semaforo;
+		int i;
+
+		semaforo = haySemaforos();
+
+		if(semaforo){
+			log_info(logger, "KERNEL: No se puede cambiar la configuracion hasta que la cola de Semaforos este vacia");
+			while(haySemaforos()){}
+			log_info(logger, "KERNEL: Cola semaforos vacia, cambiando configuracion...");
+		}
+	}
+
 	pthread_mutex_lock(&mutex_config);
 
-	printf("Cargando archivo de configuracion 'kernel.config'\n\n");
+	//printf("Cargando archivo de configuracion 'kernel.config'\n\n");
+
 	log_info(logger, "Cargando archivo de configuracion 'kernel.config'");
 
 	t_config* config = config_create(CONFIG_KERNEL);
@@ -98,20 +126,45 @@ void cargarConfiguracion() {
 	shared_vars = config_get_array_value(config, "SHARED_VARS");
 	stack_size = config_get_int_value(config, "STACK_SIZE");
 
+	valor_semaforos = convertirConfigEnInt(sem_inits);
+
+	valor_shared_vars = iniciarSharedVars(shared_vars);
+
+	if(cola_semaforos!= 0){
+		free(cola_semaforos);
+	}
+
+	cola_semaforos = nalloc(strlen((char*)sem_inits)*sizeof(char*));
+	for( j=0; j< strlen((char*)sem_inits) / sizeof(char*);j++){
+		cola_semaforos[j] = nalloc(sizeof(t_queue*));
+		cola_semaforos[j] = queue_create();
+	}
+
 	log_info(logger, "Archivo de configuración cargado");
+	hayConfiguracion = true;
 	pthread_mutex_unlock(&mutex_config);
 }
 
-void inicializarSemaforos(){
 
+int* convertirConfigEnInt(char** valores_iniciales){
+	int i;
+	int *resul;
+	resul=nalloc(((strlen((char*)valores_iniciales))/sizeof(char*))* sizeof(int));
+	for (i=0; i< (strlen((char*) valores_iniciales))/sizeof(char*);i++){
+		resul[i] = atoi(valores_iniciales[i]);
+	}
+	return resul;
 }
 
-void inicializarVariablesCompartidas(){
+
+int* iniciarSharedVars(char** variables_compartidas){
 	int i;
-	int cantidadDeVariablesCompartidas = sizeof(shared_vars) / sizeof(shared_vars[0]);
-	for(i = 0; i < cantidadDeVariablesCompartidas; i++){
-		shared_vars[i] = 0;
+	int* resul;
+	resul = nalloc(((strlen((char*)variables_compartidas))/sizeof(char*))*sizeof(int));
+	for(i=0; i<(strlen((char*) variables_compartidas))/sizeof(char*);i++){
+		resul[i]=0;
 	}
+	return resul;
 }
 
 void mostrarConfiguracion(){
