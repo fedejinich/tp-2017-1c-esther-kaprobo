@@ -92,7 +92,9 @@ int getFrameDisponibleHash(int pid, int pagina) {
 		log_warning(logger, "Colision en funcion de hash, me voy para arriba");
 		int i;
 		for(i = posibleFrame + 1; i <= tablaDePaginasSize(); i++) {
+			log_warning(logger, "Busco otro posible frame disponible");
 			entrada = getEntradaTablaDePaginas(i);
+			log_warning(logger, "Consegui otro posible frame disponible: %i", i);
 			if(entrada->pid == -1) {
 				log_debug(logger, "Frame disponible. Frame: %i", i);
 				return i;
@@ -102,7 +104,9 @@ int getFrameDisponibleHash(int pid, int pagina) {
 	int j;
 	log_warning(logger, "No hay espacios para arriba, me voy para abajo");
 	for(j = posibleFrame - 1; j >= 0; j--) {
+		log_warning(logger, "Busco otro posible frame disponible");
 		entrada = getEntradaTablaDePaginas(j);
+		log_warning(logger, "Consegui otro posible frame disponible: %i", j);
 		if(entrada->pid == -1) {
 			log_debug(logger, "Frame disponible. Frame: %i", j);
 			return j;
