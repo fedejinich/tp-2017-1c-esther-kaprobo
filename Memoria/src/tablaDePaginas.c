@@ -79,6 +79,39 @@ void escribirTablaDePaginasHash(int pid, int pagina) {
 
 };
 
+int getFrameDisponibleHash(int pid, int pagina) {
+	log_warning(logger, "Voy a llamar a funcionn de hash");
+	int posibleFrame = calcularPosicion(pid, pagina);
+	log_debug(logger, "Consegui un posible frame disponible: %i", posibleFrame);
+	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(posibleFrame);
+	log_warning(logger, "Evaluo si esta de verdad disponible");
+	if(entrada->pid == -1) {
+		log_debug(logger, "Frame disponible. Frame: %i", posibleFrame);
+		return posibleFrame;
+	} else {
+		log_warning(logger, "Colision en funcion de hash, me voy para arriba");
+		int i;
+		for(i = posibleFrame + 1; i <= tablaDePaginasSize(); i++) {
+			entrada = getEntradaTablaDePaginas(i);
+			if(entrada->pid == -1) {
+				log_debug(logger, "Frame disponible. Frame: %i", i);
+				return i;
+			}
+		}
+	}
+	int j;
+	log_warning(logger, "No hay espacios para arriba, me voy para abajo");
+	for(j = posibleFrame - 1; j >= 0; j--) {
+		entrada = getEntradaTablaDePaginas(j);
+		if(entrada->pid == -1) {
+			log_debug(logger, "Frame disponible. Frame: %i", j);
+			return j;
+		}
+	}
+	log_error(logger, "No hay frames disponibles");
+	return EXIT_FAILURE;
+}
+
 t_entradaTablaDePaginas* getEntradaTablaDePaginasHash(int pid, int pagina) {
 	int posiblePosicion = calcularPosicion(pid, pagina);
 	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(posiblePosicion);
@@ -87,6 +120,7 @@ t_entradaTablaDePaginas* getEntradaTablaDePaginasHash(int pid, int pagina) {
 		return entrada;
 	}
 	else {
+		log_warning(logger, "Colision en funcion de hash, me voy para arriba");
 		int i;
 		for(i = posiblePosicion; i <= tablaDePaginasSize(); i++) {
 			t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
@@ -98,6 +132,7 @@ t_entradaTablaDePaginas* getEntradaTablaDePaginasHash(int pid, int pagina) {
 	}
 	int j;
 	for(j = posiblePosicion; j >= 0; j--) {
+		log_warning(logger, "Colision en funcion de hash, me voy para abajo");
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(j);
 		if(entrada->pid == pid && entrada->pagina == pagina) {
 			log_info(logger, "Se encontro la entrada a la tabla de paginas para el PID: %i , Pagina: %i", pid, pagina);
@@ -119,7 +154,7 @@ bool paginasDisponibles(int paginasRequeridas) {
 
 	}
 
-	log_info(logger, "Hay espacio disponible");
+	log_debug(logger, "Hay espacio disponible");
 	return true;
 }
 
@@ -158,7 +193,8 @@ int tablaDePaginasSize() {
 void reservarPaginas(int pid, int paginasAReservar) {
 	int i;
 	for(i = 1; i <= paginasAReservar; i++) {
-		int frameDisponible = getFrameDisponible();  //aca va funcion de hash
+		int pagina = i;
+		int frameDisponible = getFrameDisponibleHash(pid, pagina);//getFrameDisponible();  //aca va funcion de hash
 		escribirTablaDePaginas(frameDisponible, pid, i);
 	}
 }

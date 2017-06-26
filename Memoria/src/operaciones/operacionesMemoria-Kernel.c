@@ -24,7 +24,7 @@ void inicializarProceso(int* pid, int* paginasRequeridas) {
 		reservarPaginas(pid, paginasRequeridas);
 		int * ok = 1; //si saco esto y dejo el 1  en el paquete me tira segmentation fault
 		enviar(socketClienteKernel, INICIALIZAR_PROCESO_OK, sizeof(int), &ok); //EL DATA ESTA AL PEDO PERO BUEN
-		log_info(logger, "Reservadas %i paginas para PID: %i", paginasRequeridas, pid);
+		log_debug(logger, "Reservadas %i paginas para PID: %i", paginasRequeridas, pid);
 	} else {
 		int * fallo = -1; //si saco esto y dejo el -1  en el paquete me tira segmentation fault
 		enviar(socketClienteKernel, INICIALIZAR_PROCESO_FALLO, sizeof(int), &fallo); //EL DATA ESTA AL PEDO PERO BUEN
