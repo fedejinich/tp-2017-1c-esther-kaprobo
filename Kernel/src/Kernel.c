@@ -14,6 +14,7 @@
 int main(int argc, char **argv) {
 	pthread_create(&hiloNotify, NULL, verNotify, NULL);
 	pthread_create(&hiloEjecuta, NULL, hiloEjecutador, NULL);
+	pthread_create(&hiloConsolaKernel, NULL, hiloConKer, NULL);
 
 	borrarArchivos();
 
@@ -37,6 +38,7 @@ void inicializar(){
 	pthread_mutex_init(&mutex_config, NULL);
 	pthread_mutex_init(&mutex_new,NULL);
 	pthread_mutex_init(&mutex_ready,NULL);
+	pthread_mutex_init(&mutexEjecuta,NULL);
 
 	sem_init(&sem_new,0,0);
 	sem_init(&sem_ready,0,0);
@@ -771,4 +773,99 @@ t_proceso* obtenerProcesoSocketCPU(t_queue *cola, int socketBuscado){
 	log_error(logger, "No hay proceso para retirar");
 	exit(0);
 	return NULL;
+}
+
+void hiloConKer(){
+	while(1){
+		pthread_mutex_lock(&mutexEjecuta);
+		mostrarMenu();
+		pthread_mutex_unlock(&mutexEjecuta);
+		scanf("%i",&opcion);
+
+		//opciones para consola
+		switch(opcion) {
+		case 1 :
+			//Obtiene listado de procesos, todos o la cola seleccionada
+			pthread_mutex_lock(&mutexEjecuta);
+			mostrarListadoDeProcesos();
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		case 2:
+			//Obtiene la informacion de un proceso en particular
+			pthread_mutex_lock(&mutexEjecuta);
+
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		case 3:
+			//Obtiene la tabla global de archivos
+			pthread_mutex_lock(&mutexEjecuta);
+
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		case 4:
+			//Modifica el grado de multiprogramacion del sistema
+			pthread_mutex_lock(&mutexEjecuta);
+
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		case 5:
+			//Finaliza un proceso
+			pthread_mutex_lock(&mutexEjecuta);
+
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		case 6:
+			//Detiene la planificacion
+			pthread_mutex_lock(&mutexEjecuta);
+
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		default:
+			printf("Opcion invalida, vuelva a intentar\n\n");
+			break;
+		}
+
+	}
+}
+
+void mostrarMenu(){
+	printf("\nIngrese la opcion deseada:\n");
+	printf("OPCION 1 - OBTENER LISTADO DE PROCESOS\n");
+	printf("OPCION 2 - OBTENER INFORMACION DE PROCESO\n");
+	printf("OPCION 3 - OBTENER TABLA GLOBAL DE ARCHIVOS\n");
+	printf("OPCION 4 - MODIFICAR GRADO DE MULTIPROGRAMACION\n");
+	printf("OPCION 5 - FINALIZAR UN PROCESO\n");
+	printf("OPCION 6 - DETENER LA PLANIFICACION\n");
+	printf("Su Opcion:\n");
+}
+
+void mostrarListadoDeProcesos(){
+	printf("Cola New\n");
+	mostrarUnaListaDeProcesos(cola_new, cant_new);
+
+	printf("Cola Ready\n");
+    mostrarUnaListaDeProcesos(cola_ready, cant_ready);
+
+	printf("Cola Exec\n");
+	mostrarUnaListaDeProcesos(cola_exec, cant_exec);
+
+	printf("Cola Block\n");
+	mostrarUnaListaDeProcesos(cola_block, cant_block);
+
+	printf("Cola Exit\n");
+	mostrarUnaListaDeProcesos(cola_exit, cant_exit);
+}
+
+void mostrarUnaListaDeProcesos(t_queue* colaAMostrar, int cantidadDeLaCola){
+	int i;
+	if(cantidadDeLaCola > 0){
+		for (i = 0; i <= cantidadDeLaCola; i++){
+			t_proceso* proceso = queue_pop(colaAMostrar);
+			printf("PID: %d\n", proceso->pcb->pid);
+		}
+	}
+	else{
+		printf("No hay procesos en esta cola\n");
+	}
+
 }
