@@ -86,9 +86,14 @@ int cantidadDeEntradasPorProceso(int pid) {
 }
 
 void liberarProcesoDeCache(int pid) {
-
+	//Si sale todo bien
+	log_debug(logger, "PID %i liberado de cache", pid);
 }
 
 void leerDeCache(int pid, int pagina) {
+	//Si sale todo bien
+	log_debug(logger, "Leido de cache PID %i, pagina %i", pid, pagina);
 
+	//sino
+	log_error(logger, "No se pudo leer de cache PID %i, pagina %i", pid, pagina);
 }

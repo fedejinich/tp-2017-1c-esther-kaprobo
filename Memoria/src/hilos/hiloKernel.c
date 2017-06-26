@@ -12,7 +12,7 @@ void* hiloServidorKernel(void* arg) {
     int servidorSocket ;
     int *socketClienteTemp;
     socketKernel = socket_escucha("127.0.0.1", puerto);
-    log_info(logger,"Creacion socket servidor Kernel exitosa");
+    log_debug(logger,"Creacion socket servidor Kernel exitosa");
     listen(socketKernel, 1024);
 
 
@@ -20,10 +20,10 @@ void* hiloServidorKernel(void* arg) {
     log_info(logger,"Iniciando Handshake con Kernel\n");
     bool resultado_hand = esperar_handshake(socketClienteKernel,13);
     if(resultado_hand){
-        log_info(logger,"Conexión aceptada del Kernel %d!!", socketClienteKernel);
+        log_debug(logger,"Conexión aceptada del Kernel %d!!", socketClienteKernel);
         enviar(socketClienteKernel,TAMANIO_PAGINA,sizeof(int),&frame_size);
     } else {
-        log_info(logger,"Handshake fallo, se aborta conexion");
+        log_error(logger,"Handshake fallo, se aborta conexion");
         exit (EXIT_FAILURE);
     }
 
@@ -51,7 +51,8 @@ void* hiloServidorKernel(void* arg) {
                 finalizarProceso(pid);
                 break;
             default:
-				log_error(logger,"Exit por hilo Kernel");
+				log_error(logger, "Exit por hilo Kernel");
+				log_error(logger, "Tiro un exit(EXIT_FAILURE) desde hilo-Kernel");
             	exit(EXIT_FAILURE);
 				break;
         }

@@ -12,14 +12,14 @@ void* hiloServidorCPU(void* arg) {
 	int servidorSocket, socketCliente;
 	int *socketClienteTemp;
 	socketCPU = socket_escucha("127.0.0.2", puerto);
-	log_info(logger,"Creacion socket servidor CPU exitosa");
+	log_debug(logger,"Creacion socket servidor CPU exitosa");
 	listen(socketCPU, 1024);
 	while(1) {
 		socketCliente = aceptar_conexion(socketCPU);
 		log_info(logger,"Iniciando Handshake con CPU");
 		bool resultado_hand = esperar_handshake(socketCliente,15);
 		if(resultado_hand){
-			log_info(logger,"Conexión aceptada de la CPU %d!!", socketCliente);
+			log_debug(logger,"Conexión aceptada de la CPU %d!!", socketCliente);
 		} else {
 			log_info(logger,"Handshake fallo, se aborta conexion");
 			exit (EXIT_FAILURE);
@@ -55,13 +55,14 @@ void* hiloConexionCPU(void* socket) {
 				tamanio = ((t_solicitudBytes*)(paqueteRecibido->data))->tamanio;
 				void* bufferAux = solicitarBytesDePagina(pid, pagina, offset, tamanio);
 				if(bufferAux != NULL) {
-					log_info(logger, "Solicitud de bytes de PID %i OK", pid);
+					log_info(logger, "Solicitud de lectura de bytes de PID %i OK", pid);
 					log_info(logger, "Enviando %i bytes a CPU: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
 					enviar(socket, SOLICITAR_BYTES_OK, tamanio, bufferAux);
+					log_debug(logger, "PID: %i leyo %i bytes de la pagina %i con offset %i y tamanio %i", pid, pagina, offset, tamanio);
 					log_info(logger, "Enviados %i bytes a CPU: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
 				} else {
 					enviar(socket, SOLICITAR_BYTES_FALLO, sizeof(int), -1);
-					log_warning(logger, "No se encontraron los bytes solicitados: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
+					log_error(logger, "No se encontraron los bytes solicitados: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
 				}
 				break;
 			case ALMACENAR_BYTES:
@@ -74,15 +75,16 @@ void* hiloConexionCPU(void* socket) {
 				if(exito) {
 					int* ok = 1;
 					enviar(socket, ALMACENAR_BYTES_OK, sizeof(int), &ok);
-					log_info(logger, "Almacenados bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
+					log_debug(logger, "Almacenados bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
 				} else {
 					int* fallo = -1;
 					enviar(socket, ALMACENAR_BYTES_FALLO, sizeof(int), &fallo);
-					log_warning(logger, "No se pudieron almacenar bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
+					log_error(logger, "No se pudieron almacenar bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
 				}
 				break;
 			default:
 				log_error(logger,"Exit por hilo CPU");
+				log_error(logger, "Tiro un exit(EXIT_FAILURE) y mato Memoria desde hilo-CPU");
 				exit(EXIT_FAILURE);
 				break;
 		}
