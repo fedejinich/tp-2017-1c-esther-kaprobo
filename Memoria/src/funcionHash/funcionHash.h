@@ -16,7 +16,7 @@
 
 t_list** overflow;
 int CANTIDAD_DE_MARCOS;
-unsigned int calcularPosicion(int pid, int num_pagina);
+int calcularPosicion(int pid, int num_pagina);
 void inicializarOverflow(int cantidad_de_marcos);
 void agregarSiguienteEnOverflow(int pos_inicial, int nro_frame);
 int buscarEnOverflow(int indice, int pid, int pagina);

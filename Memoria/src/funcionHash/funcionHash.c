@@ -8,13 +8,13 @@
 #include "funcionHash.h"
 
 /* Función Hash */
-unsigned int calcularPosicion(int pid, int num_pagina) {
+int calcularPosicion(int pid, int num_pagina) {
 	char str1[20];
 	char str2[20];
 	sprintf(str1, "%d", pid);
 	sprintf(str2, "%d", num_pagina);
 	strcat(str1, str2);
-	unsigned int indice = atoi(str1) % CANTIDAD_DE_MARCOS;
+	int indice = atoi(str1) % frames;
 	return indice;
 }
 
