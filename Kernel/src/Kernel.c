@@ -14,6 +14,7 @@
 int main(int argc, char **argv) {
 	pthread_create(&hiloNotify, NULL, verNotify, NULL);
 	pthread_create(&hiloEjecuta, NULL, hiloEjecutador, NULL);
+	pthread_create(&hiloConsolaKernel, NULL, hiloConKer, NULL);
 
 	borrarArchivos();
 
@@ -37,6 +38,7 @@ void inicializar(){
 	pthread_mutex_init(&mutex_config, NULL);
 	pthread_mutex_init(&mutex_new,NULL);
 	pthread_mutex_init(&mutex_ready,NULL);
+	pthread_mutex_init(&mutexEjecuta,NULL);
 
 	sem_init(&sem_new,0,0);
 	sem_init(&sem_ready,0,0);
@@ -47,8 +49,6 @@ void inicializar(){
 
 	//Configuracion
 	cargarConfiguracion();
-	inicializarSemaforos();
-	inicializarVariablesCompartidas();
 	mostrarConfiguracion();
 
 	//Sockets
@@ -67,9 +67,39 @@ void inicializar(){
 }
 
 void cargarConfiguracion() {
+	int j;
+	printf("inicio\n");
+	bool haySemaforos(){
+
+		bool retorno = false;
+
+		int i;
+
+		for(i=0;i<strlen((char*)sem_inits)/sizeof(char*);i++){
+			printf("i: %d\n");
+			if(list_size(cola_semaforos[i]->elements)>0) retorno = true;
+		}
+		printf(4);
+		return retorno;
+	}
+
+	if(hayConfiguracion){
+		bool semaforo;
+		int i;
+
+		semaforo = haySemaforos();
+
+		if(semaforo){
+			log_info(logger, "KERNEL: No se puede cambiar la configuracion hasta que la cola de Semaforos este vacia");
+			while(haySemaforos()){}
+			log_info(logger, "KERNEL: Cola semaforos vacia, cambiando configuracion...");
+		}
+	}
+
 	pthread_mutex_lock(&mutex_config);
 
-	printf("Cargando archivo de configuracion 'kernel.config'\n\n");
+	//printf("Cargando archivo de configuracion 'kernel.config'\n\n");
+
 	log_info(logger, "Cargando archivo de configuracion 'kernel.config'");
 
 	t_config* config = config_create(CONFIG_KERNEL);
@@ -98,20 +128,45 @@ void cargarConfiguracion() {
 	shared_vars = config_get_array_value(config, "SHARED_VARS");
 	stack_size = config_get_int_value(config, "STACK_SIZE");
 
+	valor_semaforos = convertirConfigEnInt(sem_inits);
+
+	valor_shared_vars = iniciarSharedVars(shared_vars);
+
+	if(cola_semaforos!= 0){
+		free(cola_semaforos);
+	}
+
+	cola_semaforos = nalloc(strlen((char*)sem_inits)*sizeof(char*));
+	for( j=0; j< strlen((char*)sem_inits) / sizeof(char*);j++){
+		cola_semaforos[j] = nalloc(sizeof(t_queue*));
+		cola_semaforos[j] = queue_create();
+	}
+
 	log_info(logger, "Archivo de configuración cargado");
+	hayConfiguracion = true;
 	pthread_mutex_unlock(&mutex_config);
 }
 
-void inicializarSemaforos(){
 
+int* convertirConfigEnInt(char** valores_iniciales){
+	int i;
+	int *resul;
+	resul=nalloc(((strlen((char*)valores_iniciales))/sizeof(char*))* sizeof(int));
+	for (i=0; i< (strlen((char*) valores_iniciales))/sizeof(char*);i++){
+		resul[i] = atoi(valores_iniciales[i]);
+	}
+	return resul;
 }
 
-void inicializarVariablesCompartidas(){
+
+int* iniciarSharedVars(char** variables_compartidas){
 	int i;
-	int cantidadDeVariablesCompartidas = sizeof(shared_vars) / sizeof(shared_vars[0]);
-	for(i = 0; i < cantidadDeVariablesCompartidas; i++){
-		shared_vars[i] = 0;
+	int* resul;
+	resul = nalloc(((strlen((char*)variables_compartidas))/sizeof(char*))*sizeof(int));
+	for(i=0; i<(strlen((char*) variables_compartidas))/sizeof(char*);i++){
+		resul[i]=0;
 	}
+	return resul;
 }
 
 void mostrarConfiguracion(){
@@ -280,10 +335,13 @@ int nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 
 
 void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo){
-	int res;
+
 	switch(paqueteRecibido->codigo_operacion){
-		case 101: //Codigo 101: Crear Script Ansisop
-			res = nuevoProgramaAnsisop(socketActivo, paqueteRecibido);
+		case ENVIAR_SCRIPT: //Codigo 101: Crear Script Ansisop
+			nuevoProgramaAnsisop(socketActivo, paqueteRecibido);
+			break;
+		case PEDIR_SEMAFORO:
+			pideSemaforo(socketActivo, paqueteRecibido);
 			break;
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
 			finalizarProcesoCPU(paqueteRecibido, socketActivo);
@@ -371,6 +429,93 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 	liberar_paquete(paquete);
 	return 0;
+}
+
+
+void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
+	t_proceso* procesoPideSem;
+	t_paquete* paqueteNuevo;
+	t_pcb* pcb_temporal;
+	pthread_mutex_lock(&mutex_exec);
+	procesoPideSem = obtenerProcesoSocketCPU(cola_exec, socketActivo);
+	pthread_mutex_unlock(&mutex_exec);
+	pthread_mutex_lock(&mutex_config);
+
+	log_info(logger, "Proceso %d pide semaforo %s", procesoPideSem->pcb->pid, paqueteRecibido->data);
+
+	int* valorSemaforo = buscarSemaforo(paqueteRecibido->data);
+	int mandar;
+	if(*valorSemaforo<=0){
+		mandar =1;
+		log_info(logger, "KERNEL: Recibi proceso %d mando a bloquear por semaforo %s", procesoPideSem->pcb->pid, paqueteRecibido->data);
+
+		enviar(socketActivo, PEDIDO_SEMAFORO_FALLO, sizeof(int), &mandar);//1 bloquea proceso
+		paqueteNuevo = recibir(socketActivo);
+		pcb_temporal = desserializarPCB(paqueteNuevo->data);
+		liberar_paquete(paqueteNuevo);
+		destruirPCB(procesoPideSem->pcb);
+		procesoPideSem->pcb = pcb_temporal;
+
+		/* VER
+		if(procesoPideSem->abortado == false){
+			bloqueoSemaforo(procesoPideSem, paqueteRecibido->data);
+			if(flag==0){
+				queue_push(cola_CPU_libres, (void*)socketActivo);
+				sem_post(&sem_cpu);
+			}
+			else{
+				log_info(logger,"KERNEL: se va a cerrar CPU");
+			}
+		}else{
+			log_info(logger,"KERNEL: Se recibio proceso %d por fin de quantum, abortado", procesoPideSem->pcb->pid);
+			abortar(procesoPideSem);
+		}
+		*/
+	}
+	else{
+		escribeSemaforo(paqueteNuevo->data,*buscarSemaforo(paqueteRecibido)-1);
+		mandar = 0;
+		enviar(socketActivo, PEDIDO_SEMAFORO_OK, sizeof(int), &mandar);
+		pthread_mutex_lock(&mutex_exec);
+		queue_push(cola_exec, procesoPideSem);
+		pthread_mutex_unlock(&mutex_exec);
+	}
+
+	pthread_mutex_unlock(&mutex_config);
+}
+
+t_pcb* desserializarPCB(char* serializado){
+	t_pcb* pcb;
+	return pcb;
+}
+void destruirPCB(t_pcb* pcb){
+
+}
+
+int* buscarSemaforo(char*semaforo){
+	int i;
+
+	for(i=0; i< strlen((char*)sem_ids)/sizeof(char*);i++){
+		if(strcmp((char*)sem_ids[i], semaforo) ==0){
+			return (&valor_semaforos[i]);
+		}
+	}
+	log_error(logger, "No se encontro el semaforo %s", semaforo);
+	exit(0);
+
+}
+
+void escribeSemaforo(char* semaforo, int valor){
+	int i;
+
+	for(i=0; i< strlen((char*)sem_ids)/sizeof(char*);i++){
+		if(strcmp((char*)sem_ids[i], semaforo)==0){
+			valor_semaforos[i] = valor;
+			return;
+		}
+	}
+	log_error(logger,"No se encontro semaforo %s", semaforo);
+	exit(0);
 }
 
 t_proceso* crearPrograma(int socketC){
@@ -615,7 +760,112 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 	//preparar datos de Kernel
 	//enviar primero datos
 	//enviar paquete serializado
+}
 
 
+t_proceso* obtenerProcesoSocketCPU(t_queue *cola, int socketBuscado){
+	int a = 0, t;
+	t_proceso*proceso;
+	while(proceso = (t_proceso*)list_get(cola->elements, a)){
+		if (proceso->socketCPU == socketBuscado) return (t_proceso*)list_remove(cola->elements, a);
+		a++;
+	}
+	log_error(logger, "No hay proceso para retirar");
+	exit(0);
+	return NULL;
+}
+
+void hiloConKer(){
+	while(1){
+		pthread_mutex_lock(&mutexEjecuta);
+		mostrarMenu();
+		pthread_mutex_unlock(&mutexEjecuta);
+		scanf("%i",&opcion);
+
+		//opciones para consola
+		switch(opcion) {
+		case 1 :
+			//Obtiene listado de procesos, todos o la cola seleccionada
+			pthread_mutex_lock(&mutexEjecuta);
+			mostrarListadoDeProcesos();
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		case 2:
+			//Obtiene la informacion de un proceso en particular
+			pthread_mutex_lock(&mutexEjecuta);
+
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		case 3:
+			//Obtiene la tabla global de archivos
+			pthread_mutex_lock(&mutexEjecuta);
+
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		case 4:
+			//Modifica el grado de multiprogramacion del sistema
+			pthread_mutex_lock(&mutexEjecuta);
+
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		case 5:
+			//Finaliza un proceso
+			pthread_mutex_lock(&mutexEjecuta);
+
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		case 6:
+			//Detiene la planificacion
+			pthread_mutex_lock(&mutexEjecuta);
+
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
+		default:
+			printf("Opcion invalida, vuelva a intentar\n\n");
+			break;
+		}
+
+	}
+}
+
+void mostrarMenu(){
+	printf("\nIngrese la opcion deseada:\n");
+	printf("OPCION 1 - OBTENER LISTADO DE PROCESOS\n");
+	printf("OPCION 2 - OBTENER INFORMACION DE PROCESO\n");
+	printf("OPCION 3 - OBTENER TABLA GLOBAL DE ARCHIVOS\n");
+	printf("OPCION 4 - MODIFICAR GRADO DE MULTIPROGRAMACION\n");
+	printf("OPCION 5 - FINALIZAR UN PROCESO\n");
+	printf("OPCION 6 - DETENER LA PLANIFICACION\n");
+	printf("Su Opcion:\n");
+}
+
+void mostrarListadoDeProcesos(){
+	printf("Cola New\n");
+	mostrarUnaListaDeProcesos(cola_new, cant_new);
+
+	printf("Cola Ready\n");
+    mostrarUnaListaDeProcesos(cola_ready, cant_ready);
+
+	printf("Cola Exec\n");
+	mostrarUnaListaDeProcesos(cola_exec, cant_exec);
+
+	printf("Cola Block\n");
+	mostrarUnaListaDeProcesos(cola_block, cant_block);
+
+	printf("Cola Exit\n");
+	mostrarUnaListaDeProcesos(cola_exit, cant_exit);
+}
+
+void mostrarUnaListaDeProcesos(t_queue* colaAMostrar, int cantidadDeLaCola){
+	int i;
+	if(cantidadDeLaCola > 0){
+		for (i = 0; i <= cantidadDeLaCola; i++){
+			t_proceso* proceso = queue_pop(colaAMostrar);
+			printf("PID: %d\n", proceso->pcb->pid);
+		}
+	}
+	else{
+		printf("No hay procesos en esta cola\n");
+	}
 
 }

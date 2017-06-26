@@ -42,6 +42,7 @@ typedef struct __attribute__((packed))t_proceso{
 	t_pcb* pcb;
 	int socketConsola;
 	int socketCPU;
+	bool abortado;
 }t_proceso;
 
 
@@ -75,17 +76,23 @@ int quantum_sleep;
 int algoritmo;
 int grado_multiprog;
 char** sem_ids;
-int* sem_inits;
+char ** sem_inits;
 char** shared_vars;
 int stack_size;
 
 //Propias Configuracion KERNEL
 int TAMPAG;
+int* valor_semaforos;
+int * valor_shared_vars;
+bool hayConfiguracion = false;
 
 //HILO NOTIFY
 
 pthread_t hiloNotify;
 pthread_t hiloEjecuta;
+pthread_t hiloConsolaKernel;
+
+int opcion;
 
 //SEMAFOROS
 sem_t sem_new;
@@ -97,22 +104,26 @@ pthread_mutex_t mutex_config;
 
 pthread_mutex_t mutex_new, mutex_ready, mutex_exec, mutex_exit;
 
+pthread_mutex_t mutexEjecuta;
 
 
 //COLAS
 
 t_queue * cola_new;
+t_queue * cola_ready;
+t_queue * cola_exec;
+t_queue * cola_block;
 t_queue * cola_exit;
 
-t_queue * cola_exec;
-t_queue * cola_ready;
-t_queue * cola_block;
+int cant_new, cant_ready, cant_exec, cant_block, cant_exit = 0;
+
 
 t_queue** colas_ios;
 
-t_queue** colas_semaforos;
 
 t_queue * cola_CPU_libres;
+
+t_queue ** cola_semaforos;
 
 //FUNCIONES
 void inicializar();
@@ -123,7 +134,12 @@ void borrarArchivos();
 void hiloEjecutador();
 void mandarAEjecutar(t_proceso* proceso, int socket);
 int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion);
-
+int* convertirConfigEnInt(char** valores_iniciales);
+int* iniciarSharedVars(char** variables_compartidas);
+void hiloConKer();
+void mostrarMenu();
+void mostrarListadoDeProcesos();
+void mostrarUnaListaDeProcesos(t_queue* colaAMostrar, int cantidadDeLaCola);
 /*
  *
  * SOCKETS
@@ -156,6 +172,13 @@ void * nalloc(int tamanio);
 t_proceso* crearPrograma(int socket);
 
 int nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
+t_proceso* obtenerProcesoSocketCPU(t_queue *cola, int socketBuscado);
+void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido);
+t_pcb* desserializarPCB(char* serializado);
+void destruirPCB(t_pcb* pcb);
+int* buscarSemaforo(char*semaforo);
+void escribeSemaforo(char* semaforo, int valor);
+
 
 /*
  *
