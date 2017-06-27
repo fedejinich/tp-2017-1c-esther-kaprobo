@@ -35,17 +35,6 @@ void* hiloServidorKernel(void* arg) {
 
     while (1) {
     	paqueteRecibido = recibir(socketClienteKernel);
-    	if(paqueteRecibido->codigo_operacion == INICIALIZAR_PROCESO) {
-			data = malloc(sizeof(t_asignarPaginasKernel));
-			data->paginasAsignar = 7;
-			data->pid = 1;
-
-			free(paqueteRecibido);
-
-			paqueteRecibido = malloc(sizeof(t_paquete));
-			paqueteRecibido->codigo_operacion = ASIGNAR_PAGINAS;
-			paqueteRecibido->data = data;
-    	}
 
         char * codigoDeOperacion = getCodigoDeOperacion(paqueteRecibido->codigo_operacion);
 
@@ -57,8 +46,6 @@ void* hiloServidorKernel(void* arg) {
                 inicializarProceso(pid, paginasRequeridas);
                 break;
             case ASIGNAR_PAGINAS:
-            	inicializarProceso(1, 494);
-///////////////////////////////////////////
             	paginasRequeridas = ((t_asignarPaginasKernel*)(paqueteRecibido->data))->paginasAsignar;
                 pid = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->pid;
                 asignarPaginasAProceso(pid, paginasRequeridas);
