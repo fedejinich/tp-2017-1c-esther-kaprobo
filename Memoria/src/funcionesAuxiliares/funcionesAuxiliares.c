@@ -55,5 +55,9 @@ char* getCodigoDeOperacion(int codigoInt) {
 	else if(codigoInt == INICIALIZAR_PROCESO) {
 		codigoString = "INICIALIZAR PROCESO";
 		return codigoString;
+	} else if(codigoInt == ASIGNAR_PAGINAS) {
+		codigoString = "ASIGNAR_PAGINAS";
+		return codigoString;
 	}
+
 }
