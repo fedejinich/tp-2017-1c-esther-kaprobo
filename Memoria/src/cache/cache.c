@@ -86,11 +86,20 @@ int cantidadDeEntradasPorProceso(int pid) {
 }
 
 void liberarProcesoDeCache(int pid) {
-	//Si sale todo bien
-	log_debug(logger, "PID %i liberado de cache", pid);
+	int i;
+	for(i = 0; i <= cache->elements_count; i++) {
+		t_entradaCache* entrada = list_get(cache, i);
+		if(entrada->pid == pid) {
+			log_warning(logger, "Liberando contenido de cache PID: %i, Pagina: %i", entrada->pid, entrada->pagina);
+			list_remove(cache,i);
+			log_warning(logger, "Liberado contenido de cache PID: %i, Pagina: %i");
+		}
+	}
+	log_debug(logger, "Liberado todo el contenido del PID %i de cache", pid);
 }
 
 void leerDeCache(int pid, int pagina) {
+	//Leer y usar lru
 	//Si sale todo bien
 	log_debug(logger, "Leido de cache PID %i, pagina %i", pid, pagina);
 

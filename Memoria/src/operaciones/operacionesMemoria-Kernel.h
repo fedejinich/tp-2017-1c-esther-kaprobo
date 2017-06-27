@@ -12,7 +12,8 @@
 
 
 void inicializarProceso(int* pid, int* paginasRequeridas);
-void asignarPaginasAProceso(int pid, int paginasRequeridas);
+void asignarPaginasAProceso(int pid, int paginasAsignar);
 void finalizarProceso(int pid);
+void liberarPaginaProceso(int pid, int pagina);
 
 #endif /* OPERACIONES_H_ */

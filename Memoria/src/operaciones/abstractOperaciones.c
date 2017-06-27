@@ -8,6 +8,6 @@
 #include "abstractOperaciones.h"
 
 void retardo() {
-	//printf("Retardo de %i segs", retardo_memoria);
-	//sleep(retardo_memoria);
+	log_info(logger, "sleep(%i)", retardo_memoria);
+	sleep(retardo_memoria/1000);
 }

@@ -13,9 +13,7 @@
 \******/
 
 void inicializarProceso(int* pid, int* paginasRequeridas) {
-
-	//KERNEL ME PIDE INICIALIZAR UN PROCESO
-	//retardo();
+	retardo();
 
 	log_info(logger, "Inicializando proceso: %i", pid);
 	log_info(logger, "Reservando %i paginas para PID: %i...", paginasRequeridas, pid);
@@ -34,9 +32,8 @@ void inicializarProceso(int* pid, int* paginasRequeridas) {
 }
 
 void finalizarProceso(int pid) {
-	//KERNEL PIDE FINALIZAR UN PROCESO
 	retardo();
-	log_info(logger, "Finalizando PID: %i...", pid);
+	log_warning(logger, "Finalizando PID: %i...", pid);
 
 	log_info(logger, "Finalizando PID: %i de cache...", pid);
 	liberarProcesoDeCache(pid);
@@ -46,31 +43,50 @@ void finalizarProceso(int pid) {
 	for(i = 0; i <= tablaDePaginasSize(); i++) {
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
 		if(entrada->pid == pid) {
-			log_info(logger, "Eliminando entrada %i de la tabla de paginas del PID: %i", i, pid);
+			log_warning(logger, "Eliminando entrada %i de la tabla de paginas del PID: %i", i, pid);
 			entrada->pid = -1;
 			entrada->pagina = 0;
 		}
 	}
 
-	log_info(logger, "PID %i finalizado", pid);
+	log_debug(logger, "PID %i finalizado", pid);
 }
 
-void asignarPaginasAProceso(int pid, int paginasRequeridas) {
-	//KERNEL PIDE ASIGNAR PAGINAS A UN PROCESO
+void asignarPaginasAProceso(int pid, int paginasAsignar) {
 	retardo();
 
-	log_info(logger,"Se piden %i paginas para el proceso %i.",paginasRequeridas, pid);
+	log_info(logger,"Se piden %i paginas para el proceso %i.",paginasAsignar, pid);
 
-	if(paginasDisponibles(paginasRequeridas)) {
-		reservarPaginas(pid, paginasRequeridas);
-
-		enviar(socketKernel, ASIGNAR_PAGINAS_OK, sizeof(int), 1); //EL DATA ESTA AL PEDO PERO BUEN
-
-		log_info(logger,"Se reservaron %i paginas al proceso %i.", paginasRequeridas, pid);
+	if(paginasDisponibles(paginasAsignar)) {
+		int exito = asignarMasPaginasAProceso(pid, paginasAsignar);
+		if(exito == EXIT_SUCCESS) {
+			int* ok = 1;
+			enviar(socketKernel, ASIGNAR_PAGINAS_OK, sizeof(int), ok); //EL DATA ESTA AL PEDO PERO BUEN
+			log_debug(logger,"Se asignaron %i paginas mas al PID: %i", pid, paginasAsignar);
+		} else {
+			int* fallo = -1;
+			enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), fallo);
+			log_error(logger, "No se pudieron asignar %i paginas a PID %i", paginasAsignar, pid);
+		}
 	} else {
 		enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), -1); //EL DATA ESTA AL PEDO PERO BUEN
-		log_warning(logger, "El proceso %i no se pudo inicializar.", pid);
+		log_error(logger, "No hay espacio disponible para asignar %i paginas mas al PID %i", paginasAsignar, pid);
 	}
+}
+
+void liberarPaginaProceso(int pid, int pagina) {
+	/****************************************************************************************************
+	 * LIBERAR PAGINA DE UN PROCESO																		*
+	 * Parámetros: [Identificador del Programa] [Número de Página elegida]								*
+	 * Ante un pedido de liberación de página por parte del kernel, el proceso memoria deberá liberar	*
+	 * la página que corresponde con el número solicitado. En caso de que dicha página no exista		*
+	 * o no pueda ser liberada, se deberá informar de la imposibilidad de realizar dicha operación		*
+	 * como una excepcion de memoria.																	*
+	 ***************************************************************************************************/
+
+	//MI PREGUNTA ES: POR QUE NO SE PODRIA LIBERAR UNA PAGINA?
+
+
 }
 
 
