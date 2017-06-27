@@ -14,7 +14,4 @@ void* hiloServidorKernel(void* arg);
 void* hiloConexionKernel(void* socketKernel);
 
 
-
-
-
 #endif /* HILOS_HILOKERNEL_H_ */

@@ -9,7 +9,6 @@
 #define TABLADEPAGINAS_H_
 
 #include "Memoria.h"
-#include "frames.h"
 
 typedef struct {
 	int frame;
@@ -19,12 +18,10 @@ typedef struct {
 
 t_entradaTablaDePaginas* tablaDePaginas;
 
- //DESPUES HAY QUE HACER UN FIX DE ESTO Y DEFINIR ESTE STRUCT SOLO EN ESTRUCTURAS.H
-//PERO AHORA EL PUTO DE C NO C PORQUE NO ME ESTA DEJANDO
 
 
 void inicializarTablaDePaginas();
-void escribirTablaDePaginas(int frame, int pid, int pagina);
+int escribirTablaDePaginas(int frame, int pid, int pagina);
 int getFrameDisponible();
 int tablaDePaginasSize();
 int getCantidadFramesDisponibles();
@@ -32,5 +29,8 @@ int getCantidadFramesOcupados();
 bool paginasDisponibles(int paginasRequeridas);
 t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada);
 void reservarPaginas(int pid, int paginasAReservar);
+int asignarMasPaginasAProceso(int pid, int paginasAsignar);
+int getUltimaPagina(int pid);
+t_list* getEntradasDePID(int pid);
 
 #endif /* TABLADEPAGINAS_H_ */

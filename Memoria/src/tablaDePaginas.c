@@ -35,10 +35,17 @@ void inicializarTablaDePaginas() {
 	log_info(logger,"Tabla de paginas inicializada.");
 }
 
-void escribirTablaDePaginas(int frame, int pid, int pagina) {
+int escribirTablaDePaginas(int frame, int pid, int pagina) {
 	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(frame);
-	entrada->pid = pid;
-	entrada->pagina = pagina;
+	if(entrada == EXIT_FAILURE) {
+		log_error(logger, "No se puede escribir en tabla de paginas. Frame: %i, PID: %i, Pagina: %i", frame, pid, pagina);
+		return EXIT_FAILURE;
+	} else {
+		entrada->pid = pid;
+		entrada->pagina = pagina;
+		log_debug(logger, "Se escrbio en tabla de paginas. Frame: %i, PID: %i, Pagina: %i", frame, pid, pagina);
+		return EXIT_SUCCESS;
+	}
 }
 
 t_entradaTablaDePaginas* getEntradaTablaDePaginas(int index) {
@@ -49,6 +56,38 @@ t_entradaTablaDePaginas* getEntradaTablaDePaginas(int index) {
 	}
 
 	return &tablaDePaginas[index];
+}
+
+t_entradaTablaDePaginas* getEntradaTablaDePaginasHash(int pid, int pagina) {
+	int posiblePosicion = calcularPosicion(pid, pagina);
+	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(posiblePosicion);
+	if(entrada->pid == pid && entrada->pagina == pagina) {
+		log_info(logger, "Se encontro la entrada a la tabla de paginas para el PID: %i , Pagina: %i", pid, pagina);
+		return entrada;
+	}
+	else {
+		log_warning(logger, "Colision en funcion de hash, me voy para arriba");
+		int i;
+		for(i = posiblePosicion; i <= tablaDePaginasSize(); i++) {
+			t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+			if(entrada->pid == pid && entrada->pagina == pagina) {
+				log_info(logger, "Se encontro la entrada a la tabla de paginas para el PID: %i , Pagina: %i", pid, pagina);
+				return entrada;
+			}
+		}
+	}
+	int j;
+	for(j = posiblePosicion; j >= 0; j--) {
+		log_warning(logger, "Colision en funcion de hash, me voy para abajo");
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(j);
+		if(entrada->pid == pid && entrada->pagina == pagina) {
+			log_info(logger, "Se encontro la entrada a la tabla de paginas para el PID: %i , Pagina: %i", pid, pagina);
+			return entrada;
+		}
+	}
+
+	log_error(logger, "No se encontro la entrada a la tabla de paginas para el PID: %i, Pagina: %i", pid, pagina);
+	return EXIT_FAILURE;
 }
 
 void escribirTablaDePaginasHash(int pid, int pagina) {
@@ -109,38 +148,6 @@ int getFrameDisponibleHash(int pid, int pagina) {
 	return EXIT_FAILURE;
 }
 
-t_entradaTablaDePaginas* getEntradaTablaDePaginasHash(int pid, int pagina) {
-	int posiblePosicion = calcularPosicion(pid, pagina);
-	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(posiblePosicion);
-	if(entrada->pid == pid && entrada->pagina == pagina) {
-		log_info(logger, "Se encontro la entrada a la tabla de paginas para el PID: %i , Pagina: %i", pid, pagina);
-		return entrada;
-	}
-	else {
-		log_warning(logger, "Colision en funcion de hash, me voy para arriba");
-		int i;
-		for(i = posiblePosicion; i <= tablaDePaginasSize(); i++) {
-			t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
-			if(entrada->pid == pid && entrada->pagina == pagina) {
-				log_info(logger, "Se encontro la entrada a la tabla de paginas para el PID: %i , Pagina: %i", pid, pagina);
-				return entrada;
-			}
-		}
-	}
-	int j;
-	for(j = posiblePosicion; j >= 0; j--) {
-		log_warning(logger, "Colision en funcion de hash, me voy para abajo");
-		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(j);
-		if(entrada->pid == pid && entrada->pagina == pagina) {
-			log_info(logger, "Se encontro la entrada a la tabla de paginas para el PID: %i , Pagina: %i", pid, pagina);
-			return entrada;
-		}
-	}
-
-	log_error(logger, "No se encontro la entrada a la tabla de paginas para el PID: %i, Pagina: %i", pid, pagina);
-	return EXIT_FAILURE;
-}
-
 bool paginasDisponibles(int paginasRequeridas) {
 	int i;
 	for(i = 1; i <= paginasRequeridas; i++) {
@@ -191,9 +198,67 @@ void reservarPaginas(int pid, int paginasAReservar) {
 	int i;
 	for(i = 1; i <= paginasAReservar; i++) {
 		int pagina = i;
-		int frameDisponible = getFrameDisponibleHash(pid, pagina);//getFrameDisponible();  //aca va funcion de hash
-		escribirTablaDePaginas(frameDisponible, pid, i);
+		int frameDisponible = getFrameDisponibleHash(pid, pagina);
+		escribirTablaDePaginas(frameDisponible, pid, pagina);
 	}
 }
 
+int asignarMasPaginasAProceso(int pid, int paginasAsignar) {
+	int ultimaPagina = getUltimaPagina(pid);
+	if(ultimaPagina == CUSTOM_ERROR) {
+		log_error(logger, "No se pueden asignar %i paginas al PID %i",paginasAsignar, pid);
+		return EXIT_FAILURE;
+	}
+	int i;
+	for(i = 0; i < paginasAsignar; i++) {
+		int pagina = ultimaPagina++;
+		int frameDisponible = getFrameDisponibleHash(pid, pagina);
+		int exito = escribirTablaDePaginas(frameDisponible, pid, pagina);
+		if(exito == EXIT_SUCCESS) {
+			log_debug(logger, "Se asigno una pagina mas para el PID %i. PID: %i, ultima pagina asignada: %i", pid, pid, pagina);
+		} else {
+			log_error(logger, "No se  pudo asignar una pagina mas para el PID %i. PID: %i, ultima pagina que quizo ser asignada: %i", pid, pid, pagina);
+			return EXIT_FAILURE;
+		}
+	}
 
+	log_debug(logger, "Se asignaron %i paginas mas para el PID %i", paginasAsignar, pid);
+	return EXIT_SUCCESS;
+}
+
+int getUltimaPagina(int pid) {
+	int ultimaPagina = -1;
+	t_list* entradasPID = getEntradasDePID(pid);
+	int i;
+	for(i = 0; i <= entradasPID->elements_count; i++) {
+		t_entradaTablaDePaginas* entrada = list_get(entradasPID, i);
+		if(entrada->pagina > ultimaPagina)
+			ultimaPagina = entrada->pagina;
+	}
+
+	if(ultimaPagina == -1) {
+		log_error(logger, "No pudo encontrar la ultima pagina del PID %i", pid);
+		return EXIT_FAILURE;
+	}
+
+	log_debug(logger, "Ultima pagina PID %i: %i", pid, ultimaPagina);
+	return EXIT_SUCCESS;
+}
+
+t_list* getEntradasDePID(int pid) {
+	int i;
+	t_list* lista = list_create();
+	for(i = 0; i <= frames; i++) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		if(entrada->pid == pid)
+			list_add(lista, entrada);
+	}
+
+	if(lista->elements_count <= 0) {
+		log_error(logger, "No se encontraron entradas del PID %i", pid);
+		return EXIT_FAILURE;
+	}
+
+
+	return lista;
+}

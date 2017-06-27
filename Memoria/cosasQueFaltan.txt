@@ -1,0 +1,5 @@
+1.Remplazo de cache con LRU
+2.Operaciones: asignarPaginas (KERNEL), liberarPaginaDeProceso (CPU), solicitarBytes (KERNEL)
+3.Funcion de hash para asignar paginas y leer paginas
+4.Semaforos
+

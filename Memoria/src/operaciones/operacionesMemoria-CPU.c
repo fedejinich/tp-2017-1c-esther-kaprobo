@@ -18,14 +18,19 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 	if(estaEnCache(pid, pagina))
 		leerDeCache(pid, pagina);
 	else {
-		//completar
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginasHash(pid, pagina);
+		if(entrada != -1) {
+			log_info(logger, "Los bytes del PID: %i, pagina: %i se encuentran en el frame %i", pid, pagina, entrada->frame);
+			void* buffer = leerFrame(entrada->frame, offset, tamanio);
+		}
 	}
 
-
+	return buffer;
 }
 
 bool almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer) {
 	//PEDIDO DE ESCRITURA POR PARTE DE CPU
 	retardo();
-
+	log_info(logger, "Almacenando bytes de PID %i en pagina %i con offset %i y tamanio %i ...", pid, pagina, offset, tamanio);
+	//escribirFrame();
 }

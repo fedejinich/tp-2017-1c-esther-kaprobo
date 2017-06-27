@@ -20,37 +20,9 @@
 #include "operaciones/operacionesMemoria-CPU.h"
 #include "operaciones/operacionesMemoria-Kernel.h"
 
+#define CUSTOM_ERROR -23
 
-/*
- * VARIABLES
- * */
 
-//Variables de configuracion
-int puerto;
-int frames;
-int frame_size;
-int entradas_cache;
-int cache_x_proc;
-char* reemplazo_cache;
-int retardo_memoria;
-
-//Memoria
-int tamanioMemoria;
-
-//Logger
-
-t_log* logger;
-
-//Variables de Hilos
-
-pthread_t servidorConexionesCPU;
-pthread_t servidorConexionesKernel;
-pthread_t consolaMemoria;
-
-//Sockets
-un_socket socketCPU;
-un_socket socketKernel;
-un_socket socketClienteKernel;
 
 /*
  * FUNCIONES

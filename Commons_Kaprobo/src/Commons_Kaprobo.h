@@ -25,6 +25,11 @@
 		int paginasAPedir;
 	} t_pedidoDePaginasKernel;
 
+	typedef struct __attribute__((packed))t_asignarPaginasKernel {
+		int pid;
+		int paginasAsignar;
+	} t_asignarPaginasKernel;
+
 	//Estructuras Memoria - CPU
 	typedef struct __attribute__((packed))t_solicitudBytes{
 		int pid;

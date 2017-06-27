@@ -32,7 +32,8 @@ void* hiloServidorKernel(void* arg) {
     int  pagina, tamanio, offset, tamanioCodigo;
 
     while (1) {
-        paqueteRecibido = recibir(socketClienteKernel);
+    	paqueteRecibido = recibir(socketClienteKernel);
+
         char * codigoDeOperacion = getCodigoDeOperacion(paqueteRecibido->codigo_operacion);
 
         log_info(logger, "Codigo de operacion Memoria-Kernel: %s", codigoDeOperacion);
@@ -48,7 +49,8 @@ void* hiloServidorKernel(void* arg) {
                 asignarPaginasAProceso(pid, paginasRequeridas);
                 break;
             case FINALIZAR_PROCESO:
-                finalizarProceso(pid);
+                pid = (int)paqueteRecibido->data;
+            	finalizarProceso(pid);
                 break;
             default:
 				log_error(logger, "Exit por hilo Kernel");
@@ -56,11 +58,7 @@ void* hiloServidorKernel(void* arg) {
             	exit(EXIT_FAILURE);
 				break;
         }
-
-
     }
-
-
 
     /*socketClienteTemp = malloc(sizeof(int));
     *socketClienteTemp = socketCliente;
