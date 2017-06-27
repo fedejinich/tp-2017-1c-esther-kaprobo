@@ -17,8 +17,18 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar);
 void retornar(t_valor_variable retorno);
 void finalizar();
 
+
+//Primitivas Kernel
 void wait_kernel(t_nombre_semaforo identificador_semaforo);
 void signal_kernel(t_nombre_semaforo identificador_semaforo);
+t_puntero reservarEnHeap(t_valor_variable espacio);
+void liberarEnHeap(t_puntero puntero);
+t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flags);
+void borrarArchivo(t_descriptor_archivo descriptor_archivo);
+void cerrarArchivo(t_descriptor_archivo descriptor_archivo);
+void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posicion);
+void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion, t_valor_variable tamanio);
+void leerArchivo(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio);
 
 
 #endif /* PRIMITIVAS_H_ */

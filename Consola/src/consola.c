@@ -248,7 +248,7 @@ void hiloNuevoPrograma(){
 		switch(paquete->codigo_operacion){
 
 		//Programa Finalizado
-		case 102:
+		case FINALIZAR_PROGRAMA:
 			estadisticasPrograma.fechaYHoraFin = fechaYHora();
 			pthread_mutex_lock(&mutexEjecuta);
 
@@ -263,31 +263,21 @@ void hiloNuevoPrograma(){
 
 			break;
 
-		//Imprimir texto
-		case 103:
+		//Imprimir
+		case IMPRIMIR_CONSOLA:
 			pthread_mutex_lock(&mutexEjecuta);
 
 			memcpy(&info_cadena, &paquete->data, paquete->tamanio);
-			printf("Imprimiendo información del pid %d\n",pid);
-			printf("Cadena: %s\n", info_cadena);
+			log_info(log,"Imprimiendo información del pid %d",pid);
+			printf("%s\n", info_cadena);
 			estadisticasPrograma.impresiones ++;
 			mostrarMenu();
-			pthread_mutex_unlock(&mutexEjecuta);
-			break;
-
-		//imprimir valor
-		case 104:
-			pthread_mutex_lock(&mutexEjecuta);
-
-			printf("Imprimiendo información del pid %d\n",pid);
-			printf("Valor: %d\n", *(int*) paquete->data);
-			estadisticasPrograma.impresiones ++;
-			mostrarMenu();
+			free(info_cadena);
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
 
 		//Programa sin espacio en memoria
-		case 105:
+		case SIN_ESPACIO_MEMORIA:
 			pthread_mutex_lock(&mutexEjecuta);
 
 			printf("Programa sin espacio en memoria\n");
@@ -302,7 +292,7 @@ void hiloNuevoPrograma(){
 			break;
 
 		//Programa abortado por Kernel
-		case 106:
+		case ABORTADO_KERNEL:
 			pthread_mutex_lock(&mutexEjecuta);
 
 			printf("Programa Abortado por Kernel");
@@ -315,7 +305,7 @@ void hiloNuevoPrograma(){
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
 		//Error por multiprogramacion
-		case 108:
+		case ERROR_MULTIPROGRAMACION:
 			pthread_mutex_lock(&mutexEjecuta);
 
 			printf("Grado de multiprogramacion maximo\n");

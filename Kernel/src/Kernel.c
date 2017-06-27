@@ -337,15 +337,37 @@ int nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo){
 
 	switch(paqueteRecibido->codigo_operacion){
-		case ENVIAR_SCRIPT: //Codigo 101: Crear Script Ansisop
+
+		case ENVIAR_SCRIPT: //Consola nos envia Script
+			log_info(logger,"KERNEL: Se recibio nuevo Script desde Consola");
 			nuevoProgramaAnsisop(socketActivo, paqueteRecibido);
 			break;
-		case PEDIR_SEMAFORO:
+
+		case PEDIR_SEMAFORO: //Proceso CPU nos pide Semaforo
+			log_info(logger,"KERNEL: Proceso nos solicita semaforo");
 			pideSemaforo(socketActivo, paqueteRecibido);
 			break;
+
+		case LIBERAR_SEMAFORO: //Proceso CPU nos libera semaforo
+			log_info(logger,"KERNEL: Proceso nos libera semaforo");
+			liberarSemaforo(socketActivo, paqueteRecibido);
+			break;
+
+		case ESCRIBIR_ARCHIVO: //Proceso CPU nos pide escribir texto, a traves de print. Se envia tb a Consola
+			log_info(logger,"KERNEL: Proceso nos solicita imprimir texto");
+			imprimirConsola(socketActivo, paqueteRecibido);
+			//VER - ADEMAS DE IMPRIMIR POR CONSOLA TIENE QUE ESCRIBIR EN ARCHIVO
+			break;
+
+		case SOLICITAR_VARIABLE: //Proceso CPU nos pide variable compartida
+			log_info(logger, "KERNEL: Proceso nos solicita variable compartida");
+			solicitaVariable(socketActivo, paqueteRecibido);
+			break;
+
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
 			finalizarProcesoCPU(paqueteRecibido, socketActivo);
 			break;
+
 		default:
 			break;
 	}
@@ -369,8 +391,6 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	sem_post(&sem_new); // capaz que no es necesario, para que saque siempre 1, y no haga lio
 	pthread_mutex_unlock(&mutex_new);
 
-	printf("cantidad prog %d\n", cantidadDeProgramas);
-	printf("grado multiprog%d\n", grado_multiprog);
 	if(cantidadDeProgramas >= grado_multiprog){
 		//No puedo pasar a Ready, aviso a Consola
 		int* basura = 1;
@@ -483,6 +503,76 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 
 	pthread_mutex_unlock(&mutex_config);
 }
+
+void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
+
+}
+
+void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido){
+	t_proceso* proceso;
+	pthread_mutex_lock(&mutex_exec);
+	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
+	queue_push(cola_exec, proceso);
+	pthread_mutex_unlock(&mutex_exec);
+	if(proceso->abortado==false)
+		enviar(proceso->socketConsola, IMPRIMIR_CONSOLA, paqueteRecibido->tamanio, paqueteRecibido->data);
+	return;
+}
+
+
+void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido){
+	int* valor;
+	t_proceso* proceso;
+	pthread_mutex_lock(&mutex_exec);
+	proceso = obtenerProcesoSocketCPU(cola_exec,socketActivo);
+	queue_push(cola_exec, proceso);
+	pthread_mutex_unlock(&mutex_exec);
+	pthread_mutex_lock(&mutex_config);
+	valor = valorVariable(paqueteRecibido->data);
+	enviar(socketActivo,SOLICITAR_VARIABLE_OK, sizeof(int), &valor);
+	pthread_mutex_unlock(&mutex_config);
+	return;
+}
+
+int* valorVariable(char* variable){
+	int i;
+	log_info(logger, "Se solicita variable %s", variable);
+	for(i=0; i < strlen((char*)shared_vars)/ sizeof(char*); i++){
+		if(strcmp((char*)shared_vars[i], variable)==0){
+			return &valor_shared_vars[i];
+		}
+	}
+	log_error(logger, "KERNEL, no se encontro variable %s, exit", variable);
+	exit(0);
+}
+
+void escribirVariable(int* socketActivo, t_paquete* paqueteRecibido){
+	char* variable;
+	t_proceso* proceso;
+	int* valor;
+	int i;
+
+	pthread_mutex_lock(&cola_exec);
+	proceso=obtenerProcesoSocketCPU(cola_exec, socketActivo);
+	queue_push(cola_exec, proceso);
+	pthread_mutex_unlock(&cola_exec);
+	pthread_mutex_lock(&mutex_config);
+
+	//Para escribir primero enviamos el int y despues el string con el nombre
+	variable = paqueteRecibido->data;
+	valor = (int*)variable;
+	variable +=4;
+	for(i=0; i<strlen((char*)shared_vars)/sizeof(char*);i++){
+		if(strcmp((char*)shared_vars[i], variable)==0){
+			memcpy(&valor_shared_vars[i], valor, sizeof(int));
+			return;
+		}
+	}
+	log_error(logger, "No se encontro Variable %s, EXIT",variable);
+	exit(0);
+}
+
+
 
 t_pcb* desserializarPCB(char* serializado){
 	t_pcb* pcb;
@@ -620,10 +710,7 @@ int conectarConFileSystem(){
 	}
 }
 
-/*
- * Función que devuelve el valor máximo en la tabla.
- * Supone que los valores válidos de la tabla son positivos y mayores que 0.
- * Devuelve 0 si n es 0 o la tabla es NULL */
+
 int dameSocketMasGrande (int *tabla, int n) {
 	int i;
 	int max;

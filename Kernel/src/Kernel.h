@@ -125,21 +125,7 @@ t_queue * cola_CPU_libres;
 
 t_queue ** cola_semaforos;
 
-//FUNCIONES
-void inicializar();
-void cargarConfiguracion();
-void mostrarConfiguracion();
-void verNotify();
-void borrarArchivos();
-void hiloEjecutador();
-void mandarAEjecutar(t_proceso* proceso, int socket);
-int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion);
-int* convertirConfigEnInt(char** valores_iniciales);
-int* iniciarSharedVars(char** variables_compartidas);
-void hiloConKer();
-void mostrarMenu();
-void mostrarListadoDeProcesos();
-void mostrarUnaListaDeProcesos(t_queue* colaAMostrar, int cantidadDeLaCola);
+
 /*
  *
  * SOCKETS
@@ -160,32 +146,55 @@ un_socket memoria;
 //PERO AHORA EL PUTO DE C NO C PORQUE NO ME ETA DEJANDO
 
 //FUNCIONES
+
+//Varias Kernel
+void inicializar();
+void cargarConfiguracion();
+void mostrarConfiguracion();
+void verNotify();
+void borrarArchivos();
+int* convertirConfigEnInt(char** valores_iniciales);
+int* iniciarSharedVars(char** variables_compartidas);
+void * nalloc(int tamanio);
+
+//Consola
+void hiloConKer();
+void mostrarMenu();
+void mostrarListadoDeProcesos();
+void mostrarUnaListaDeProcesos(t_queue* colaAMostrar, int cantidadDeLaCola);
+
+//Sockets
 void compactaClaves(int *tabla, int *n);
 int dameSocketMasGrande (int *tabla, int n);
 void prepararSocketsServidores();
 void verSiHayNuevosClientes();
 int nuevoClienteConsola (int servidor, int *clientes, int *nClientes);
 void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo);
-int pedirPaginasParaProceso(int pid);
 un_socket conectarConLaMemoria();
-void * nalloc(int tamanio);
-t_proceso* crearPrograma(int socket);
 
+
+//Creacion Programa
+void hiloEjecutador();
+void mandarAEjecutar(t_proceso* proceso, int socket);
+int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion);
+int pedirPaginasParaProceso(int pid);
+t_proceso* crearPrograma(int socket);
 int nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
+
+//Ejecucion programas
+
 t_proceso* obtenerProcesoSocketCPU(t_queue *cola, int socketBuscado);
 void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido);
+void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido);
 t_pcb* desserializarPCB(char* serializado);
 void destruirPCB(t_pcb* pcb);
 int* buscarSemaforo(char*semaforo);
 void escribeSemaforo(char* semaforo, int valor);
+void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido);
+
+void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido);
+void escribirVariable(int* socketActivo, t_paquete* paqueteRecibido);
+int* valorVariable(char* variable);
 
 
-/*
- *
- * CPU
- *
- */
-int indiceCPUsConectadas = 0;
-un_socket cpusConectadas[1000]; //DEFINIR ESTE NUMERO
-int indiceCPUsDisponibles = 0;
-un_socket cpusDisponibles[1000];
+
