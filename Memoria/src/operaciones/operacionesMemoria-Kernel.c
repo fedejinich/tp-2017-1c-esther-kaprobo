@@ -59,16 +59,13 @@ void asignarPaginasAProceso(int pid, int paginasAsignar) {
 
 	if(paginasDisponibles(paginasAsignar)) {
 		int exito = asignarMasPaginasAProceso(pid, paginasAsignar);
-		log_warning(logger, "Exito del asingnarPAginas a proceso %i",  exito);
 		if(exito == EXIT_SUCCESS) {
             dumpTabla();
 			int* ok = 1;
-			log_warning(logger, "ASIGNAR PAGINAS OK no voy  apoder enviar porque hardcodeo");
 			enviar(socketKernel, ASIGNAR_PAGINAS_OK, sizeof(int), ok); //EL DATA ESTA AL PEDO PERO BUEN
 			log_debug(logger,"Se asignaron %i paginas mas al PID: %i", pid, paginasAsignar);
 		} else {
 			int* fallo = -1;
-			log_warning(logger, "ASIGNAR PAGINAS FALLO no voy  apoder enviar porque hardcodeo");
 			enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), fallo);
 			log_error(logger, "No se pudieron asignar %i paginas a PID %i", paginasAsignar, pid);
 		}
