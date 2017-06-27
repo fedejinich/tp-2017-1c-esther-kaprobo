@@ -273,5 +273,6 @@ t_list* getEntradasDePID(int pid) {
 		return EXIT_FAILURE;
 	}
 
+
 	return lista;
 }
