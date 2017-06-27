@@ -65,7 +65,7 @@ void ejecutarArchivo(FILE *archivo);
 int conectarConElKernel();
 int conectarConMemoria();
 t_pcb* deserializarPCB(char* buffer);
-char * leerArchivo(FILE *archivo);
+//char * leerArchivo(FILE *archivo);
 char* depurarSentencia(char* sentencia);
 
 void asignarDatosKernel(t_paquete * datos_kernel);

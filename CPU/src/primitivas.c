@@ -17,11 +17,32 @@ void asignar(t_puntero direccion_variable,t_valor_variable valor){
 }
 
 t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
-	printf("Definiendo variable: %s", variable);
+	char* variable_compartida = malloc(strlen(variable)+1);
+	char* barra_cero = "\0";
+	t_paquete* paquete;
+	int valor;
+	memcpy(variable_compartida, variable, strlen(variable));
+	memcpy(variable_compartida+strlen(variable), barra_cero,1);
+	log_info(logger,"Obteniendo la variable %s", variable_compartida);
+	enviar(kernel, SOLICITAR_VARIABLE, strlen(variable)+1, variable_compartida);
+	paquete = recibir(kernel);
+	memcpy(&valor, paquete->data, 4);
+	log_info(logger, "El valor de la variable %s es %d", variable_compartida,valor);
+	free(variable_compartida);
+	liberar_paquete(paquete);
+	return valor;
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable,t_valor_variable valor){
-	printf("asignar Valor Compartida\n");
+	char* variable_compartida = malloc(5+strlen(variable));
+	char* barra_cero="\0";
+	memcpy(variable_compartida, &valor, 4);
+	memcpy(variable_compartida, &variable, strlen(variable));
+	memcpy(variable_compartida+strlen(variable)+4, barra_cero,1);
+	log_info(logger,"Variable compartida %s le asignamos valor %d", variable_compartida+4, (int*)variable_compartida[0]);
+	enviar(kernel, ESCRIBIR_VARIABLE, 5+strlen(variable), variable_compartida);
+	free(variable_compartida);
+	return valor;
 }
 
 void irAlLabel(t_nombre_etiqueta etiqueta){
@@ -44,6 +65,8 @@ void finalizar(){
 	printf("Termino el programa");
 }
 
+
+//Primitivas KERNEL
 void wait_kernel(t_nombre_semaforo identificador_semaforo){
 	log_info(logger,"Tamanio semaforo %d", strlen(identificador_semaforo));
 	char* nombre_semaforo = malloc(strlen(identificador_semaforo)+1);
@@ -60,5 +83,44 @@ void wait_kernel(t_nombre_semaforo identificador_semaforo){
 	liberar_paquete(paquete_semaforo);
 	log_info(logger, "Saliendo del wait");
 	return;
+}
+
+void signal_kernel(t_nombre_semaforo identificador_semaforo){
+	printf("signal\n");
+}
+
+t_puntero reservarEnHeap(t_valor_variable espacio){
+	printf("reservar en Heap\n");
+	t_puntero * puntero;
+	return puntero;
+}
+
+void liberarEnHeap(t_puntero puntero){
+	printf("liberar\n");
+}
+
+t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flags){
+	t_descriptor_archivo* archi;
+	return archi;
+}
+
+void borrarArchivo(t_descriptor_archivo descriptor_archivo){
+
+}
+
+void cerrarArchivo(t_descriptor_archivo descriptor_archivo){
+
+}
+
+void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posicion){
+
+}
+
+void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion, t_valor_variable tamanio){
+
+}
+
+void leerArchivo(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio){
+
 }
 

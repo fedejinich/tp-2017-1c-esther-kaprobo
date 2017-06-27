@@ -30,7 +30,17 @@ AnSISOP_funciones primitivas = {
 
 
 AnSISOP_kernel primitivas_kernel = {
-		.AnSISOP_wait				= wait_kernel
+		.AnSISOP_wait				= wait_kernel,
+		.AnSISOP_signal				= signal_kernel,
+		.AnSISOP_reservar			= reservarEnHeap,
+		.AnSISOP_liberar			= liberarEnHeap,
+		.AnSISOP_abrir				= abrirArchivo,
+		.AnSISOP_borrar				= borrarArchivo,
+		.AnSISOP_cerrar				= cerrarArchivo,
+		.AnSISOP_moverCursor		= moverCursor,
+		.AnSISOP_escribir			= escribirArchivo,
+		.AnSISOP_leer				= leerArchivo
+
 };
 
 int main(int argc, char **argv) {
@@ -147,7 +157,7 @@ char* depurarSentencia(char* sentencia){
 	}
 	return sentencia;
 }
-
+/*
 char * leerArchivo(FILE *archivo){
 	fseek(archivo, 0, SEEK_END);
 	long fsize = ftell(archivo);
@@ -157,7 +167,7 @@ char * leerArchivo(FILE *archivo){
 	script[fsize] = '\0';
 	return script;
 }
-
+*/
 void cargarConfiguracion(){
 	t_config* config = config_create(getenv("archivo_configuracion_CPU"));
 	puerto_kernel = config_get_int_value(config, "PUERTO_KERNEL");
