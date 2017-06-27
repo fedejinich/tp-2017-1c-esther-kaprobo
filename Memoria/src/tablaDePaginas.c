@@ -154,7 +154,6 @@ bool paginasDisponibles(int paginasRequeridas) {
 		return true;
 	} else {
 		log_error(logger, "No hay mas espacio disponible en memoria");
-		log_error(logger, "%i paginas de mas colapsan la memoria", paginasRequeridas);
 		return false;
 	}
 	/*
@@ -212,9 +211,7 @@ void reservarPaginas(int pid, int paginasAReservar) {
 }
 
 int asignarMasPaginasAProceso(int pid, int paginasAsignar) {
-	log_warning(logger, "Pido ultima pagina");
 	int ultimaPagina = getUltimaPagina(pid);
-	log_warning(logger, "Ultima pagina %i", ultimaPagina);
 	if(ultimaPagina == CUSTOM_ERROR) {
 		log_error(logger, "No se pueden asignar %i paginas al PID %i",paginasAsignar, pid);
 		return EXIT_FAILURE;
@@ -223,7 +220,6 @@ int asignarMasPaginasAProceso(int pid, int paginasAsignar) {
 	for(i = 0; i < paginasAsignar; i++) {
 		ultimaPagina++;
 		int pagina = ultimaPagina;
-		log_warning(logger, "Pagina a asignar de mas para el PID %i: Pagina %i", pid, pagina);
 		int frameDisponible = getFrameDisponibleHash(pid, pagina);
 		if(frameDisponible != EXIT_FAILURE) {
 			int exito = escribirTablaDePaginas(frameDisponible, pid, pagina);
@@ -245,15 +241,11 @@ int asignarMasPaginasAProceso(int pid, int paginasAsignar) {
 }
 
 int getUltimaPagina(int pid) {
-	log_warning(logger, "Empiezo a buscar ultima pagina");
 	int ultimaPagina = -1;
-	log_warning(logger, "Pido enetradas de PID %i", pid);
 	t_list* entradasPID = getEntradasDePID(pid);
-	log_warning(logger, "Entro en el for para encontrar la ultima pagina de las entradas del PID %i", pid);
 	int i;
 	for(i = 0; i < entradasPID->elements_count; i++) {
 		t_entradaTablaDePaginas* entrada = list_get(entradasPID, i);
-		log_warning(logger, "Evaluo entrada Frame %i PID %i, Pagina %i", entrada->frame, entrada->pid, entrada->pagina);
 		if(entrada->pagina > ultimaPagina)
 			ultimaPagina = entrada->pagina;
 	}
@@ -269,24 +261,17 @@ int getUltimaPagina(int pid) {
 
 t_list* getEntradasDePID(int pid) {
 	int i;
-	log_warning(logger, "Voy a crear lista");
 	t_list* lista = list_create();
-	log_warning(logger, "Cree lista");
 	for(i = 0; i < frames; i++) {
-
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
-		if(entrada->pid == pid) {
-			log_warning(logger, "Consigo entrada de pid %i, pagina %i", entrada->pid, entrada->pagina);
+		if(entrada->pid == pid)
 			list_add(lista, entrada);
-		}
 	}
-	log_warning(logger, "Chequeo errores en getEntradasDePID");
+
 	if(lista->elements_count <= 0) {
 		log_error(logger, "No se encontraron entradas del PID %i", pid);
 		return EXIT_FAILURE;
 	}
-	log_warning(logger, "Pase chequeo");
-
 
 	return lista;
 }
