@@ -142,15 +142,16 @@ int liberarProcesoDeCache(int pid) {
 		}
 	}
 	log_debug(logger, "Liberado todo el contenido del PID %i de cache", pid);
+	return EXIT_SUCCESS;
 }
 
-int leerDeCache(int pid, int pagina) {
+void* leerDeCache(int pid, int pagina) {
 	incrementarCantidadDeLecturas();
 	t_entradaCache* entrada = getEntradaCache(pid, pagina);
 	entrada->cantidadDeLecturasSinUsar = 0;
 	log_debug(logger, "Leido de cache PID %i, pagina %i", pid, pagina);
 
-	return entrada;
+	return entrada->contenido;
 }
 
 int incrementarCantidadDeLecturas() {

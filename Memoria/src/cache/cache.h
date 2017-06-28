@@ -29,7 +29,7 @@ bool hayEspacioEnCache(int pid);
 int cantidadDeEntradasPorProceso(int pid);
 int liberarProcesoDeCache(int pid);
 int liberarPaginaDeProcesoDeCache(int pid, int pagina);
-int leerDeCache(int pid, int pagina);
+void* leerDeCache(int pid, int pagina);
 int incrementarCantidadDeLecturas();
 int remplazoLRU(int pid, int pagina, void* contenido);
 int getEntradaMasAntigua();
