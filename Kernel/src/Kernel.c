@@ -815,21 +815,7 @@ void hiloEjecutador(){
 
 		log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
 
-		//mandarAEjecutar(proceso, socketCPULibre);
-
-
-		/*SIMULACION DE EJECUCION PARA PRUEBAS!!!*/
-
-		printf("Estaria EJECUTANDO\n");
-		sleep(20);
-		printf("Termine de ejecutar\n");
-
-		//Pruebo envio codigo 102 programa finalizado
-		enviar(proceso->socketConsola, EnvioFinalizacionAConsola, sizeof(int), &proceso->pcb->pid);
-		finalizarProceso(proceso, 0);
-
-		/*FIN SIMULACION DE EJECUCION PARA PRUEBAS*/
-
+		mandarAEjecutar(proceso, socketCPULibre);
 
 		pthread_mutex_unlock(&mutex_config);
 	}
@@ -847,6 +833,28 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 	//preparar datos de Kernel
 	//enviar primero datos
 	//enviar paquete serializado
+
+
+	/*SIMULACION DE EJECUCION PARA PRUEBAS SECCION 1*/
+
+	printf("Estaria EJECUTANDO\n");
+	sleep(20);
+	printf("Termine de ejecutar\n");
+
+	/*FIN SIMULACION DE EJECUCION PARA PRUEBAS SECCION 1*/
+
+
+	pthread_mutex_lock(&mutex_exec);
+	queue_pop(cola_exec);
+	pthread_mutex_unlock(&mutex_exec);
+
+	/*SIMULACION DE EJECUCION PARA PRUEBAS SECCION 2*/
+
+	//Pruebo envio codigo 102 programa finalizado
+	enviar(proceso->socketConsola, EnvioFinalizacionAConsola, sizeof(int), &proceso->pcb->pid);
+	finalizarProceso(proceso, 0);
+
+	/*FIN SIMULACION DE EJECUCION PARA PRUEBAS SECCION 2*/
 }
 
 
@@ -928,31 +936,39 @@ void mostrarMenu(){
 
 void mostrarListadoDeProcesos(){
 	printf("Cola New\n");
-	mostrarUnaListaDeProcesos(cola_new, cant_new);
+	pthread_mutex_lock(&mutex_new);
+	mostrarUnaListaDeProcesos(cola_new);
+	pthread_mutex_unlock(&mutex_new);
 
 	printf("Cola Ready\n");
-    mostrarUnaListaDeProcesos(cola_ready, cant_ready);
+	pthread_mutex_lock(&mutex_ready);
+	mostrarUnaListaDeProcesos(cola_ready);
+	pthread_mutex_unlock(&mutex_ready);
 
 	printf("Cola Exec\n");
-	mostrarUnaListaDeProcesos(cola_exec, cant_exec);
+	pthread_mutex_lock(&mutex_exec);
+	mostrarUnaListaDeProcesos(cola_exec);
+	pthread_mutex_unlock(&mutex_exec);
 
 	printf("Cola Block\n");
-	mostrarUnaListaDeProcesos(cola_block, cant_block);
+	pthread_mutex_lock(&mutex_block);
+	mostrarUnaListaDeProcesos(cola_block);
+	pthread_mutex_unlock(&mutex_block);
 
 	printf("Cola Exit\n");
-	mostrarUnaListaDeProcesos(cola_exit, cant_exit);
+	pthread_mutex_lock(&mutex_exit);
+	mostrarUnaListaDeProcesos(cola_exit);
+	pthread_mutex_unlock(&mutex_exit);
 }
 
-void mostrarUnaListaDeProcesos(t_queue* colaAMostrar, int cantidadDeLaCola){
-	int i;
-	if(cantidadDeLaCola > 0){
-		for (i = 0; i <= cantidadDeLaCola; i++){
-			t_proceso* proceso = queue_pop(colaAMostrar);
-			printf("PID: %d\n", proceso->pcb->pid);
-		}
+void mostrarUnaListaDeProcesos(t_queue* colaAMostrar){
+	int i = 0;
+	t_proceso*proceso;
+	while(proceso = (t_proceso*)list_get(colaAMostrar->elements, i)){
+		printf("PID: %d\n", proceso->pcb->pid);
+		i++;
 	}
-	else{
+	if(i == 0){
 		printf("No hay procesos en esta cola\n");
 	}
-
 }

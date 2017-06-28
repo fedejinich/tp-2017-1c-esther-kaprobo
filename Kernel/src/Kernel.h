@@ -102,7 +102,7 @@ sem_t sem_exit;
 
 pthread_mutex_t mutex_config;
 
-pthread_mutex_t mutex_new, mutex_ready, mutex_exec, mutex_exit;
+pthread_mutex_t mutex_new, mutex_ready, mutex_exec, mutex_block, mutex_exit;
 
 pthread_mutex_t mutexEjecuta;
 
@@ -161,7 +161,7 @@ void * nalloc(int tamanio);
 void hiloConKer();
 void mostrarMenu();
 void mostrarListadoDeProcesos();
-void mostrarUnaListaDeProcesos(t_queue* colaAMostrar, int cantidadDeLaCola);
+void mostrarUnaListaDeProcesos(t_queue* colaAMostrar);
 
 //Sockets
 void compactaClaves(int *tabla, int *n);
