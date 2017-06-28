@@ -8,25 +8,70 @@
 
 #include "cache.h"
 
-void inicializarCache() {
+int inicializarCache() {
+	cache = -1;
 	cache = list_create();
+	if(cache == -1) {
+		log_error(logger, "Error al inicializar cache");
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }
 
-void escribirCache(int pid, int pagina, void* contenido) {
-	if(!estaEnCache(pid, pagina) && hayEspacioEnCache(pid)) {
+int escribirCache(int pid, int pagina, void* contenido) {
+	int exito = incrementarCantidadDeLecturas();
+
+	if(exito == EXIT_FAILURE) {
+		log_error(logger, "Error al escribir cache");
+		return EXIT_FAILURE;
+	}
+
+	if(hayEspacioEnCache(pid)) {
 		t_entradaCache* entrada = malloc(sizeof(t_entradaCache));
 
 		entrada->pid = pid;
 		entrada->pagina = pagina;
+		entrada->cantidadDeLecturasSinUsar = 0;
 		entrada->contenido = contenido;
 
 		list_add(cache, entrada);
 
 		free(entrada);
 	} else {
-		t_entradaCache* entrada = getEntradaCache(pid, pagina);
-		entrada->contenido = contenido; //esto me hace mucho ruido
+		//ACA ESTA LA GRACIA DEL LRU
+		log_warning(logger, "No hay mas espacio en memoria cache, remplazando elementos");
+
+		int exito = remplazoLRU(pid, pagina, contenido);
+
+		if(exito == EXIT_FAILURE) {
+			log_error(logger, "No se pudo escribir en cache, PID %i, Pagina %i", pid, pagina);
+			return EXIT_FAILURE;
+		}
 	}
+
+	log_debug(logger, "Se escribio en cache PID %i, Pagina %i", pid, pagina);
+	return EXIT_SUCCESS;
+}
+
+int remplazoLRU(int pid, int pagina, void* contenido) {
+	log_info(logger, "Usando algoritmo %s para remplazo de elementos en memoria cache", reemplazo_cache);
+	t_entradaCache* entrada = getEntradaMasAntigua();
+
+	if(entrada == EXIT_FAILURE) {
+		log_error(logger, "Error en remplazo LRU, PID %i, Pagina %i", pid, pagina);
+		return EXIT_FAILURE;
+	}
+
+	log_info(logger, "Remplazando entrada cache. PID %i, Pagina %i");
+
+	entrada->pid = pid;
+	entrada->pagina = pagina;
+	entrada->cantidadDeLecturasSinUsar = 0;
+	entrada->contenido = contenido;
+
+	log_info(logger, "Remplazada entrada cache. PID %i, Pagina %i");
+	return EXIT_SUCCESS;
 }
 
 bool estaEnCache(int pid, int pagina) {
@@ -85,7 +130,7 @@ int cantidadDeEntradasPorProceso(int pid) {
 	return cantidad;
 }
 
-void liberarProcesoDeCache(int pid) {
+int liberarProcesoDeCache(int pid) {
 	int i;
 	for(i = 0; i <= cache->elements_count; i++) {
 		t_entradaCache* entrada = list_get(cache, i);
@@ -98,11 +143,51 @@ void liberarProcesoDeCache(int pid) {
 	log_debug(logger, "Liberado todo el contenido del PID %i de cache", pid);
 }
 
-void leerDeCache(int pid, int pagina) {
-	//Leer y usar lru
-	//Si sale todo bien
+int leerDeCache(int pid, int pagina) {
+	incrementarCantidadDeLecturas();
+	t_entradaCache* entrada = getEntradaCache(pid, pagina);
+	entrada->cantidadDeLecturasSinUsar = 0;
 	log_debug(logger, "Leido de cache PID %i, pagina %i", pid, pagina);
 
-	//sino
-	log_error(logger, "No se pudo leer de cache PID %i, pagina %i", pid, pagina);
+	return entrada;
+}
+
+int incrementarCantidadDeLecturas() {
+	//EN LA ESTRUCTURA TIPO LIST NO HAY HUECOS, SI ELIMINO UN ELEMENTO SE COMPACTA TODO
+	int i;
+	for(i = 0; i <= cache->elements_count; i++) {
+		t_entradaCache* entrada = list_get(cache, i);
+		//despues saca los warnings que son super al pedo
+		log_warning(logger, "Entrada Cache, PID %i, Pagina %i, Contador %i", entrada->pid, entrada->pagina, entrada->cantidadDeLecturasSinUsar);
+		entrada->cantidadDeLecturasSinUsar++;
+		log_warning(logger, "Entrada Cache, PID %i, Pagina %i, Contador %i", entrada->pid, entrada->pagina, entrada->cantidadDeLecturasSinUsar);
+	}
+
+	return EXIT_SUCCESS;
+}
+
+int getEntradaMasAntigua() {
+	t_entradaCache* entrada;
+	t_entradaCache* entradaMasAntigua = malloc(sizeof(t_entradaCache));
+	entradaMasAntigua->pid = -1;
+	entradaMasAntigua->pagina = -1;
+	entradaMasAntigua->cantidadDeLecturasSinUsar = -1;
+
+	int i;
+	for(i = 0; i <= cache->elements_count; i++) {
+		entrada = list_get(cache, i);
+		if(entrada->cantidadDeLecturasSinUsar >= entrada->cantidadDeLecturasSinUsar) {
+			entradaMasAntigua = entrada;
+		}
+	}
+
+	if(entrada->pid == -1) {
+		log_error(logger, "Error al buscar entrada mas antigua");
+		return EXIT_FAILURE;
+	}
+
+	free(entradaMasAntigua);
+
+	log_info(logger, "Entrada mas antigua: PID %i, Pagina %i, Cantidad de lecutras sin usar %i", entrada->pid, entrada->pagina, entrada->cantidadDeLecturasSinUsar);
+	return EXIT_SUCCESS;
 }

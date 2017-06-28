@@ -13,19 +13,27 @@
 typedef struct {
 	int pid;
 	int pagina;
+	int cantidadDeLecturasSinUsar; //Indica la cantidad de veces que se ingreso a la cache y no se uso este elemento
 	void* contenido;
 } t_entradaCache;
 
+
+
 t_list* cache;
 
-void inicializarCache();
-void escribirCache(int pid, int pagina, void* contenido);
+int inicializarCache();
+int escribirCache(int pid, int pagina, void* contenido);
 bool estaEnCache(int pid, int pagina);
 t_entradaCache* getEntradaCache(int pid, int pagina);
 bool hayEspacioEnCache(int pid);
 int cantidadDeEntradasPorProceso(int pid);
-void liberarProcesoDeCache(int pid);
-void liberarPaginaDeProcesoDeCache(int pid, int pagina);
-void leerDeCache(int pid, int pagina);
+int liberarProcesoDeCache(int pid);
+int liberarPaginaDeProcesoDeCache(int pid, int pagina);
+int leerDeCache(int pid, int pagina);
+int incrementarCantidadDeLecturas();
+int remplazoLRU(int pid, int pagina, void* contenido);
+int getEntradaMasAntigua();
+
+//QUE PASA SI HAY HUECOS?
 
 #endif /* CACHE_H_ */
