@@ -32,5 +32,7 @@ void reservarPaginas(int pid, int paginasAReservar);
 int asignarMasPaginasAProceso(int pid, int paginasAsignar);
 int getUltimaPagina(int pid);
 t_list* getEntradasDePID(int pid);
+int esPaginaLiberable(int pid, int pagina);
+int liberarPagina(int pid, int pagina);
 
 #endif /* TABLADEPAGINAS_H_ */

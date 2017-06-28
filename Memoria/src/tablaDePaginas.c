@@ -212,7 +212,7 @@ void reservarPaginas(int pid, int paginasAReservar) {
 
 int asignarMasPaginasAProceso(int pid, int paginasAsignar) {
 	int ultimaPagina = getUltimaPagina(pid);
-	if(ultimaPagina == CUSTOM_ERROR) {
+	if(ultimaPagina == EXIT_FAILURE) {
 		log_error(logger, "No se pueden asignar %i paginas al PID %i",paginasAsignar, pid);
 		return EXIT_FAILURE;
 	}
@@ -275,4 +275,22 @@ t_list* getEntradasDePID(int pid) {
 
 
 	return lista;
+}
+
+int esPaginaLiberable(int pid, int pagina) {
+	return EXIT_SUCCESS;
+}
+
+int liberarPagina(int pid, int pagina) {
+	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginasHash(pid, pagina);
+	if(entrada == EXIT_FAILURE) {
+		log_error(logger, "No se puede liberar pagina nro %i del PID %i", pagina, pid);
+		return EXIT_FAILURE;
+	}
+
+	entrada->pid = -1;
+	entrada->pagina = 0;
+
+	log_debug(logger, "Se libero la pagina nro %i del PID %i", pagina, pid);
+	return EXIT_SUCCESS;
 }
