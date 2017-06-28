@@ -10,7 +10,7 @@
 
 #include "../Memoria.h"
 
-bool almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer);
+int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer);
 void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio);
 
 #endif /* OPERACIONESMEMORIACPU_H_ */
