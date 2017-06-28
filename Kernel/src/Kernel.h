@@ -92,7 +92,7 @@ pthread_t hiloNotify;
 pthread_t hiloEjecuta;
 pthread_t hiloConsolaKernel;
 
-int opcion;
+int opcion, opcionPID;
 
 //SEMAFOROS
 sem_t sem_new;
@@ -162,6 +162,10 @@ void hiloConKer();
 void mostrarMenu();
 void mostrarListadoDeProcesos();
 void mostrarUnaListaDeProcesos(t_queue* colaAMostrar);
+void mostrarInformacionDeProceso(int pid);
+void forzarFinalizacionDeProceso(int pid);
+t_proceso* buscarProcesoEnLasColasYEliminarlo(int pid);
+t_proceso* obtenerProcesoPorPID(t_queue *cola, int pid);
 
 //Sockets
 void compactaClaves(int *tabla, int *n);

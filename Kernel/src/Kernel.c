@@ -888,7 +888,9 @@ void hiloConKer(){
 		case 2:
 			//Obtiene la informacion de un proceso en particular
 			pthread_mutex_lock(&mutexEjecuta);
-
+			printf("Ingrese PID del proceso deseado\n");
+			scanf("%i",&opcionPID);
+			mostrarInformacionDeProceso(opcionPID);
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
 		case 3:
@@ -906,7 +908,9 @@ void hiloConKer(){
 		case 5:
 			//Finaliza un proceso
 			pthread_mutex_lock(&mutexEjecuta);
-
+			printf("Ingrese PID del proceso a finalizar\n");
+			scanf("%i",&opcionPID);
+			forzarFinalizacionDeProceso(opcionPID);
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
 		case 6:
@@ -971,4 +975,49 @@ void mostrarUnaListaDeProcesos(t_queue* colaAMostrar){
 	if(i == 0){
 		printf("No hay procesos en esta cola\n");
 	}
+}
+
+void mostrarInformacionDeProceso(int pid){
+	t_proceso* proceso = obtenerProcesoPorPID(pid);
+	//TODO mostrar info
+}
+
+void forzarFinalizacionDeProceso(int pid){
+	t_proceso* proceso = buscarProcesoEnLasColasYEliminarlo(pid);
+	if(proceso != NULL){
+		finalizarProceso(proceso, FinalizacionPorConsolaDeKernel);
+		printf("El proceso %i se ha finalizado.\n", pid);
+	}
+	else{
+		printf("El proceso no se puede finalizar. Ya ha finalizado o no se encuentra.\n");
+	}
+
+}
+
+t_proceso* buscarProcesoEnLasColasYEliminarlo(int pid){
+	t_proceso* proceso;
+	if(proceso = obtenerProcesoPorPID(cola_new, pid)){
+		return proceso;
+	}
+	if(proceso = obtenerProcesoPorPID(cola_ready, pid)){
+		return proceso;
+	}
+	if(proceso = obtenerProcesoPorPID(cola_exec, pid)){
+		//TODO AVISARLE A CPU QUE LO DEJE DE EJECUTAR
+		return proceso;
+	}
+	if(proceso = obtenerProcesoPorPID(cola_block, pid)){
+		return proceso;
+	}
+	return NULL;
+}
+
+t_proceso* obtenerProcesoPorPID(t_queue *cola, int pid){
+	int a = 0;
+	t_proceso* proceso;
+	while(proceso = (t_proceso*)list_get(cola->elements, a)){
+		if (proceso->pcb->pid == pid) return (t_proceso*)list_remove(cola->elements, a);
+		a++;
+	}
+	return NULL;
 }
