@@ -978,7 +978,7 @@ void mostrarUnaListaDeProcesos(t_queue* colaAMostrar){
 }
 
 void mostrarInformacionDeProceso(int pid){
-	t_proceso* proceso = obtenerProcesoPorPID(pid);
+	//t_proceso* proceso = obtenerProcesoPorPID(pid);
 	//TODO mostrar info
 }
 

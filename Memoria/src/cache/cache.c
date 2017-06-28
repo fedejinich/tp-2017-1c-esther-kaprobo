@@ -11,6 +11,7 @@
 int inicializarCache() {
 	cache = -1;
 	cache = list_create();
+
 	if(cache == -1) {
 		log_error(logger, "Error al inicializar cache");
 		return EXIT_FAILURE;
