@@ -32,7 +32,10 @@ int liberarPaginaDeProcesoDeCache(int pid, int pagina);
 void* leerDeCache(int pid, int pagina);
 int incrementarCantidadDeLecturas();
 int remplazoLRU(int pid, int pagina, void* contenido);
-int getEntradaMasAntigua();
+t_entradaCache* getEntradaMasAntigua(int pid);
+bool superaElLimitePorPID();
+int cacheCantidadEntradasUsadas();
+int cacheCantidadEntradasLibres();
 
 //QUE PASA SI HAY HUECOS?
 
