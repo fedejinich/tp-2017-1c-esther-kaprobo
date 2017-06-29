@@ -24,15 +24,65 @@ int main() {
 		exit (EXIT_FAILURE);
 	}
 	while(1){
-		//Aca tenemos que recibir pedidos de Kernel, se puede hacer switch de codigo de operacion
+		//Recibimos pedidos de kernel y se hace switch dependiendo operacion
 		paquete = recibir(socketKernel);
+		void* path;
+
+		char * codigoDeOperacion = getCodigoDeOperacion(paquete->codigo_operacion);
+		log_info(logger, "Codigo de operacion FileSystem-Kernel: %s", codigoDeOperacion);
+
+		switch (paquete->codigo_operacion)
+		{
+		case VALIDAR_ARCHIVO:
+			path = malloc(paquete->tamanio);
+			memcpy(path, paquete->data, paquete->tamanio);
+			log_info(logger, "Path: %s", path);
+			bool existe = false;
+			int fd = open(path, O_RDONLY); //Porq no toma O_RDONLY?
+
+			if (fd > 0){
+				existe = true;
+			log_info(logger, "El archivo existe");
+			}
+			else{
+				log_info(logger, "El archivo no existe");
+				}
+
+			enviar(socketKernel, VALIDAR_ARCHIVO, paquete->tamanio, &existe);
+			close(fd);
+			free(path);
+			break;
+		case CREAR_ARCHIVO:
+			path = malloc(paquete->tamanio);
+			memcpy(path, paquete->data, paquete->tamanio);
+			log_info(logger, "Path: %s", path);
+
+			crearArchivo(path);
+			enviar(socketKernel, CREAR_ARCHIVO, 0, 0);
+			free(path);
+			break;
+		case BORRAR_ARCHIVO: //Porq no toma BORRAR_ARCHIVO?
+			path = malloc(paquete->tamanio);
+			memcpy(path, paquete->data, paquete->tamanio);
+			log_info(logger, "Path: %s", path);
+
+			borrarArchivo(path);
+			enviar(socketKernel, BORRAR_ARCHIVO, 0, 0);
+			free(path);
+			break;
+		case OBTENER_DATOS: //FALTA
+			break;
+		case GUARDAR_DATOS: //FALTA
+			break;
+		default:
+				log_error(logger, "Se ha desconectado el Kernel");
+		        exit(EXIT_FAILURE);
+			break;
+		}
 	}
-
-
 	//Variante HILOS
 	//pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
 	//pthread_join(servidorConexionesKernel, NULL);
-
 	return 0;
 }
 
@@ -108,3 +158,109 @@ void* hiloConexionKernel(void* socket) {
 	return 0;
 }
 */
+void leerMetadataArchivo(){
+
+	char* rutaMetadata = string_duplicate(puntoMontaje);
+	string_append(&rutaMetadata, "/Metadata/Metadata.bin"); //Como crear el Metadata.bin
+	log_info(logger, "rutaMetadata %s", rutaMetadata);
+
+	t_config* metadata = config_create(rutaMetadata);
+	if(metadata == NULL){
+		log_error(logger, "No se encuentra metadata");
+		fprintf(stderr, "No se encuentra metadata\n");
+		exit(1);
+	}
+	tamanioBloques = config_get_int_value(metadata, "TAMANIO_BLOQUES"); //No toma tamanioBloques de file_system.h
+													//TAMANIO_BLOQUES va a estar en el Metadata.bin
+	cantidadBloques = config_get_int_value(metadata, "CANTIDAD_BLOQUES"); //No toma cantidadBloques de file_system.h
+														//CANTIDAD_BLOQUES va a estar en el Metadata.bin
+	if(!string_equals_ignore_case(config_get_string_value(metadata, "MAGIC_NUMBER") , "SADICA")){//MAGIC_NUMBER en Metadata.bin
+		log_error(logger, "No es un FS SADICA");
+		fprintf(stderr, "No es un FS SADICA\n");
+		exit(1);
+	}
+	config_destroy(metadata);
+}
+
+void leerBitMap(){		// con q numero arranco bloques 0 o 1?	considero 1
+	int fd;
+	char *data;
+	struct stat sbuf;
+	char* rutaBitMap = string_duplicate(puntoMontaje);
+	string_append(&rutaBitMap, "/Metadata/Bitmap.bin"); //Como crear el Bitmap.bin
+	log_info(logger, "rutaBitMap %s", rutaBitMap);
+
+	fd = open(rutaBitMap, O_RDWR); //Porq no reconoce O_RDWR?
+	if (fd < 0) {
+		perror("error al abrir el archivo bitmap");
+		exit(1);
+	}
+
+	if (stat(rutaBitMap, &sbuf) < 0) {
+		perror("stat, fijarse si el archivo esta corrupto");
+		exit(1);
+	}
+
+	data = mmap((caddr_t)0, sbuf.st_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	if (data == MAP_FAILED) {
+		perror("fallo el mmap del bitmap");
+		exit(1);
+	}
+	bitMap = bitarray_create_with_mode(data, sbuf.st_size, LSB_FIRST);	//No reconoce bitMap de file_system.h
+
+	close(fd);
+}
+
+void crearArchivo(void* path){
+	int nroBloque;
+	char* rutaMetadata = string_new();
+	string_append(&rutaMetadata, puntoMontaje);
+	string_append(&rutaMetadata, path);
+	log_info(logger, "rutaMetadata %s", rutaMetadata);
+
+	for(nroBloque = 0; nroBloque < bitMap->size; nroBloque++){
+		if(!bitarray_test_bit(bitMap, nroBloque)){
+			bitarray_set_bit(bitMap, nroBloque);
+			break;
+		}
+	}
+
+	char* data = string_from_format("TAMANIO=1 BLOQUES=[%d]", nroBloque + 1);
+
+	system(string_from_format("touch %s", rutaMetadata));
+
+	int fd = open(rutaMetadata, O_RDWR);
+	write(fd, data, string_length(data));
+	close(fd);
+
+	free(rutaMetadata);
+}
+
+void borrarArchivo(void* path){
+	int i;
+	char* rutaMetadata = string_new();
+	string_append(&rutaMetadata, puntoMontaje);
+	string_append(&rutaMetadata, path);
+	log_info(logger, "rutaMetadata %s", rutaMetadata);
+
+	t_config* metadata = config_create(rutaMetadata);
+	if(metadata == NULL){
+		log_error(logger, "No se encuentra metadata");
+		fprintf(stderr, "No se encuentra archivo %s\n", rutaMetadata);
+		free(rutaMetadata);
+		free(metadata);
+		return;
+	}
+	int tamanio = config_get_int_value(metadata, "TAMANIO");
+	char* bloques = config_get_array_value(metadata, "BLOQUES");
+
+	for(i = 0; i*tamanioBloques < tamanio; i++){
+		int nroBloque =  atoi(bloques[i / tamanioBloques]);
+		bitarray_clean_bit(bitMap, nroBloque - 1);
+	}
+
+	config_destroy(metadata);
+	system(string_from_format("rm -f %s", rutaMetadata));
+	free(rutaMetadata);
+	free(bloques);
+}
