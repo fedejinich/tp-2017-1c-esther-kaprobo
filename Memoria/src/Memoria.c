@@ -19,7 +19,6 @@ int main(int argc, char **argv){
 
 	printf("%s", "\n====== INICIO MEMORIA ======\n\n");
 
-
 	//iniciarSeniales();
 	cargarConfiguracion();
 	grandMalloc();
@@ -28,7 +27,25 @@ int main(int argc, char **argv){
 	inicializarCache();
 	iniciarHilos();
 
-	//testFuncionHashObtengoPosicionCandidataOk();
+	/*escribirCache(1,0,1);
+	escribirCache(1,1,1);
+	escribirCache(1,2,1);
+	escribirCache(2,0,1);
+	escribirCache(2,1,1);
+	escribirCache(2,2,1);
+	escribirCache(3,0,1);
+	escribirCache(3,1,1);
+	escribirCache(3,2,1);
+	escribirCache(3,3,1);
+	escribirCache(4,0,1);
+	escribirCache(4,0,1);
+	escribirCache(5,0,1);
+	escribirCache(5,0,1);
+	escribirCache(5,0,1);
+	escribirCache(7,0,1);
+	escribirCache(7,0,1);
+
+	dumpCache();*/
 
 	return EXIT_SUCCESS;
 }
