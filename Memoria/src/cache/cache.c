@@ -68,16 +68,26 @@ void* leerDeCache(int pid, int pagina) {
 }
 
 int liberarProcesoDeCache(int pid) {
+	log_warning(logger, "Liberando de cache PID %i", pid);
+	bool existeProceso = false;
 	int i;
-	for(i = 0; i <= cache->elements_count; i++) {
+	for(i = 0; i < cache->elements_count; i++) {
 		t_entradaCache* entrada = list_get(cache, i);
 		if(entrada->pid == pid) {
 			log_warning(logger, "Liberando contenido de cache PID: %i, Pagina: %i", entrada->pid, entrada->pagina);
 			list_remove(cache,i);
 			i = 0;
+			existeProceso = true;
 			log_warning(logger, "Liberado contenido de cache PID: %i, Pagina: %i");
 		}
 	}
+
+	if(!existeProceso) {
+		log_warning(logger, "No existe en cache PID %i");
+		log_warning(logger, "No se libero de cache PID %i");
+		return EXIT_SUCCESS;
+	}
+
 	log_debug(logger, "Liberado todo el contenido del PID %i de cache", pid);
 	return EXIT_SUCCESS;
 }

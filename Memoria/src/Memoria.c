@@ -44,6 +44,11 @@ int main(int argc, char **argv){
 	escribirCache(5,0,1);
 	escribirCache(7,0,1);
 	escribirCache(7,0,1);
+	liberarProcesoDeCache(2);
+	liberarProcesoDeCache(1);
+	liberarProcesoDeCache(5);
+	liberarProcesoDeCache(2);
+
 
 	dumpCache();*/
 
