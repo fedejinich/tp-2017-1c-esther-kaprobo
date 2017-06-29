@@ -60,7 +60,7 @@ bool esDumpTabla(char* comando) {
 }
 
 bool esDumpCache(char* comando) {
-	return false;
+	return string_equals_ignore_case(comando, "dump cache\n");
 }
 
 bool esDumpPID(char* comando) {
@@ -108,7 +108,21 @@ void dumpTabla() {
 }
 
 void dumpCache() {
-	printf("Implemnta dump Cache, pajero\n");
+	remove("dumpCache.log");
+	t_log* logDumpCache = log_create("dumpCache.log", "Memoria", false, LOG_LEVEL_TRACE);
+
+	log_warning(logger, "Iniciando dump cache...");
+	log_info(logDumpCache, "Tamanio cache %i", entradas_cache);
+	log_info(logDumpCache, "Cantidad de entradas usadas: %i", cacheCantidadEntradasUsadas());
+	log_info(logDumpCache, "Cantidad de entradas libres: %i", cacheCantidadEntradasLibres());
+
+	int i;
+	for(i = 0; i < list_size(cache); i++) {
+		t_entradaCache* entrada = list_get(cache, i);
+		log_info(logDumpCache, "Entrada Cache. PID %i Pagina %i Contador %i", entrada->pid, entrada->pagina, entrada->cantidadDeLecturasSinUsar);
+	}
+
+	log_warning(logger, "Dump cache realizado correctamente");
 }
 
 void dumpPID(char* comando) {
