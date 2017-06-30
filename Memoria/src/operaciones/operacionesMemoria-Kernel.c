@@ -18,7 +18,7 @@ int inicializarProceso(int pid, int paginasRequeridas) {
 	log_info(logger, "Inicializando proceso: %i", pid);
 	log_info(logger, "Reservando %i paginas para PID: %i ...", paginasRequeridas, pid);
 
-	if(paginasDisponibles(paginasRequeridas)) {
+	if(paginasDisponibles(pid, paginasRequeridas)) {
 		reservarPaginas(pid, paginasRequeridas);
 		int * ok = 1; //si saco esto y dejo el 1  en el paquete me tira segmentation fault
 		enviar(socketClienteKernel, INICIALIZAR_PROCESO_OK, sizeof(int), &ok); //EL DATA ESTA AL PEDO PERO BUEN
