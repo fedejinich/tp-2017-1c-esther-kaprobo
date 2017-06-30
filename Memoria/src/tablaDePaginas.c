@@ -121,16 +121,14 @@ void escribirTablaDePaginasHash(int pid, int pagina) {
 int getFrameDisponibleHash(int pid, int pagina) {
 	int posibleFrame = calcularPosicion(pid, pagina);
 	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(posibleFrame);
-	if(entrada->pid == -1) {
-		log_debug(logger, "Frame disponible. Frame: %i", posibleFrame);
+	if(entrada->pid == -1)
 		return posibleFrame;
-	} else {
+	else {
 		log_warning(logger, "Colision en funcion de hash, me voy para arriba");
 		int i;
 		for(i = posibleFrame + 1; i <= tablaDePaginasSize(); i++) {
 			entrada = getEntradaTablaDePaginas(i);
 			if(entrada->pid == -1) {
-				log_debug(logger, "Frame disponible. Frame: %i", i);
 				return i;
 			}
 		}
@@ -140,7 +138,6 @@ int getFrameDisponibleHash(int pid, int pagina) {
 	for(j = posibleFrame - 1; j >= 0; j--) {
 		entrada = getEntradaTablaDePaginas(j);
 		if(entrada->pid == -1) {
-			log_debug(logger, "Frame disponible. Frame: %i", j);
 			return j;
 		}
 	}
@@ -150,7 +147,6 @@ int getFrameDisponibleHash(int pid, int pagina) {
 
 bool paginasDisponibles(int paginasRequeridas) {
 	if(getCantidadFramesDisponibles() >= paginasRequeridas) {
-		log_debug(logger, "Hay espacio disponible");
 		return true;
 	} else {
 		log_error(logger, "No hay mas espacio disponible en memoria");
@@ -203,7 +199,7 @@ int tablaDePaginasSize() {
 
 void reservarPaginas(int pid, int paginasAReservar) {
 	int i;
-	for(i = 0; i <= paginasAReservar; i++) {
+	for(i = 1; i <= paginasAReservar; i++) {
 		int pagina = i;
 		int frameDisponible = getFrameDisponibleHash(pid, pagina);
 		escribirTablaDePaginas(frameDisponible, pid, pagina);
@@ -224,7 +220,7 @@ int asignarMasPaginasAProceso(int pid, int paginasAsignar) {
 		if(frameDisponible != EXIT_FAILURE) {
 			int exito = escribirTablaDePaginas(frameDisponible, pid, pagina);
 			if(exito == EXIT_SUCCESS) {
-				log_debug(logger, "Se asigno una pagina mas para el PID %i. PID: %i, ultima pagina asignada: %i", pid, pid, pagina);
+				log_info(logger, "Se asigno una pagina mas para el PID %i. PID: %i, ultima pagina asignada: %i", pid, pid, pagina);
 			} else {
 				log_error(logger, "No se  pudo asignar una pagina mas para el PID %i. PID: %i, ultima pagina que quizo ser asignada: %i", pid, pid, pagina);
 				return EXIT_FAILURE;

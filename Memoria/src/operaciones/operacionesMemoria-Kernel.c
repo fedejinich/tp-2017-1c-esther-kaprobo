@@ -16,7 +16,7 @@ void inicializarProceso(int pid, int paginasRequeridas) {
 	retardo();
 
 	log_info(logger, "Inicializando proceso: %i", pid);
-	log_info(logger, "Reservando %i paginas para PID: %i...", paginasRequeridas, pid);
+	log_info(logger, "Reservando %i paginas para PID: %i ...", paginasRequeridas, pid);
 
 	if(paginasDisponibles(paginasRequeridas)) {
 		reservarPaginas(pid, paginasRequeridas);
