@@ -18,6 +18,7 @@
 #include <commons/collections/list.h>
 
 #define EXIT_FAILURE_CUSTOM -23
+#define EXIT_SUCCESS_CUSTOM -99
 
 //Estructuras
 

@@ -18,7 +18,7 @@ int inicializarCache() {
 		return EXIT_FAILURE_CUSTOM;
 	}
 	log_debug(logger, "Cache inicializada");
-	return EXIT_SUCCESS;
+	return EXIT_SUCCESS_CUSTOM;
 }
 
 int escribirCache(int pid, int pagina, void* contenido) {
@@ -49,7 +49,7 @@ int escribirCache(int pid, int pagina, void* contenido) {
 		}
 	}
 
-	return EXIT_SUCCESS;
+	return EXIT_SUCCESS_CUSTOM;
 }
 
 void* leerDeCache(int pid, int pagina) {
@@ -85,11 +85,11 @@ int liberarProcesoDeCache(int pid) {
 	if(!existeProceso) {
 		log_warning(logger, "No existe en cache PID %i");
 		log_warning(logger, "No se libero de cache PID %i");
-		return EXIT_SUCCESS;
+		return EXIT_SUCCESS_CUSTOM;
 	}
 
 	log_debug(logger, "Liberado todo el contenido del PID %i de cache", pid);
-	return EXIT_SUCCESS;
+	return EXIT_SUCCESS_CUSTOM;
 }
 
 int remplazoLRU(int pid, int pagina, void* contenido) {
@@ -115,7 +115,7 @@ int remplazoLRU(int pid, int pagina, void* contenido) {
 
 	log_debug(logger, "Se escribio en cache PID %i, Pagina %i", entradaMasAntigua->pid, entradaMasAntigua->pagina); //este log deberia estar en escribirCache
 	//pero por un tema de simplicidad lo meti aca
-	return EXIT_SUCCESS;
+	return EXIT_SUCCESS_CUSTOM;
 }
 
 t_entradaCache* getEntradaCache(int pid, int pagina) {
@@ -218,7 +218,7 @@ int incrementarCantidadDeLecturas() {
 			entrada->cantidadDeLecturasSinUsar++;
 		}
 	}
-	return EXIT_SUCCESS;
+	return EXIT_SUCCESS_CUSTOM;
 }
 
 bool superaElLimitePorPID(int pid) {

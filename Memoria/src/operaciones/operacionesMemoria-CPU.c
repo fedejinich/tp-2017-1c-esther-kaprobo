@@ -45,5 +45,5 @@ int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* b
 	//escribirFrame();
 
 	log_debug(logger, "Almacenados %i bytes de PID %i en pagina %i con offset %i ...", tamanio, pid, pagina, offset);
-	return EXIT_SUCCESS;
+	return EXIT_SUCCESS_CUSTOM;
 }

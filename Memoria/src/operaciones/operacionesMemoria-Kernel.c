@@ -59,7 +59,7 @@ void asignarPaginasAProceso(int pid, int paginasAsignar) {
 
 	if(paginasDisponibles(paginasAsignar)) {
 		int exito = asignarMasPaginasAProceso(pid, paginasAsignar);
-		if(exito == EXIT_SUCCESS) {
+		if(exito == EXIT_SUCCESS_CUSTOM) {
 			int* ok = 1;
 			enviar(socketKernel, ASIGNAR_PAGINAS_OK, sizeof(int), ok); //EL DATA ESTA AL PEDO PERO BUEN
 			log_debug(logger,"Se asignaron %i paginas mas al PID: %i", pid, paginasAsignar);
@@ -90,7 +90,7 @@ void liberarPaginaProceso(int pid, int pagina) {
 	log_warning(logger, "Liberando la pagina nro %i del PID %i...", pagina, pid);
 	if(esPaginaLiberable(pid, pagina)) {
 		int exito = liberarPagina(pid, pagina);
-		if(exito == EXIT_SUCCESS) {
+		if(exito == EXIT_SUCCESS_CUSTOM) {
 			int* ok = 1;
 			enviar(socketKernel, LIBERAR_PAGINA_OK, sizeof(int), ok);
 			log_debug(logger, "Se libero la pagina nro %i del PID %i", pagina, pid);
