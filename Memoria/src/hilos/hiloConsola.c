@@ -129,9 +129,15 @@ void dumpPID(char* comando) {
 	printf("Implemnta dump PID, pajero\n");
 }
 
-void sizeMemory() {
+int sizeMemory() {
 	framesLibres = getCantidadFramesDisponibles();
 	framesOcupados = getCantidadFramesOcupados();
+
+	if(framesOcupados == EXIT_FAILURE_CUSTOM || framesLibres == EXIT_FAILURE_CUSTOM) {
+		log_error(logger, "Error en sizeMemory()");
+		return EXIT_FAILURE_CUSTOM;
+	}
+
 	log_warning(logger, "Cantidad de frames: %i, frames libres: %i, frames ocupados: %i", frames, framesLibres, framesOcupados);
 }
 

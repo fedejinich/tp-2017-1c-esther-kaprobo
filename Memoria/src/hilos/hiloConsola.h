@@ -33,7 +33,7 @@ char* retardoCommand;
 char* sizePIDCommand;
 
 void flush();
-void sizeMemory();
+int sizeMemory();
 void retardoUpdate(char* comando);
 void dumpTabla();
 void dumpCache();

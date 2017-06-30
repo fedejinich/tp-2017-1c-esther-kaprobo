@@ -59,6 +59,7 @@ void* hiloServidorKernel(void* arg) {
             	offset = ((t_solicitudBytes*)(paqueteRecibido->data))->offset;
             	tamanio = ((t_solicitudBytes*)(paqueteRecibido->data))->tamanio;
             	solicitarBytesDePagina(pid, pagina, offset, tamanio);
+            	break;
             default:
 				log_error(logger, "Exit por hilo Kernel");
 				log_error(logger, "Tiro un exit(EXIT_FAILURE_CUSTOM) desde hilo-Kernel");

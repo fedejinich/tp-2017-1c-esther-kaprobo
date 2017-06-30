@@ -12,7 +12,7 @@
 |KERNEL|
 \******/
 
-void inicializarProceso(int pid, int paginasRequeridas) {
+int inicializarProceso(int pid, int paginasRequeridas) {
 	retardo();
 
 	log_info(logger, "Inicializando proceso: %i", pid);
@@ -31,7 +31,7 @@ void inicializarProceso(int pid, int paginasRequeridas) {
 
 }
 
-void finalizarProceso(int pid) {
+int finalizarProceso(int pid) {
 	retardo();
 	log_warning(logger, "Finalizando PID: %i...", pid);
 
@@ -42,22 +42,34 @@ void finalizarProceso(int pid) {
 	int i;
 	for(i = 0; i <= tablaDePaginasSize(); i++) {
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		if(entrada == EXIT_FAILURE_CUSTOM) {
+			log_error(logger, "No se pudo finalizar proceso");
+			return EXIT_FAILURE_CUSTOM;
+		}
 		if(entrada->pid == pid) {
-			log_warning(logger, "Eliminando entrada %i de la tabla de paginas del PID: %i", i, pid);
+			log_warning(logger, "Eliminando entrada %i de la tabla de paginas del PID: %i...", i, pid);
 			entrada->pid = -1;
 			entrada->pagina = 0;
 		}
 	}
 
 	log_debug(logger, "PID %i finalizado", pid);
+	return EXIT_SUCCESS_CUSTOM;
 }
 
-void asignarPaginasAProceso(int pid, int paginasAsignar) {
+int asignarPaginasAProceso(int pid, int paginasAsignar) {
 	retardo();
 
 	log_info(logger,"Se piden %i paginas mas para el proceso %i.",paginasAsignar, pid);
 
-	if(paginasDisponibles(paginasAsignar)) {
+	bool paginasDisponiblesOk = paginasDisponibles(paginasAsignar);
+
+	if(paginasDisponiblesOk == EXIT_FAILURE_CUSTOM) {
+		log_error(logger, "Error al asignar paginas a proceso PID %i, Paginas a asignar %i", pid, paginasAsignar);
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	if(paginasDisponiblesOk) {
 		int exito = asignarMasPaginasAProceso(pid, paginasAsignar);
 		if(exito == EXIT_SUCCESS_CUSTOM) {
 			int* ok = 1;
@@ -74,7 +86,7 @@ void asignarPaginasAProceso(int pid, int paginasAsignar) {
 	}
 }
 
-void liberarPaginaProceso(int pid, int pagina) {
+int liberarPaginaProceso(int pid, int pagina) {
 	/****************************************************************************************************
 	 * LIBERAR PAGINA DE UN PROCESO																		*
 	 * Parámetros: [Identificador del Programa] [Número de Página elegida]								*

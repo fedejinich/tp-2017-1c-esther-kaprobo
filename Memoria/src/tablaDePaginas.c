@@ -50,8 +50,8 @@ int escribirTablaDePaginas(int frame, int pid, int pagina) {
 
 t_entradaTablaDePaginas* getEntradaTablaDePaginas(int index) {
 
-	if(index > frames) {
-		log_error(logger,"Se solicito una entrada inexistente");
+	if(index > frames || index < 0) {
+		log_error(logger,"Error getEntradaTablaDePaginas(%i)", index);
 		return EXIT_FAILURE_CUSTOM;
 	}
 
@@ -146,7 +146,14 @@ int getFrameDisponibleHash(int pid, int pagina) {
 }
 
 bool paginasDisponibles(int paginasRequeridas) {
-	if(getCantidadFramesDisponibles() >= paginasRequeridas) {
+	int cantidadFramesDisponibles = getCantidadFramesDisponibles();
+
+	if(cantidadFramesDisponibles == EXIT_FAILURE_CUSTOM) {
+		log_error(logger, "Error paginasDisponibles(%i)", paginasRequeridas);
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	if(cantidadFramesDisponibles >= paginasRequeridas) {
 		return true;
 	} else {
 		log_error(logger, "No hay mas espacio disponible en memoria");
@@ -180,8 +187,14 @@ int getFrameDisponible() {
 int getCantidadFramesDisponibles() {
 	int i;
 	int framesDisponibles = 0;
-	for(i = 0; i < frames; i++) {
+	for(i = 0; i < frames; i++) { //VER SI VA UN IGUAL ACA i <= frames
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+
+		if(entrada == EXIT_FAILURE_CUSTOM) {
+			log_error(logger, "Error en getCantidadFramesDisponibles()");
+			return EXIT_FAILURE_CUSTOM;
+		}
+
 		if(entrada->pid == -1)
 			framesDisponibles++;
 	}
@@ -190,7 +203,13 @@ int getCantidadFramesDisponibles() {
 }
 
 int getCantidadFramesOcupados() {
-	return frames - getCantidadFramesDisponibles();
+	int cantidad = getCantidadFramesDisponibles();
+
+	if(cantidad == EXIT_FAILURE_CUSTOM) {
+		log_error(logger, "Error en getCantidadFramesOcupados()");
+		return EXIT_FAILURE_CUSTOM;
+	}
+	return frames - cantidad;
 }
 
 int tablaDePaginasSize() {
