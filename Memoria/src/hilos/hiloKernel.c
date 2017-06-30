@@ -28,8 +28,7 @@ void* hiloServidorKernel(void* arg) {
     }
 
     t_paquete * paqueteRecibido;
-    int* pid, paginasRequeridas;
-    int  pagina, tamanio, offset, tamanioCodigo;
+    int pid, paginasRequeridas, pagina, tamanio, offset, tamanioCodigo;
 
     t_asignarPaginasKernel* data;
 
@@ -54,6 +53,12 @@ void* hiloServidorKernel(void* arg) {
                 pid = (int)paqueteRecibido->data;
             	finalizarProceso(pid);
                 break;
+            case SOLICITAR_BYTES:
+            	pid = ((t_solicitudBytes*)(paqueteRecibido->data))->pid;
+            	pagina = ((t_solicitudBytes*)(paqueteRecibido->data))->pagina;
+            	offset = ((t_solicitudBytes*)(paqueteRecibido->data))->offset;
+            	tamanio = ((t_solicitudBytes*)(paqueteRecibido->data))->tamanio;
+            	solicitarBytesDePagina(pid, pagina, offset, tamanio);
             default:
 				log_error(logger, "Exit por hilo Kernel");
 				log_error(logger, "Tiro un exit(EXIT_FAILURE) desde hilo-Kernel");
