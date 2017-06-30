@@ -24,7 +24,7 @@ void* hiloServidorKernel(void* arg) {
         enviar(socketClienteKernel,TAMANIO_PAGINA,sizeof(int),&frame_size);
     } else {
         log_error(logger,"Handshake fallo, se aborta conexion");
-        exit (EXIT_FAILURE);
+        exit (EXIT_FAILURE_CUSTOM);
     }
 
     t_paquete * paqueteRecibido;
@@ -61,8 +61,8 @@ void* hiloServidorKernel(void* arg) {
             	solicitarBytesDePagina(pid, pagina, offset, tamanio);
             default:
 				log_error(logger, "Exit por hilo Kernel");
-				log_error(logger, "Tiro un exit(EXIT_FAILURE) desde hilo-Kernel");
-            	exit(EXIT_FAILURE);
+				log_error(logger, "Tiro un exit(EXIT_FAILURE_CUSTOM) desde hilo-Kernel");
+            	exit(EXIT_FAILURE_CUSTOM);
 				break;
         }
     }

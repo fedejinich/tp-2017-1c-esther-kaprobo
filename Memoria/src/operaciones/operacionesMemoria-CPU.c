@@ -21,9 +21,9 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 		retardo();
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginasHash(pid, pagina);
 
-		if(entrada == EXIT_FAILURE) {
+		if(entrada == EXIT_FAILURE_CUSTOM) {
 			log_error(logger, "Error en solicitar bytes de una pagina");
-			return EXIT_FAILURE;
+			return EXIT_FAILURE_CUSTOM;
 		}
 
 		log_info(logger, "Los bytes del PID: %i, pagina: %i se encuentran en el frame %i", pid, pagina, entrada->frame);
@@ -38,6 +38,10 @@ int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* b
 	//PEDIDO DE ESCRITURA POR PARTE DE CPU
 	retardo();
 	log_info(logger, "Almacenando %i bytes de PID %i en pagina %i con offset %i ...", tamanio, pid, pagina, offset);
+
+	/*if(!superaLimiteFrame(offset, tamanio)) {
+		escribirFrame();
+	}*/
 	//escribirFrame();
 
 	log_debug(logger, "Almacenados %i bytes de PID %i en pagina %i con offset %i ...", tamanio, pid, pagina, offset);

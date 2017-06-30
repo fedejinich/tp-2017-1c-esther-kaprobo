@@ -15,7 +15,7 @@ int inicializarCache() {
 
 	if(cache == -1) {
 		log_error(logger, "Error al inicializar cache");
-		return EXIT_FAILURE;
+		return EXIT_FAILURE_CUSTOM;
 	}
 	log_debug(logger, "Cache inicializada");
 	return EXIT_SUCCESS;
@@ -25,9 +25,9 @@ int escribirCache(int pid, int pagina, void* contenido) {
 	log_info(logger, "Escribiendo cache PID %i Pagina %i", pid, pagina);
 	t_entradaCache* entrada = malloc(sizeof(t_entradaCache));
 	int exito = incrementarCantidadDeLecturas();
-	if(exito == EXIT_FAILURE) {
+	if(exito == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "Error al escribir cache");
-		return EXIT_FAILURE;
+		return EXIT_FAILURE_CUSTOM;
 	}
 
 	if(hayEspacioEnCache(pid)) {
@@ -43,9 +43,9 @@ int escribirCache(int pid, int pagina, void* contenido) {
 
 		int exito = remplazoLRU(pid, pagina, contenido);
 
-		if(exito == EXIT_FAILURE) {
+		if(exito == EXIT_FAILURE_CUSTOM) {
 			log_error(logger, "No se pudo escribir en cache, PID %i, Pagina %i", pid, pagina);
-			return EXIT_FAILURE;
+			return EXIT_FAILURE_CUSTOM;
 		}
 	}
 
@@ -56,9 +56,9 @@ void* leerDeCache(int pid, int pagina) {
 	incrementarCantidadDeLecturas();
 	t_entradaCache* entrada = getEntradaCache(pid, pagina);
 
-	if(entrada == EXIT_FAILURE) {
+	if(entrada == EXIT_FAILURE_CUSTOM) {
 		log_warning(logger, "No se pudo leer de cache PID %i Pagina %i", pid, pagina);
-		return EXIT_FAILURE;
+		return EXIT_FAILURE_CUSTOM;
 	}
 
 	entrada->cantidadDeLecturasSinUsar = 0;
@@ -97,9 +97,9 @@ int remplazoLRU(int pid, int pagina, void* contenido) {
 	t_entradaCache* entradaMasAntigua = getEntradaMasAntigua(pid);
 
 
-	if(entradaMasAntigua == EXIT_FAILURE) {
+	if(entradaMasAntigua == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "Error en remplazo LRU, PID %i, Pagina %i", pid, pagina);
-		return EXIT_FAILURE;
+		return EXIT_FAILURE_CUSTOM;
 	}
 
 	log_info(logger, "Remplazando entrada cache. PID %i, Pagina %i",
@@ -131,7 +131,7 @@ t_entradaCache* getEntradaCache(int pid, int pagina) {
 	}
 
 	log_error("No se pudo encontrar la entrada para el PID %i, Pagina %i", pid, pagina);
-	return EXIT_FAILURE;
+	return EXIT_FAILURE_CUSTOM;
 }
 
 t_entradaCache* getEntradaMasAntigua(int pid) {
@@ -159,7 +159,7 @@ t_entradaCache* getEntradaMasAntigua(int pid) {
 
 	if(entradaMasAntigua->pid == -1) {
 		log_error(logger, "Error al buscar entrada mas antigua");
-		return EXIT_FAILURE;
+		return EXIT_FAILURE_CUSTOM;
 	}
 
 	return entradaMasAntigua;
