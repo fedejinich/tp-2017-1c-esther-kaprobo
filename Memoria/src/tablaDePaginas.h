@@ -34,5 +34,7 @@ int getUltimaPagina(int pid);
 t_list* getEntradasDePID(int pid);
 int esPaginaLiberable(int pid, int pagina);
 int liberarPagina(int pid, int pagina);
+int getFrameByPIDPagina(int pid, int pagina);
+bool existePIDPagina(int pid, int pagina);
 
 #endif /* TABLADEPAGINAS_H_ */

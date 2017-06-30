@@ -17,6 +17,8 @@
 #include <commons/config.h>
 #include <commons/collections/list.h>
 
+#define EXIT_FAILURE_CUSTOM -23
+
 //Estructuras
 
 	//Estructuras Memoria - Kernel

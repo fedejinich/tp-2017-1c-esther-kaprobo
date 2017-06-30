@@ -37,8 +37,9 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer) {
 	//PEDIDO DE ESCRITURA POR PARTE DE CPU
 	retardo();
-	log_info(logger, "Almacenando bytes de PID %i en pagina %i con offset %i y tamanio %i ...", pid, pagina, offset, tamanio);
+	log_info(logger, "Almacenando %i bytes de PID %i en pagina %i con offset %i ...", tamanio, pid, pagina, offset);
 	//escribirFrame();
 
+	log_debug(logger, "Almacenados %i bytes de PID %i en pagina %i con offset %i ...", tamanio, pid, pagina, offset);
 	return EXIT_SUCCESS;
 }

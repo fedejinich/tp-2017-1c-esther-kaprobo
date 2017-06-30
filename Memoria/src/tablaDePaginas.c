@@ -290,3 +290,27 @@ int liberarPagina(int pid, int pagina) {
 	log_debug(logger, "Se libero la pagina nro %i del PID %i", pagina, pid);
 	return EXIT_SUCCESS;
 }
+
+bool existePIDPagina(int pid, int pagina) {
+	int i;
+	for(i = 0; i <= tablaDePaginasSize(); i++) { //VER SI ES <= O < Y SI INICIALIZA EN 0
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		if(entrada->pid == pid && entrada->pagina == pagina)
+			return true;
+	}
+
+	log_warning(logger, "No existe PID %i Pagina %i en tabla de paginas", pid, pagina);
+	return false;
+}
+
+int getFrameByPIDPagina(int pid, int pagina) {
+	int i;
+	for(i = 0; i <= tablaDePaginasSize(); i++) { //VER SI ES <= O < Y SI INICIALIZA EN 0
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		if(entrada->pid == pid && entrada->pagina == pagina)
+			return entrada->frame;
+	}
+
+	log_warning(logger, "No existe PID %i Pagina %i en tabla de paginas", pid, pagina);
+	return EXIT_FAILURE_CUSTOM;
+}
