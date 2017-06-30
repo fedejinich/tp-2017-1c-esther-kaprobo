@@ -12,7 +12,7 @@
 |KERNEL|
 \******/
 
-void inicializarProceso(int* pid, int* paginasRequeridas) {
+void inicializarProceso(int pid, int paginasRequeridas) {
 	retardo();
 
 	log_info(logger, "Inicializando proceso: %i", pid);
