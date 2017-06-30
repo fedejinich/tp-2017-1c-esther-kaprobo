@@ -27,7 +27,8 @@ int main(int argc, char **argv){
 	inicializarCache();
 	iniciarHilos();
 
-	/*escribirCache(1,0,1);
+	/*liberarProcesoDeCache(2);
+	escribirCache(1,0,1);
 	escribirCache(1,1,1);
 	escribirCache(1,2,1);
 	escribirCache(2,0,1);
@@ -49,8 +50,10 @@ int main(int argc, char **argv){
 	liberarProcesoDeCache(5);
 	liberarProcesoDeCache(2);
 
+	dumpCache();
 
-	dumpCache();*/
+	int* num = leerDeCache(3,2);
+	log_warning(logger, "Contendio de lectura %i", num);*/
 
 	return EXIT_SUCCESS;
 }
