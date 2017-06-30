@@ -11,6 +11,6 @@
 #include "../Memoria.h"
 
 void retardo();
-
+void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio);
 
 #endif /* OPERACIONES_ABSTRACTOPERACIONES_H_ */
