@@ -28,7 +28,7 @@ int getCantidadFramesDisponibles();
 int getCantidadFramesOcupados();
 bool paginasDisponibles(int pid, int paginasRequeridas);
 t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada);
-void reservarPaginas(int pid, int paginasAReservar);
+int reservarPaginas(int pid, int paginasAReservar);
 int asignarMasPaginasAProceso(int pid, int paginasAsignar);
 int getUltimaPagina(int pid);
 t_list* getEntradasDePID(int pid);
@@ -36,5 +36,6 @@ int esPaginaLiberable(int pid, int pagina);
 int liberarPagina(int pid, int pagina);
 int getFrameByPIDPagina(int pid, int pagina);
 bool existePIDPagina(int pid, int pagina);
+
 
 #endif /* TABLADEPAGINAS_H_ */

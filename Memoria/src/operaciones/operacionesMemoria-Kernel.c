@@ -15,75 +15,109 @@
 int inicializarProceso(int pid, int paginasRequeridas) {
 	retardo();
 
-	log_info(logger, "Inicializando proceso: %i", pid);
-	log_info(logger, "Reservando %i paginas para PID: %i ...", paginasRequeridas, pid);
+	log_warning(logger, "Inicializando proceso. PID %i ...", pid);
+	if(paginasRequeridas > 1)
+		log_info(logger, "Reservando %i paginas ...", paginasRequeridas);
+	else
+		log_info(logger, "Reservando una pagina");
 
 	if(paginasDisponibles(pid, paginasRequeridas)) {
 		reservarPaginas(pid, paginasRequeridas);
-		int * ok = 1; //si saco esto y dejo el 1  en el paquete me tira segmentation fault
+		int* ok = (int*) 1; //si saco esto y dejo el 1  en el paquete me tira segmentation fault
 		enviar(socketClienteKernel, INICIALIZAR_PROCESO_OK, sizeof(int), &ok); //EL DATA ESTA AL PEDO PERO BUEN
-		log_debug(logger, "Reservadas %i paginas para PID: %i", paginasRequeridas, pid);
+		if(paginasRequeridas > 1)
+			log_info(logger, "Reservadas %i paginas para PID %i", paginasRequeridas, pid);
+		else
+			log_info(logger, "Reservada una pagina para PID %i", pid);
+		log_debug(logger, "Proceso inicializado correctamente. PID %i", pid);
+
+		return EXIT_SUCCESS_CUSTOM;
 	} else {
-		int * fallo = -1; //si saco esto y dejo el -1  en el paquete me tira segmentation fault
+		int* fallo = (int*) -1; //si saco esto y dejo el -1  en el paquete me tira segmentation fault
 		enviar(socketClienteKernel, INICIALIZAR_PROCESO_FALLO, sizeof(int), &fallo); //EL DATA ESTA AL PEDO PERO BUEN
-		log_error(logger, "No se pueden reservar %i paginas para PID: %i", paginasRequeridas, pid);
+		if(paginasRequeridas > 1)
+			log_error(logger, "No se pueden reservar %i paginas para PID %i", paginasRequeridas, pid);
+		else
+			log_error(logger, "No se puede reservar una pagina para PID %i", pid);
+
+		return EXIT_FAILURE_CUSTOM;
 	}
 
 }
 
 int finalizarProceso(int pid) {
 	retardo();
-	log_warning(logger, "Finalizando PID: %i...", pid);
+	log_warning(logger, "Finalizando proceso. PID %i ...", pid);
 
-	log_info(logger, "Finalizando PID: %i de cache...", pid);
+	log_info(logger, "Finalizando proceso de cache. PID %i ...", pid);
 	liberarProcesoDeCache(pid);
 
-	log_info(logger, "Finalizando PID: %i de memoria principal", pid);
+	log_info(logger, "Finalizando proceso de memoria principal. PID %i ...", pid);
 	int i;
 	for(i = 0; i <= tablaDePaginasSize(); i++) {
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
 		if(entrada == EXIT_FAILURE_CUSTOM) {
-			log_error(logger, "No se pudo finalizar proceso");
+			log_error(logger, "No se pudo finalizar proceso. PID %i", pid);
 			return EXIT_FAILURE_CUSTOM;
 		}
+
 		if(entrada->pid == pid) {
-			log_warning(logger, "Eliminando entrada %i de la tabla de paginas del PID: %i...", i, pid);
+			log_info(logger, "Eliminando entrada %i de la tabla de paginas del PID: %i...", i, pid);
 			entrada->pid = -1;
 			entrada->pagina = 0;
 		}
 	}
 
-	log_debug(logger, "PID %i finalizado", pid);
+	log_debug(logger, "Proceso finalizado. PID %i", pid);
 	return EXIT_SUCCESS_CUSTOM;
 }
 
 int asignarPaginasAProceso(int pid, int paginasAsignar) {
 	retardo();
 
-	log_info(logger,"Se piden %i paginas mas para el proceso %i.",paginasAsignar, pid);
+	if(paginasAsignar > 1)
+		log_warning(logger,"Asignando %i paginas al proceso. PID %i ...",paginasAsignar, pid);
+	else
+		log_warning(logger, "Asignando una pagina al proceso. PID %i", pid);
 
 	bool paginasDisponiblesOk = paginasDisponibles(pid, paginasAsignar);
 
 	if(paginasDisponiblesOk == EXIT_FAILURE_CUSTOM) {
-		log_error(logger, "Error al asignar paginas a proceso PID %i, Paginas a asignar %i", pid, paginasAsignar);
+		log_error(logger, "Error al asignar paginas al proceso PID %i, Paginas a asignar %i", pid, paginasAsignar);
 		return EXIT_FAILURE_CUSTOM;
 	}
 
 	if(paginasDisponiblesOk) {
 		int exito = asignarMasPaginasAProceso(pid, paginasAsignar);
 		if(exito == EXIT_FAILURE_CUSTOM) {
-			int* fallo = -1;
+			int* fallo = (int*) -1;
 			enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), fallo);
-			log_error(logger, "No se pudieron asignar %i paginas a PID %i", paginasAsignar, pid);
+			if(paginasAsignar > 1)
+				log_error(logger, "No se pudieron asignar %i paginas al proceso. PID %i", paginasAsignar, pid);
+			else
+				log_error(logger, "No se pudo asignar una pagina al proceso. PID %i", pid);
+
+			return EXIT_FAILURE_CUSTOM;
 		}
 
-		int* ok = 1;
+		int* ok = (int*) 1;
 		enviar(socketKernel, ASIGNAR_PAGINAS_OK, sizeof(int), ok); //EL DATA ESTA AL PEDO PERO BUEN
-		log_debug(logger,"Se asignaron %i paginas mas al PID: %i", pid, paginasAsignar);
+		if(paginasAsignar > 1)
+			log_debug(logger, "Se asignaron %i paginas mas al proceso. PID: %i", paginasAsignar, pid);
+		else
+			log_debug(logger, "Se asigno una pagina mas al proceso. PID %i", pid);
+
+		return EXIT_SUCCESS_CUSTOM;
 
 	} else {
-		enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), -1); //EL DATA ESTA AL PEDO PERO BUEN
-		log_error(logger, "No se pudieron asignar %i paginas a PID %i", paginasAsignar, pid);
+		int* fallo = (int*) -1;
+		enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), fallo); //EL DATA ESTA AL PEDO PERO BUEN
+		if(paginasAsignar > 1)
+			log_error(logger, "No se pudieron asignar %i paginas al proceso. PID %i", paginasAsignar, pid);
+		else
+			log_error(logger, "No se pudo asignar una pagina al proceso. PID %i", pid);
+
+		return EXIT_FAILURE_CUSTOM;
 	}
 }
 
@@ -100,21 +134,28 @@ int liberarPaginaProceso(int pid, int pagina) {
 	//MI PREGUNTA ES: POR QUE NO SE PODRIA LIBERAR UNA PAGINA?
 	retardo();
 
-	log_warning(logger, "Liberando la pagina nro %i del PID %i...", pagina, pid);
+	log_warning(logger, "Liberando pagina nro %i del proceso. PID %i ...", pagina, pid);
 
 	if(esPaginaLiberable(pid, pagina)) {
 		int exito = liberarPagina(pid, pagina);
 		if(exito == EXIT_FAILURE_CUSTOM) {
-			int* fallo = -1;
+			int* fallo = (int*) -1;
 			enviar(socketKernel, LIBERAR_PAGINA_FALLO, sizeof(int), fallo);
-			log_error(socketKernel, "No se pudo liberar la pagina nro %i del PID %i", pagina, pid);
+			log_error(logger, "No se pudo liberar la pagina nro %i del proceso. PID %i", pagina, pid);
+
+			return EXIT_FAILURE_CUSTOM;
 		}
 
-		int* ok = 1;
+		int* ok = (int*) 1;
 		enviar(socketKernel, LIBERAR_PAGINA_OK, sizeof(int), ok);
-		log_debug(logger, "Se libero la pagina nro %i del PID %i", pagina, pid);
+		log_debug(logger, "Se libero la pagina nro %i del proceso. PID %i", pagina, pid);
+
+		return EXIT_SUCCESS_CUSTOM;
 	}
 
+	log_error(logger, "No se libero la pagina nro %i del proceso. PID %i", pagina, pid);
+
+	return EXIT_FAILURE_CUSTOM;
 }
 
 

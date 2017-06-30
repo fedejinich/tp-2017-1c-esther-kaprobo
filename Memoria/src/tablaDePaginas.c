@@ -43,7 +43,7 @@ int escribirTablaDePaginas(int frame, int pid, int pagina) {
 	} else {
 		entrada->pid = pid;
 		entrada->pagina = pagina;
-		log_debug(logger, "Se escrbio en tabla de paginas. Frame: %i, PID: %i, Pagina: %i", frame, pid, pagina);
+		log_info(logger, "Se escrbio en tabla de paginas. Frame: %i, PID: %i, Pagina: %i", frame, pid, pagina);
 		return EXIT_SUCCESS_CUSTOM;
 	}
 }
@@ -141,6 +141,7 @@ int getFrameDisponibleHash(int pid, int pagina) {
 			return j;
 		}
 	}
+
 	log_error(logger, "No hay frames disponibles");
 	return EXIT_FAILURE_CUSTOM;
 }
@@ -216,13 +217,25 @@ int tablaDePaginasSize() {
 	return frames;
 }
 
-void reservarPaginas(int pid, int paginasAReservar) {
+int reservarPaginas(int pid, int paginasAReservar) {
 	int i;
 	for(i = 1; i <= paginasAReservar; i++) {
 		int pagina = i;
 		int frameDisponible = getFrameDisponibleHash(pid, pagina);
-		escribirTablaDePaginas(frameDisponible, pid, pagina);
+
+		if(frameDisponible == EXIT_FAILURE_CUSTOM) {
+			log_error(logger, "No se pueden reservar %i paginas para PID %i", paginasAReservar, pid);
+			return EXIT_FAILURE_CUSTOM;
+		}
+
+		int escribio = escribirTablaDePaginas(frameDisponible, pid, pagina);
+		if(escribio == EXIT_FAILURE_CUSTOM) {
+			log_error(logger, "No se pudo reservar la pagina %i para el PID %i", pagina, pid);
+			return EXIT_FAILURE;
+		}
 	}
+
+	return EXIT_SUCCESS_CUSTOM;
 }
 
 int asignarMasPaginasAProceso(int pid, int paginasAsignar) {

@@ -37,7 +37,7 @@ void* hiloServidorKernel(void* arg) {
 
         char * codigoDeOperacion = getCodigoDeOperacion(paqueteRecibido->codigo_operacion);
 
-        log_info(logger, "Codigo de operacion Memoria-Kernel: %s", codigoDeOperacion);
+        log_warning(logger, "Codigo de operacion Memoria-Kernel: %s", codigoDeOperacion);
         switch (paqueteRecibido->codigo_operacion) {
             case INICIALIZAR_PROCESO:
                 paginasRequeridas = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->paginasAPedir;

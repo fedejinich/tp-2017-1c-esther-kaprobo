@@ -42,7 +42,7 @@ void* hiloConexionCPU(void* socket) {
 		paqueteRecibido = recibir(socket);
 		char * codigoDeOperacion = getCodigoDeOperacion(paqueteRecibido->codigo_operacion);
 
-		log_info(logger, "Codigo de operacion Memoria-CPU: %s", codigoDeOperacion);
+		log_warning(logger, "Codigo de operacion Memoria-CPU: %s", codigoDeOperacion);
 
 		int pid, pagina, offset, tamanio;
 		void* buffer;
