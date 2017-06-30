@@ -62,7 +62,7 @@ int asignarPaginasAProceso(int pid, int paginasAsignar) {
 
 	log_info(logger,"Se piden %i paginas mas para el proceso %i.",paginasAsignar, pid);
 
-	bool paginasDisponiblesOk = paginasDisponibles(paginasAsignar);
+	bool paginasDisponiblesOk = paginasDisponibles(pid, paginasAsignar);
 
 	if(paginasDisponiblesOk == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "Error al asignar paginas a proceso PID %i, Paginas a asignar %i", pid, paginasAsignar);
@@ -71,18 +71,19 @@ int asignarPaginasAProceso(int pid, int paginasAsignar) {
 
 	if(paginasDisponiblesOk) {
 		int exito = asignarMasPaginasAProceso(pid, paginasAsignar);
-		if(exito == EXIT_SUCCESS_CUSTOM) {
-			int* ok = 1;
-			enviar(socketKernel, ASIGNAR_PAGINAS_OK, sizeof(int), ok); //EL DATA ESTA AL PEDO PERO BUEN
-			log_debug(logger,"Se asignaron %i paginas mas al PID: %i", pid, paginasAsignar);
-		} else {
+		if(exito == EXIT_FAILURE_CUSTOM) {
 			int* fallo = -1;
 			enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), fallo);
 			log_error(logger, "No se pudieron asignar %i paginas a PID %i", paginasAsignar, pid);
 		}
+
+		int* ok = 1;
+		enviar(socketKernel, ASIGNAR_PAGINAS_OK, sizeof(int), ok); //EL DATA ESTA AL PEDO PERO BUEN
+		log_debug(logger,"Se asignaron %i paginas mas al PID: %i", pid, paginasAsignar);
+
 	} else {
 		enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), -1); //EL DATA ESTA AL PEDO PERO BUEN
-		log_error(logger, "No hay espacio disponible para asignar %i paginas mas al PID %i", paginasAsignar, pid);
+		log_error(logger, "No se pudieron asignar %i paginas a PID %i", paginasAsignar, pid);
 	}
 }
 
@@ -100,17 +101,18 @@ int liberarPaginaProceso(int pid, int pagina) {
 	retardo();
 
 	log_warning(logger, "Liberando la pagina nro %i del PID %i...", pagina, pid);
+
 	if(esPaginaLiberable(pid, pagina)) {
 		int exito = liberarPagina(pid, pagina);
-		if(exito == EXIT_SUCCESS_CUSTOM) {
-			int* ok = 1;
-			enviar(socketKernel, LIBERAR_PAGINA_OK, sizeof(int), ok);
-			log_debug(logger, "Se libero la pagina nro %i del PID %i", pagina, pid);
-		} else {
+		if(exito == EXIT_FAILURE_CUSTOM) {
 			int* fallo = -1;
 			enviar(socketKernel, LIBERAR_PAGINA_FALLO, sizeof(int), fallo);
 			log_error(socketKernel, "No se pudo liberar la pagina nro %i del PID %i", pagina, pid);
 		}
+
+		int* ok = 1;
+		enviar(socketKernel, LIBERAR_PAGINA_OK, sizeof(int), ok);
+		log_debug(logger, "Se libero la pagina nro %i del PID %i", pagina, pid);
 	}
 
 }

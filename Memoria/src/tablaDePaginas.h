@@ -26,7 +26,7 @@ int getFrameDisponible();
 int tablaDePaginasSize();
 int getCantidadFramesDisponibles();
 int getCantidadFramesOcupados();
-bool paginasDisponibles(int paginasRequeridas);
+bool paginasDisponibles(int pid, int paginasRequeridas);
 t_entradaTablaDePaginas* getEntradaTablaDePaginas(int numeroDeEntrada);
 void reservarPaginas(int pid, int paginasAReservar);
 int asignarMasPaginasAProceso(int pid, int paginasAsignar);

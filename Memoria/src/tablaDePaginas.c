@@ -145,18 +145,18 @@ int getFrameDisponibleHash(int pid, int pagina) {
 	return EXIT_FAILURE_CUSTOM;
 }
 
-bool paginasDisponibles(int paginasRequeridas) {
+bool paginasDisponibles(int pid, int paginasRequeridas) {
 	int cantidadFramesDisponibles = getCantidadFramesDisponibles();
 
 	if(cantidadFramesDisponibles == EXIT_FAILURE_CUSTOM) {
-		log_error(logger, "Error paginasDisponibles(%i)", paginasRequeridas);
+		log_error(logger, "Error paginasDisponibles(%i, %i)", pid, paginasRequeridas);
 		return EXIT_FAILURE_CUSTOM;
 	}
 
 	if(cantidadFramesDisponibles >= paginasRequeridas) {
 		return true;
 	} else {
-		log_error(logger, "No hay mas espacio disponible en memoria");
+		log_error(logger, "No hay mas espacio disponible en memoria para PID %i, Paginas requeridas %i", pid, paginasRequeridas);
 		return false;
 	}
 	/*
