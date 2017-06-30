@@ -17,5 +17,6 @@ void* leerFrame(int frame,int offset, int tamanio);
 void liberarFrame(int frame);
 int getFirstFrame();
 void inicializarFramePointer();
+bool superaLimiteFrame(int offset, int tamanio);
 
 #endif /* FRAMES_H_ */
