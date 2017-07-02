@@ -376,26 +376,26 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 
 int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	int exito;
-	t_proceso* proceso;
-	t_proceso* procesoin;
-	proceso = crearPrograma(socket);
+	t_proceso* proceso = malloc(sizeof(t_proceso));
+	t_proceso* procesoin = malloc(sizeof(t_proceso));
+	proceso = crearPrograma(socket, paquete);
 
 	log_info(logger, "KERNEL: Creando proceso %d", proceso->pcb->pid);
 
-	//ENVIO PID A CONSOLA
+
 	enviar(proceso->socketConsola, ENVIAR_PID, sizeof(int), &proceso->pcb->pid);
 
-	//envio cola NEW
+
 	pthread_mutex_lock(&mutex_new);
 	queue_push(cola_new, proceso);
 	sem_post(&sem_new); // capaz que no es necesario, para que saque siempre 1, y no haga lio
 	pthread_mutex_unlock(&mutex_new);
 
 	if(cantidadDeProgramas >= grado_multiprog){
-		//No puedo pasar a Ready, aviso a Consola
+
 		int* basura = 1;
 		enviar(socket, 108, sizeof(int), &basura);
-		//Lo saco de New, le asigno el exit code, y lo mando a Exit directo
+
 		pthread_mutex_lock(&mutex_new);
 		t_proceso* proceso = queue_pop(cola_new);
 		sem_wait(&sem_new);
@@ -608,7 +608,8 @@ void escribeSemaforo(char* semaforo, int valor){
 	exit(0);
 }
 
-t_proceso* crearPrograma(int socketC){
+t_proceso* crearPrograma(int socketC , t_paquete* paquete){
+	char* codigo = paquete->data;
 	t_proceso* procesoNuevo;
 	t_pcb * pcb;
 	pcb = nalloc(sizeof(t_pcb));
@@ -617,6 +618,20 @@ t_proceso* crearPrograma(int socketC){
 	procesoNuevo->pcb->pid = pidcounter;
 	procesoNuevo->socketConsola = socketC;
 	pidcounter ++;
+	t_metadata_program* metadata = metadata_desde_literal(codigo);
+	procesoNuevo->pcb->programCounter = metadata->instruccion_inicio;
+	int paginasCodigo = ceil((double)paquete->tamanio / (double)TAMPAG);
+	procesoNuevo->pcb->paginasDeCodigo = paginasCodigo;
+	procesoNuevo->pcb->instrucciones = metadata->instrucciones_size;
+	procesoNuevo->pcb->indiceDeCodigo = desseralizarInstrucciones(procesoNuevo->pcb->instrucciones, metadata->instrucciones_serializado);
+	procesoNuevo->pcb->sizeIndiceEtiquetas = metadata->etiquetas_size;
+	procesoNuevo->pcb->indiceEtiquetas = malloc(sizeof(char)*procesoNuevo->pcb->sizeIndiceEtiquetas + sizeof(char));
+	memcpy(procesoNuevo->pcb->indiceEtiquetas, metadata->etiquetas, sizeof(char)*procesoNuevo->pcb->sizeIndiceEtiquetas);
+	strcpy(procesoNuevo->pcb->indiceEtiquetas+sizeof(char)*procesoNuevo->pcb->sizeIndiceEtiquetas, "\0");
+	procesoNuevo->pcb->indiceStack = list_create();
+	procesoNuevo->pcb->paginasDeMemoria = (int)ceil((double)stack_size);
+	metadata_destruir(metadata);
+
 	return procesoNuevo;
 }
 
@@ -782,21 +797,25 @@ void * nalloc(int tamanio){
 }
 
 int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion){
-	int paginasAPedir = ceil((double)size / (double)TAMPAG);
-	t_pedidoDePaginasKernel* pedidoDePaginas = malloc(sizeof(t_pedidoDePaginasKernel));
-	pedidoDePaginas->pid = proceso->pcb->pid;
-	pedidoDePaginas->paginasAPedir = paginasAPedir;
+	char* paqueteAEnviar;
+	paqueteAEnviar = malloc(size+3*sizeof(int));
+	int paginas = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria;
+	log_info(logger, "KERNEL: cantidad de paginas de pid %d: %d", proceso->pcb->pid, paginas);
 
-	//Envio a memoria el pedido de pagina
-	enviar(memoria, codigoOperacion, sizeof(t_pedidoDePaginasKernel),pedidoDePaginas);
+	memcpy(paqueteAEnviar, &(proceso->pcb->pid), sizeof(int));
+	memcpy(paqueteAEnviar+sizeof(int), &paginas, sizeof(int));
+	memcpy(paqueteAEnviar+2*sizeof(int),&size, sizeof(int));
+	memcpy(paqueteAEnviar+3*sizeof(int), codigo, size);
 
-	free(pedidoDePaginas);
+	enviar(memoria, codigoOperacion, (size+3*sizeof(int)),paqueteAEnviar);
 
-	//Tengo que esperar a que vuelva la respuesta del pedido. Si esta OK, devuelve la cantidad de paginas, sino devuelve -1
-	t_paquete* respuestaAPedidoDePaginas;
-	respuestaAPedidoDePaginas = recibir(memoria);
+	t_paquete * paquete;
+	paquete = recibir(memoria);
 
-	return respuestaAPedidoDePaginas->codigo_operacion;
+	int resultado = paquete->codigo_operacion;
+
+	liberar_paquete(paquete);
+	return resultado;
 }
 
 void hiloEjecutador(){
@@ -1020,4 +1039,15 @@ t_proceso* obtenerProcesoPorPID(t_queue *cola, int pid){
 		a++;
 	}
 	return NULL;
+}
+
+int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instrucciones_serializados){
+	int i,j;
+	int **indice = malloc(sizeof(int*)*instrucciones);
+	for (i=0; i<instrucciones; i++){
+		indice[i]= malloc(sizeof(int)*2);
+		indice[i][0] = (instrucciones_serializados +1)->start;
+		indice[i][1] = (instrucciones_serializados +1)->offset;
+	}
+	return indice;
 }

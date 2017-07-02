@@ -3,7 +3,7 @@
 #include <string.h>
 #include <commons/config.h>
 #include "src/Commons_Kaprobo.h"
-//#include "src/Estructuras.h"
+#include "src/Estructuras.h"
 #include <pthread.h>
 #include <commons/log.h>
 #include <math.h>
@@ -30,12 +30,18 @@
  * ESTRUCTURAS
  *
  * */
+
 typedef struct __attribute__((packed))t_pcb{
 	int pid;
-	int programCounter;
-	//Falta referencia a tabla
-	int stackPosition;
+	t_puntero_instruccion programCounter;
+	int paginasDeMemoria;
+	int paginasDeCodigo;
+	int instrucciones;
+	int **indiceDeCodigo;
 	int exitCode;
+	int sizeIndiceEtiquetas;
+	char* indiceEtiquetas;
+	t_list* indiceStack;
 }t_pcb;
 
 typedef struct __attribute__((packed))t_proceso{
@@ -182,8 +188,9 @@ void hiloEjecutador();
 void mandarAEjecutar(t_proceso* proceso, int socket);
 int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion);
 int pedirPaginasParaProceso(int pid);
-t_proceso* crearPrograma(int socket);
+t_proceso* crearPrograma(int socketC , t_paquete* paquete);
 int nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
+int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instrucciones_serializados);
 
 //Ejecucion programas
 
