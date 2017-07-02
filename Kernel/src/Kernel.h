@@ -3,7 +3,7 @@
 #include <string.h>
 #include <commons/config.h>
 #include "src/Commons_Kaprobo.h"
-#include "src/Estructuras.h"
+
 #include <pthread.h>
 #include <commons/log.h>
 #include <math.h>
@@ -31,25 +31,7 @@
  *
  * */
 
-typedef struct __attribute__((packed))t_pcb{
-	int pid;
-	t_puntero_instruccion programCounter;
-	int paginasDeMemoria;
-	int paginasDeCodigo;
-	int instrucciones;
-	int **indiceDeCodigo;
-	int exitCode;
-	int sizeIndiceEtiquetas;
-	char* indiceEtiquetas;
-	t_list* indiceStack;
-}t_pcb;
 
-typedef struct __attribute__((packed))t_proceso{
-	t_pcb* pcb;
-	int socketConsola;
-	int socketCPU;
-	bool abortado;
-}t_proceso;
 
 
 //VARIABLES
@@ -95,7 +77,7 @@ bool hayConfiguracion = false;
 //HILO NOTIFY
 
 pthread_t hiloNotify;
-pthread_t hiloEjecuta;
+pthread_t hiloPCP;
 pthread_t hiloConsolaKernel;
 
 int opcion, opcionPID;
@@ -186,7 +168,7 @@ un_socket conectarConLaMemoria();
 
 
 //Creacion Programa
-void hiloEjecutador();
+void planificadorCortoPlazo();
 void mandarAEjecutar(t_proceso* proceso, int socket);
 int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion);
 int pedirPaginasParaProceso(int pid);

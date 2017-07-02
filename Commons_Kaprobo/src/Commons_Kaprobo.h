@@ -16,6 +16,7 @@
 #include <commons/log.h>
 #include <commons/config.h>
 #include <commons/collections/list.h>
+#include "src/Estructuras.h"
 
 #define EXIT_FAILURE_CUSTOM -23
 #define EXIT_SUCCESS_CUSTOM -99
@@ -214,7 +215,7 @@ typedef enum{
 	SIN_ESPACIO_MEMORIA,
 	ABORTADO_KERNEL,
 	ERROR_MULTIPROGRAMACION
-};
+}codigosKernelConsola;
 
 //CODIGOS DE OPERACION KERNEL-FILE SYSTEM
 typedef enum{

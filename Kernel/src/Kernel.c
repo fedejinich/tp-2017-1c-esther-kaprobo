@@ -13,7 +13,7 @@
 
 int main(int argc, char **argv) {
 	pthread_create(&hiloNotify, NULL, verNotify, NULL);
-	pthread_create(&hiloEjecuta, NULL, hiloEjecutador, NULL);
+	pthread_create(&hiloPCP, NULL, planificadorCortoPlazo, NULL);
 	pthread_create(&hiloConsolaKernel, NULL, hiloConKer, NULL);
 
 	borrarArchivos();
@@ -818,7 +818,7 @@ int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemo
 	return resultado;
 }
 
-void hiloEjecutador(){
+void planificadorCortoPlazo(){
 	//printf("hilo Ejecutador\n");
 	t_proceso* proceso;
 	int socketCPULibre;
@@ -831,8 +831,9 @@ void hiloEjecutador(){
 		if(estadoPlanificacion){
 			yaMeFijeReady = false;
 			//sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
-			pthread_mutex_lock(&mutex_config); //Como envio despues datos para ejecutar, necesito mutex
-			//socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
+			pthread_mutex_lock(&mutex_config);
+			socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
+
 			pthread_mutex_lock(&mutex_ready);
 			proceso = queue_pop(cola_ready);
 			pthread_mutex_unlock(&mutex_ready);
@@ -851,7 +852,10 @@ void hiloEjecutador(){
 }
 
 void mandarAEjecutar(t_proceso* proceso, int socket){
-	//Serializar PCB
+
+	t_pcb* pcbSerializado;
+
+	pcbSerializado = (t_pcb*)serializarPCB(proceso->pcb);
 
 	proceso->socketCPU = socket;
 
@@ -880,7 +884,7 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 	/*SIMULACION DE EJECUCION PARA PRUEBAS SECCION 2*/
 
 	//Pruebo envio codigo 102 programa finalizado
-	enviar(proceso->socketConsola, EnvioFinalizacionAConsola, sizeof(int), &proceso->pcb->pid);
+	enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
 	finalizarProceso(proceso, 0);
 
 	/*FIN SIMULACION DE EJECUCION PARA PRUEBAS SECCION 2*/
