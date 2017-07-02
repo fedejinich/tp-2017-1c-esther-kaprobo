@@ -106,12 +106,14 @@ sem_t sem_ready;
 sem_t sem_cpu;
 sem_t sem_exit;
 
+bool estadoPlanificacion = true;
+bool yaMeFijeReady = false;
+
 pthread_mutex_t mutex_config;
 
 pthread_mutex_t mutex_new, mutex_ready, mutex_exec, mutex_block, mutex_exit;
 
 pthread_mutex_t mutexEjecuta;
-
 
 //COLAS
 
@@ -170,7 +172,7 @@ void mostrarListadoDeProcesos();
 void mostrarUnaListaDeProcesos(t_queue* colaAMostrar);
 void mostrarInformacionDeProceso(int pid);
 void forzarFinalizacionDeProceso(int pid);
-t_proceso* buscarProcesoEnLasColasYEliminarlo(int pid);
+t_queue* buscarProcesoEnLasColas(int pid);
 t_proceso* obtenerProcesoPorPID(t_queue *cola, int pid);
 
 //Sockets
