@@ -28,8 +28,8 @@ int main() {
 		paquete = recibir(socketKernel);
 		void* path;
 
-		char * codigoDeOperacion = getCodigoDeOperacion(paquete->codigo_operacion);
-		log_info(logger, "Codigo de operacion FileSystem-Kernel: %s", codigoDeOperacion);
+		//char * codigoDeOperacion = getCodigoDeOperacion(paquete->codigo_operacion);
+		//log_info(logger, "Codigo de operacion FileSystem-Kernel: %s", codigoDeOperacion);
 
 		switch (paquete->codigo_operacion)
 		{

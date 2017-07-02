@@ -29,6 +29,7 @@ void* hiloServidorKernel(void* arg) {
 
     t_paquete * paqueteRecibido;
     int pid, paginasRequeridas, pagina, tamanio, offset, tamanioCodigo;
+    char* codigo;
 
     t_asignarPaginasKernel* data;
 
@@ -40,8 +41,17 @@ void* hiloServidorKernel(void* arg) {
         log_warning(logger, "Codigo de operacion Memoria-Kernel: %s", codigoDeOperacion);
         switch (paqueteRecibido->codigo_operacion) {
             case INICIALIZAR_PROCESO:
-                paginasRequeridas = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->paginasAPedir;
-                pid = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->pid;
+
+            	memcpy(&pid, paqueteRecibido->data, sizeof(int));
+            	memcpy(&paginasRequeridas, paqueteRecibido->data + sizeof(int), sizeof(int));
+            	memcpy(&tamanioCodigo, paqueteRecibido->data+sizeof(int)*2, sizeof(int));
+
+            	codigo = malloc(tamanioCodigo);
+            	memcpy(codigo, paqueteRecibido->data + sizeof(int)*3, tamanioCodigo);
+
+                //paginasRequeridas = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->paginasAPedir;
+                //pid = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->pid;
+
                 inicializarProceso(pid, paginasRequeridas);
                 break;
             case ASIGNAR_PAGINAS:

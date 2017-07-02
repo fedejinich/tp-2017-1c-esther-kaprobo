@@ -17,6 +17,9 @@
 #include <commons/log.h>
 #include <commons/process.h>
 
+#include <fcntl.h>
+#include <sys/mman.h>
+
 #define ARCHIVOLOG "File_System.log"
 #define KernelValidacion 11
 
