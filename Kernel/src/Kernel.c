@@ -36,13 +36,13 @@ void inicializar(){
 
 	//Semaforos
 	pthread_mutex_init(&mutex_config, NULL);
-	pthread_mutex_init(&mutex_new,NULL);
-	pthread_mutex_init(&mutex_ready,NULL);
-	pthread_mutex_init(&mutexEjecuta,NULL);
+	pthread_mutex_init(&mutex_new, NULL);
+	pthread_mutex_init(&mutex_ready, NULL);
+	pthread_mutex_init(&mutexEjecuta, NULL);
 
-	sem_init(&sem_new,0,0);
-	sem_init(&sem_ready,0,0);
-	sem_init(&sem_cpu,0,0);
+	sem_init(&sem_new, 0, 0);
+	sem_init(&sem_ready, 0, 0);
+	sem_init(&sem_cpu, 0, 0);
 
 	//Crear Log
 	logger = log_create("kernel.log","Kernel",true,LOG_LEVEL_TRACE);
@@ -805,19 +805,29 @@ void hiloEjecutador(){
 	int socketCPULibre;
 
 	while(1){
-		sem_wait(&sem_ready);//El signal lo tengo cuando envio de New a Ready
-		//sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
-		pthread_mutex_lock(&mutex_config); //Como envio despues datos para ejecutar, necesito mutex
-		//socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
-		pthread_mutex_lock(&mutex_ready);
-		proceso = queue_pop(cola_ready);
-		pthread_mutex_unlock(&mutex_ready);
+		if(!yaMeFijeReady){
+			sem_wait(&sem_ready);//El signal lo tengo cuando envio de New a Ready
+			yaMeFijeReady = true;
+		}
+		if(estadoPlanificacion){
+			yaMeFijeReady = false;
+			//sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
+			pthread_mutex_lock(&mutex_config); //Como envio despues datos para ejecutar, necesito mutex
+			//socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
+			pthread_mutex_lock(&mutex_ready);
+			proceso = queue_pop(cola_ready);
+			pthread_mutex_unlock(&mutex_ready);
 
-		log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
+			log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
 
-		mandarAEjecutar(proceso, socketCPULibre);
+			mandarAEjecutar(proceso, socketCPULibre);
 
-		pthread_mutex_unlock(&mutex_config);
+			pthread_mutex_unlock(&mutex_config);
+		}
+		else{
+			printf("PLANIF DETENIDA \n");
+			sleep(2);
+		}
 	}
 }
 
@@ -838,7 +848,7 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 	/*SIMULACION DE EJECUCION PARA PRUEBAS SECCION 1*/
 
 	printf("Estaria EJECUTANDO\n");
-	sleep(20);
+	sleep(10);
 	printf("Termine de ejecutar\n");
 
 	/*FIN SIMULACION DE EJECUCION PARA PRUEBAS SECCION 1*/
@@ -916,7 +926,15 @@ void hiloConKer(){
 		case 6:
 			//Detiene la planificacion
 			pthread_mutex_lock(&mutexEjecuta);
-
+			if(estadoPlanificacion){
+				//sem_wait(sem_planificacion);
+				estadoPlanificacion = false;
+				log_warning(logger, "PLANIFICACION DETENIDA");
+			}else{
+				//sem_post(sem_planificacion);
+				estadoPlanificacion = true;
+				log_warning(logger, "PLANIFICACION CONTINUADA");
+			}
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
 		default:
@@ -934,7 +952,7 @@ void mostrarMenu(){
 	printf("OPCION 3 - OBTENER TABLA GLOBAL DE ARCHIVOS\n");
 	printf("OPCION 4 - MODIFICAR GRADO DE MULTIPROGRAMACION\n");
 	printf("OPCION 5 - FINALIZAR UN PROCESO\n");
-	printf("OPCION 6 - DETENER LA PLANIFICACION\n");
+	printf("OPCION 6 - DETENER/CONTINUAR LA PLANIFICACION\n");
 	printf("Su Opcion:\n");
 }
 
@@ -975,15 +993,18 @@ void mostrarUnaListaDeProcesos(t_queue* colaAMostrar){
 	if(i == 0){
 		printf("No hay procesos en esta cola\n");
 	}
+	printf("\n");
 }
 
 void mostrarInformacionDeProceso(int pid){
-	//t_proceso* proceso = obtenerProcesoPorPID(pid);
+	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
+	t_proceso* proceso = obtenerProcesoPorPID(colaDelProceso, pid);
 	//TODO mostrar info
 }
 
 void forzarFinalizacionDeProceso(int pid){
-	t_proceso* proceso = buscarProcesoEnLasColasYEliminarlo(pid);
+	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
+	t_proceso* proceso = obtenerProcesoPorPID(colaDelProceso, pid);
 	if(proceso != NULL){
 		finalizarProceso(proceso, FinalizacionPorConsolaDeKernel);
 		printf("El proceso %i se ha finalizado.\n", pid);
@@ -994,20 +1015,20 @@ void forzarFinalizacionDeProceso(int pid){
 
 }
 
-t_proceso* buscarProcesoEnLasColasYEliminarlo(int pid){
+t_queue* buscarProcesoEnLasColas(int pid){
 	t_proceso* proceso;
 	if(proceso = obtenerProcesoPorPID(cola_new, pid)){
-		return proceso;
+		return cola_new;
 	}
 	if(proceso = obtenerProcesoPorPID(cola_ready, pid)){
-		return proceso;
+		return cola_ready;
 	}
 	if(proceso = obtenerProcesoPorPID(cola_exec, pid)){
 		//TODO AVISARLE A CPU QUE LO DEJE DE EJECUTAR
-		return proceso;
+		return cola_exec;
 	}
 	if(proceso = obtenerProcesoPorPID(cola_block, pid)){
-		return proceso;
+		return cola_block;
 	}
 	return NULL;
 }
