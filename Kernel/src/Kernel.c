@@ -609,28 +609,60 @@ void escribeSemaforo(char* semaforo, int valor){
 }
 
 t_proceso* crearPrograma(int socketC , t_paquete* paquete){
+	int size = paquete->tamanio;
 	char* codigo = paquete->data;
 	t_proceso* procesoNuevo;
 	t_pcb * pcb;
+	int cuantasPaginas, estado, i;
+	int* indiceCodigo;
+	int sizeIndiceCodigo;
+	t_metadata_program* metadata;
+
 	pcb = nalloc(sizeof(t_pcb));
 	procesoNuevo = nalloc(sizeof(t_proceso));
 	procesoNuevo->pcb = pcb;
 	procesoNuevo->pcb->pid = pidcounter;
 	procesoNuevo->socketConsola = socketC;
+	procesoNuevo->abortado = false;
 	pidcounter ++;
-	t_metadata_program* metadata = metadata_desde_literal(codigo);
-	procesoNuevo->pcb->programCounter = metadata->instruccion_inicio;
-	int paginasCodigo = ceil((double)paquete->tamanio / (double)TAMPAG);
-	procesoNuevo->pcb->paginasDeCodigo = paginasCodigo;
-	procesoNuevo->pcb->instrucciones = metadata->instrucciones_size;
-	procesoNuevo->pcb->indiceDeCodigo = desseralizarInstrucciones(procesoNuevo->pcb->instrucciones, metadata->instrucciones_serializado);
+
+	metadata = metadata_desde_literal(codigo);
+
+	procesoNuevo->pcb->paginasDeCodigo = ceil((double)size / (double)TAMPAG);
+	procesoNuevo->pcb->sizeIndiceDeCodigo = metadata->instrucciones_size;
+	procesoNuevo->pcb->indiceDeCodigo = malloc(procesoNuevo->pcb->sizeIndiceDeCodigo * 2 * sizeof(int));
+
+	//Indice del Codigo
+	for(i=0; i<metadata->instrucciones_size; i++){
+		log_info(logger, "Instruccion inicio:%d offset:%d %.*s", metadata->instrucciones_serializado[i].start, metadata->instrucciones_serializado[i].offset, metadata->instrucciones_serializado[i].offset, codigo+metadata->instrucciones_serializado[i].start);
+		procesoNuevo->pcb->indiceDeCodigo[i*2] = metadata->instrucciones_serializado[i].start;
+		procesoNuevo->pcb->indiceDeCodigo[i*2 + 1]= metadata->instrucciones_serializado[i].offset;
+	}
+
 	procesoNuevo->pcb->sizeIndiceEtiquetas = metadata->etiquetas_size;
-	procesoNuevo->pcb->indiceEtiquetas = malloc(sizeof(char)*procesoNuevo->pcb->sizeIndiceEtiquetas + sizeof(char));
-	memcpy(procesoNuevo->pcb->indiceEtiquetas, metadata->etiquetas, sizeof(char)*procesoNuevo->pcb->sizeIndiceEtiquetas);
-	strcpy(procesoNuevo->pcb->indiceEtiquetas+sizeof(char)*procesoNuevo->pcb->sizeIndiceEtiquetas, "\0");
-	procesoNuevo->pcb->indiceStack = list_create();
-	procesoNuevo->pcb->paginasDeMemoria = (int)ceil((double)stack_size);
+	procesoNuevo->pcb->indiceEtiquetas = malloc(procesoNuevo->pcb->sizeIndiceEtiquetas * sizeof(char));
+	memcpy(procesoNuevo->pcb->indiceEtiquetas, metadata->etiquetas, procesoNuevo->pcb->sizeIndiceEtiquetas*sizeof(char));
+
+	procesoNuevo->pcb->contextoActual = list_create();
+
+	t_contexto* contextoInicial;
+	contextoInicial = malloc(sizeof(t_contexto));
+
+	contextoInicial->args = list_create();
+	contextoInicial->vars = list_create();
+
+	contextoInicial->sizeVars = 0;
+	contextoInicial->sizeArgs = 0;
+	contextoInicial->pos = 0;
+
+	list_add(procesoNuevo->pcb->contextoActual, (void*)contextoInicial);
+
+	procesoNuevo->pcb->sizeContextoActual = 1;
+	procesoNuevo->pcb->programCounter = 0;
+	(procesoNuevo->pcb->paginasDeMemoria)= (int)ceil((double)stack_size);
+
 	metadata_destruir(metadata);
+
 
 	return procesoNuevo;
 }
@@ -832,7 +864,7 @@ void planificadorCortoPlazo(){
 			yaMeFijeReady = false;
 			//sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
 			pthread_mutex_lock(&mutex_config);
-			socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
+			//socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
 
 			pthread_mutex_lock(&mutex_ready);
 			proceso = queue_pop(cola_ready);
@@ -855,7 +887,7 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 
 	t_pcb* pcbSerializado;
 
-	pcbSerializado = (t_pcb*)serializarPCB(proceso->pcb);
+	//pcbSerializado = (t_pcb*)serializarPCB(proceso->pcb);
 
 	proceso->socketCPU = socket;
 

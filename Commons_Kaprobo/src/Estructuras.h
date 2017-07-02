@@ -25,14 +25,21 @@ typedef struct __attribute__((packed))t_contexto{
 
 typedef struct __attribute__((packed))t_pcb{
 	int pid;
-	t_puntero_instruccion programCounter;
 	int paginasDeMemoria;
+	t_puntero_instruccion programCounter;
 	int paginasDeCodigo;
-	int instrucciones;
-	int **indiceDeCodigo;
-	int exitCode;
-	int sizeIndiceEtiquetas;
+	int *indiceDeCodigo;
 	char* indiceEtiquetas;
+	t_list* contextoActual;
+	int sizeContextoActual;
+	int sizeIndiceEtiquetas;
+	int sizeIndiceDeCodigo;
+
+	int instrucciones;
+
+	int exitCode;
+
+
 	t_list* indiceStack;
 }t_pcb;
 

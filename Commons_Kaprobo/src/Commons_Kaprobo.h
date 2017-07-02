@@ -16,7 +16,7 @@
 #include <commons/log.h>
 #include <commons/config.h>
 #include <commons/collections/list.h>
-#include "src/Estructuras.h"
+#include "Estructuras.h"
 
 #define EXIT_FAILURE_CUSTOM -23
 #define EXIT_SUCCESS_CUSTOM -99
