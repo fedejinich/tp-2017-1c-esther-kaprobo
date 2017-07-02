@@ -5,7 +5,36 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 }
 
 t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable){
-	printf("Obtener Posicion variable: %s", identificador_variable);
+	log_info(logger,"Obtener Posicion variable: %c", identificador_variable);
+
+	t_list* indiceStack = pcb->indiceStack;
+	t_entradaStack* ultimaEntradaStack = list_get(indiceStack, list_size(indiceStack) - 1);
+
+	if(esArgumentoDeFuncion(identificador_variable)) {
+		t_list* args = ultimaEntradaStack->args;
+
+		log_warning(logger, "Paso a int el identificador_varialbe '%c'",identificador_variable);
+		int variableInt = identificador_variable - '0';
+		log_warning(logger, "En int = %i", variableInt);
+
+		t_direccion* direccion = (t_direccion*) list_get(args, variableInt);
+
+		return direccion;
+	} else {
+		t_list* vars = ultimaEntradaStack->vars;
+		int i;
+
+		for(i = 0; i <= vars->elements_count; i++) {
+			t_entradaVars* entradaVars = list_get(vars, i);
+			if(entradaVars->id == identificador_variable) {
+				return entradaVars->direccion;
+			}
+		}
+	}
+
+	log_error(logger, "No se puedo obtener posicion de variable '%c'", identificador_variable);
+
+	return EXIT_FAILURE_CUSTOM;
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable){

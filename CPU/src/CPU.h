@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <parser/parser.h>
 #include <signal.h>
+#include <commons/log.h>
 
 #define ARCHIVOLOG "CPU.log"
 

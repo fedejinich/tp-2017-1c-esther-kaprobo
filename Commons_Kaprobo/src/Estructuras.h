@@ -11,7 +11,7 @@ typedef struct __attribute__((packed))t_direccion{
 	int pagina;
 	int offset;
 	int size;
-}t_direccion;
+} t_direccion;
 
 typedef struct __attribute__((packed))t_contexto{
 	int pos;
@@ -22,6 +22,18 @@ typedef struct __attribute__((packed))t_contexto{
 	int sizeArgs;
 	int sizeVars;
 }t_contexto;
+
+typedef struct __attribute__((packed)) t_entradaStack {
+	t_list* args;
+	t_list* vars;
+	int retPos;
+	t_direccion retVar;
+} t_entradaStack;
+
+typedef struct __attribute__((packed)) t_entradaVars {
+	char id;
+	t_direccion* direccion;
+} t_entradaVars;
 
 typedef struct __attribute__((packed))t_pcb{
 	int pid;

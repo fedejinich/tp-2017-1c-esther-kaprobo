@@ -25,10 +25,12 @@ int inicializarProceso(int pid, int paginasRequeridas) {
 		reservarPaginas(pid, paginasRequeridas);
 		int* ok = (int*) 1; //si saco esto y dejo el 1  en el paquete me tira segmentation fault
 		enviar(socketClienteKernel, INICIALIZAR_PROCESO_OK, sizeof(int), &ok); //EL DATA ESTA AL PEDO PERO BUEN
+
 		if(paginasRequeridas > 1)
 			log_info(logger, "Reservadas %i paginas para PID %i", paginasRequeridas, pid);
 		else
 			log_info(logger, "Reservada una pagina para PID %i", pid);
+
 		log_debug(logger, "Proceso inicializado correctamente. PID %i", pid);
 
 		return EXIT_SUCCESS_CUSTOM;
@@ -71,6 +73,7 @@ int finalizarProceso(int pid) {
 	log_debug(logger, "Proceso finalizado. PID %i", pid);
 	return EXIT_SUCCESS_CUSTOM;
 }
+
 
 int asignarPaginasAProceso(int pid, int paginasAsignar) {
 	retardo();
