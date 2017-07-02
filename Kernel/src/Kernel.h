@@ -80,7 +80,7 @@ pthread_t hiloNotify;
 pthread_t hiloPCP;
 pthread_t hiloConsolaKernel;
 
-int opcion, opcionPID;
+int opcion, opcionPID, opcionMultiProg;
 
 //SEMAFOROS
 sem_t sem_new;
@@ -96,6 +96,8 @@ pthread_mutex_t mutex_config;
 pthread_mutex_t mutex_new, mutex_ready, mutex_exec, mutex_block, mutex_exit;
 
 pthread_mutex_t mutexEjecuta;
+
+pthread_mutex_t mutexGradoMultiprogramacion;
 
 //COLAS
 
@@ -153,6 +155,7 @@ void mostrarMenu();
 void mostrarListadoDeProcesos();
 void mostrarUnaListaDeProcesos(t_queue* colaAMostrar);
 void mostrarInformacionDeProceso(int pid);
+void cambiarGradoMultiprogramacion(int gradoNuevo);
 void forzarFinalizacionDeProceso(int pid);
 t_queue* buscarProcesoEnLasColas(int pid);
 t_proceso* obtenerProcesoPorPID(t_queue *cola, int pid);

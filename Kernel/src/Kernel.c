@@ -394,7 +394,7 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	if(cantidadDeProgramas >= grado_multiprog){
 
 		int* basura = 1;
-		enviar(socket, 108, sizeof(int), &basura);
+		enviar(socket, ERROR_MULTIPROGRAMACION, sizeof(int), &basura);
 
 		pthread_mutex_lock(&mutex_new);
 		t_proceso* proceso = queue_pop(cola_new);
@@ -967,7 +967,9 @@ void hiloConKer(){
 		case 4:
 			//Modifica el grado de multiprogramacion del sistema
 			pthread_mutex_lock(&mutexEjecuta);
-
+			printf("Ingrese el grado de multiprogramacion deseado\n");
+			scanf("%i",&opcionMultiProg);
+			cambiarGradoMultiprogramacion(opcionMultiProg);
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
 		case 5:
@@ -1055,6 +1057,12 @@ void mostrarInformacionDeProceso(int pid){
 	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
 	t_proceso* proceso = obtenerProcesoPorPID(colaDelProceso, pid);
 	//TODO mostrar info
+}
+
+void cambiarGradoMultiprogramacion(int gradoNuevo){
+	pthread_mutex_lock(&mutexGradoMultiprogramacion);
+	grado_multiprog = gradoNuevo;
+	pthread_mutex_unlock(&mutexGradoMultiprogramacion);
 }
 
 void forzarFinalizacionDeProceso(int pid){
