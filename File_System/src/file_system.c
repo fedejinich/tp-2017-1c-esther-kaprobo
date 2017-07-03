@@ -29,6 +29,7 @@ int main() {
 		void* path;
 
 		//char * codigoDeOperacion = getCodigoDeOperacion(paquete->codigo_operacion);
+		pthread_mutex_lock(&solicitud_mutex);
 		//log_info(logger, "Codigo de operacion FileSystem-Kernel: %s", codigoDeOperacion);
 
 		switch (paquete->codigo_operacion)
@@ -76,9 +77,13 @@ int main() {
 			break;
 		default:
 				log_error(logger, "Se ha desconectado el Kernel");
+				pthread_mutex_unlock(&solicitud_mutex);
 		        exit(EXIT_FAILURE);
 			break;
 		}
+		log_info(logger, "Finalizo solicitud de %d", socketKernel);
+		pthread_mutex_unlock(&solicitud_mutex);
+
 	}
 	//Variante HILOS
 	//pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);

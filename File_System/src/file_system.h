@@ -16,6 +16,7 @@
 #include <commons/bitarray.h>
 #include <commons/log.h>
 #include <commons/process.h>
+#include <semaphore.h>
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -38,6 +39,9 @@
 	int tamanioBloques;
 	int cantidadBloques;
 	t_bitarray* bitMap;
+
+	//Semaforo
+	pthread_mutex_t solicitud_mutex;
 
 	//Sockets
 	t_paquete* paquete;
