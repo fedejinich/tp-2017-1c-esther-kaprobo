@@ -44,7 +44,6 @@ AnSISOP_kernel primitivas_kernel = {
 };
 
 int main(int argc, char **argv) {
-
 	iniciarCPU();
 	sigusr1_desactivado=1;
 	//manejo de señales
@@ -80,6 +79,7 @@ int main(int argc, char **argv) {
 
 		paquete_recibido = recibir(kernel);
 		pcb = deserializarPCB(paquete_recibido->data);
+		var_max = (tamanioPagina * (stack_size+pcb->paginasDeCodigo))-1;
 		int pid = pcb->pid;
 		liberar_paquete(paquete_recibido);
 		log_info(logger, "Obteniendo PCB. PID %d \n",pid);

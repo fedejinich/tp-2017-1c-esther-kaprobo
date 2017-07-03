@@ -8,6 +8,7 @@
 #include "src/Commons_Kaprobo.h"
 #include "primitivas.h"
 #include "src/Estructuras.h"
+#include "auxiliaresPrimitivas.h"
 #include <pthread.h>
 #include <parser/parser.h>
 #include <signal.h>
@@ -57,6 +58,8 @@ int quantum_sleep;
 int stack_size;
 int tamanio_pag;
 int programaBloqueado;
+bool programaAbortado;
+int var_max; //NO SE QUE VERGA ES PERO LO NECESITO PARA UNA PRIMITIVA, AVERIGUAR QUE ES Y HACERLE UN REFACTOR AL NOMBRE DE MIERDA QUE TIENE
 
 void iniciarCPU();
 void crearArchivoLog();

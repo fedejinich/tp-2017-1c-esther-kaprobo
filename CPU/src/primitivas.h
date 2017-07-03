@@ -5,6 +5,8 @@
 #include <parser/parser.h>
 #include "CPU.h"
 
+#define TAMANIO_TIPO_DE_DATO sizeof(int); //las variables solo pueden ser de tipo int por ende el tamanio es 4 bytes pero por las dudas va como #define
+
 t_puntero definirVariable(t_nombre_variable identificador_variable);
 t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable);
 t_valor_variable dereferenciar(t_puntero direccion_variable);

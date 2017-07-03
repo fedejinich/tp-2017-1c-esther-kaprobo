@@ -1,17 +1,97 @@
 #include "primitivas.h"
 
-t_puntero definirVariable(t_nombre_variable identificador_variable){
-	printf("Definiendo variable: %s", identificador_variable);
+t_puntero definirVariable(t_nombre_variable identificador_variable) {
+	/*
+	 * DEFINIR VARIABLE
+	 *
+	 * Reserva en el Contexto de Ejecución Actual el espacio necesario para una variable llamada identificador_variable y la registra tanto en el Stack como en el Diccionario de Variables. Retornando la posición del valor de esta nueva variable del stack
+	 * El valor de la variable queda indefinido: no deberá inicializarlo con ningún valor default.
+	 * Esta función se invoca una vez por variable, a pesar que este varias veces en una línea.
+	 * Ej: Evaluar "variables a, b, c" llamará tres veces a esta función con los parámetros "a", "b" y "c"
+	 *
+	 * @sintax	TEXT_VARIABLE (variables)
+	 * 			-- nota: Al menos un identificador; separado por comas
+	 * @param	identificador_variable	Nombre de variable a definir
+	 * @return	Puntero a la variable recien asignada
+	 */
+
+	//RESERVA EL ESPACIO EN MEMORIA? O EN TEORIA YA HAY ESPACIO RESERVADO EN MEMORIA PARA LA VARIABLE A DEFINIR?
+	//QUE ONDA LA PARTE DEL DICCIONARIO?
+
+	programaAbortado = false; //ESTO ESTA HARDCODEADO, ADAPTAR;
+
+	if(!programaAbortado) {
+		log_info(logger, "Definiendo variable: %c", identificador_variable);
+		t_direccion* direccion_variable;
+		t_variable* variable = malloc(sizeof(t_variable));
+		t_contexto *contexto = malloc(sizeof(t_contexto));
+		//int posicionStack = pcb->sizeContextoActual-1;
+		contexto= (t_contexto*)(list_get(pcb->contextoActual, pcb->sizeContextoActual-1));
+
+		if(pcb->sizeContextoActual == 1 &&  contexto->sizeVars == 0 ){
+			direccion_variable = armarDireccionPrimeraPagina();
+			variable->etiqueta = identificador_variable;
+			variable->direccion = direccion_variable;
+			list_add(contexto->vars, variable);
+			contexto->pos = 0;
+			contexto->sizeVars++;
+		} else if((identificador_variable >= '0') && (identificador_variable <= '9')){
+			log_info(logger, "Creando argumento %c", identificador_variable);
+			direccion_variable = armarDireccionDeArgumento();
+			list_add(contexto->args, direccion_variable);
+			log_info(logger,"Direccion de argumento '%c'. Pagina %i, Offset %i, Size %i",
+					identificador_variable,
+					direccion_variable->pagina,
+					direccion_variable->offset,
+					direccion_variable->size);
+			contexto->sizeArgs++;
+		} else if(contexto->sizeVars == 0 && (pcb->sizeContextoActual) > 1){
+			//La posicion va a estar definida cuando se llama a la primitiva funcion
+			log_info(logger, "Declarando variable '%c' de funcion", identificador_variable);
+			direccion_variable = armarDirecccionDeFuncion();
+			variable->etiqueta = identificador_variable;
+			variable->direccion = direccion_variable;
+			list_add(contexto->vars, variable);
+			contexto->sizeVars++;
+		} else {
+			direccion_variable = armarProximaDireccion(direccion_variable);
+			variable->etiqueta = identificador_variable;
+			variable->direccion = direccion_variable;
+			list_add(contexto->vars, variable);
+			contexto->sizeVars++;
+		}
+
+		char* escribirUMC = malloc(16);
+		int valor;
+		log_info(logger,"Basura: %d", valor);
+		int direccionRetorno = convertirDireccionAPuntero(direccion_variable);
+		if(direccionRetorno + 3 > var_max) {
+			log_error(logger,"No hay espacio para definir variable '%c'. Abortando programa", identificador_variable);
+			programaAbortado = true;
+			return EXIT_FAILURE_CUSTOM;
+		} else {
+			enviarDirecParaEscribirUMC(escribirUMC, direccion_variable, valor);
+			free(escribirUMC);
+			log_info(logger,"Devuelvo direccion: %d\n", direccionRetorno);
+			return direccionRetorno;
+		}
+	}
+
+	log_error(logger, "No se puede definir varialbe por programa abortado")
+	return EXIT_FAILURE_CUSTOM;
 }
 
+
+
+
 t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable){
-	log_info(logger,"Obtener Posicion variable: %c", identificador_variable);
+	log_info(logger, "Obteniendo posicion variable: %c", identificador_variable);
 
 	t_list* indiceStack = pcb->indiceStack;
-	t_entradaStack* ultimaEntradaStack = list_get(indiceStack, list_size(indiceStack) - 1);
+	t_contexto* entradaActualStack = list_get(indiceStack, list_size(indiceStack) - 1);
 
 	if(esArgumentoDeFuncion(identificador_variable)) {
-		t_list* args = ultimaEntradaStack->args;
+		t_list* args = entradaActualStack->args;
 
 		log_warning(logger, "Paso a int el identificador_varialbe '%c'",identificador_variable);
 		int variableInt = identificador_variable - '0';
@@ -21,13 +101,13 @@ t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable){
 
 		return direccion;
 	} else {
-		t_list* vars = ultimaEntradaStack->vars;
+		t_list* vars = entradaActualStack->vars;
 		int i;
 
-		for(i = 0; i <= vars->elements_count; i++) {
-			t_entradaVars* entradaVars = list_get(vars, i);
-			if(entradaVars->id == identificador_variable) {
-				return entradaVars->direccion;
+		for(i = 0; i <= list_size(vars); i++) {
+			t_variable* variable = list_get(vars, i);
+			if(variable->etiqueta == identificador_variable) {
+				return variable->direccion;
 			}
 		}
 	}
