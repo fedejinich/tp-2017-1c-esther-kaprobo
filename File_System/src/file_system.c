@@ -26,7 +26,9 @@ int main() {
 	while(1){
 		//Recibimos pedidos de kernel y se hace switch dependiendo operacion
 		paquete = recibir(socketKernel);
-		void* path;
+		void* path, *buffer;
+		int tmpsize = 0, tmpoffset = 0;
+		t_num offset, size;
 
 		//char * codigoDeOperacion = getCodigoDeOperacion(paquete->codigo_operacion);
 		pthread_mutex_lock(&solicitud_mutex);
@@ -71,7 +73,18 @@ int main() {
 			enviar(socketKernel, BORRAR_ARCHIVO, 0, 0);
 			free(path);
 			break;
-		case OBTENER_DATOS: //FALTA
+		case OBTENER_DATOS:
+			tmpsize = paquete->tamanio - sizeof(t_num)*2;
+			path = malloc(tmpsize);
+			memcpy(path, paquete->data, tmpsize);
+			tmpoffset += tmpsize;
+			memcpy(&offset, paquete->data + tmpoffset, sizeof(t_num));
+			tmpoffset += sizeof(t_num);
+			memcpy(&size, paquete->data + tmpoffset, sizeof(t_num));
+			log_info(logger, "Path: %s - offset: %d - size: %d", path, offset, size);
+			char* data = leerBloquesArchivo(path, offset, size);
+			enviar(socketKernel, OBTENER_DATOS, size, data);
+			free(data);
 			break;
 		case GUARDAR_DATOS: //FALTA
 			break;
@@ -269,3 +282,69 @@ void borrarArchivo(void* path){
 	free(rutaMetadata);
 	free(bloques);
 }
+
+char* leerBloquesArchivo(void* path, int offset, int size){
+	char* data = malloc(size), *tmpdata, *pathBloque;
+	int i, tmpoffset = 0;
+	char* rutaMedatada = string_new();
+	string_append(&rutaMedatada, puntoMontaje);
+	string_append(&rutaMedatada, path);
+
+	log_info(logger, "rutaMetadata %s", rutaMedatada);
+
+	t_config* metadata = config_create(rutaMedatada);
+	if(metadata == NULL){
+		log_error(logger, "No se encuentra metadata");
+		fprintf(stderr, "No se encuentra archivo %s\n", rutaMedatada);
+		free(rutaMedatada);
+		free(metadata);
+		return NULL;
+	}
+	int tamanio = config_get_int_value(metadata, "TAMANIO");
+	char** bloques = config_get_array_value(metadata, "BLOQUES");
+
+	for(i = offset / tamanioBloques; i < tamanio; i += tamanioBloques, tmpoffset += tamanioBloques){
+		pathBloque = string_new();
+		string_append(&pathBloque, puntoMontaje);
+		string_append_with_format(&pathBloque, "/Bloques/%s.bin", bloques[i / tamanioBloques]);
+		tmpdata = leerArchivo(pathBloque);
+
+		if(size - tmpoffset > tamanioBloques){ //falta
+			memcpy(data + tmpoffset, tmpdata, tamanioBloques);
+		}else{
+			memcpy(data + tmpoffset, tmpdata, size - tmpoffset);
+			break;
+		}
+
+	}
+
+	free(rutaMedatada);
+	free(pathBloque);
+	free(bloques);
+	return data;
+}
+
+char* leerArchivo(void* path){
+	int fd;
+	char *data;
+	struct stat sbuf;
+
+	fd = open(path, O_RDWR);
+	if (fd == -1){
+		perror("error al abrir el archivo");
+		return NULL;
+	}
+	if(stat(path, &sbuf) == -1){
+		perror("stat, chequear si el archivo esta corrupto");
+		return NULL;
+	}
+	data = mmap((caddr_t)0, sbuf.st_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	if(data == MAP_FAILED){
+		perror("Fallo el mmap");
+		return NULL;
+	}
+	close(fd);
+	return data;
+}
+
+
