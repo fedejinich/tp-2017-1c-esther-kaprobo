@@ -22,75 +22,72 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 
 	if(!programaAbortado) {
 		log_info(logger, "Definiendo variable: %c", identificador_variable);
-		t_direccion* direccion_variable;
+		t_direccion* direccionVariable;
 		t_variable* variable = malloc(sizeof(t_variable));
 		t_contexto *contexto = malloc(sizeof(t_contexto));
 		//int posicionStack = pcb->sizeContextoActual-1;
 		contexto= (t_contexto*)(list_get(pcb->contextoActual, pcb->sizeContextoActual-1));
 
 		if(pcb->sizeContextoActual == 1 &&  contexto->sizeVars == 0 ){
-			direccion_variable = armarDireccionPrimeraPagina();
+			direccionVariable = armarDireccionPrimeraPagina();
 			variable->etiqueta = identificador_variable;
-			variable->direccion = direccion_variable;
+			variable->direccion = direccionVariable;
 			list_add(contexto->vars, variable);
 			contexto->pos = 0;
 			contexto->sizeVars++;
 		} else if((identificador_variable >= '0') && (identificador_variable <= '9')){
 			log_info(logger, "Creando argumento %c", identificador_variable);
-			direccion_variable = armarDireccionDeArgumento();
-			list_add(contexto->args, direccion_variable);
+			direccionVariable = armarDireccionDeArgumento();
+			list_add(contexto->args, direccionVariable);
 			log_info(logger,"Direccion de argumento '%c'. Pagina %i, Offset %i, Size %i",
 					identificador_variable,
-					direccion_variable->pagina,
-					direccion_variable->offset,
-					direccion_variable->size);
+					direccionVariable->pagina,
+					direccionVariable->offset,
+					direccionVariable->size);
 			contexto->sizeArgs++;
 		} else if(contexto->sizeVars == 0 && (pcb->sizeContextoActual) > 1){
 			//La posicion va a estar definida cuando se llama a la primitiva funcion
 			log_info(logger, "Declarando variable '%c' de funcion", identificador_variable);
-			direccion_variable = armarDirecccionDeFuncion();
+			direccionVariable = armarDirecccionDeFuncion();
 			variable->etiqueta = identificador_variable;
-			variable->direccion = direccion_variable;
+			variable->direccion = direccionVariable;
 			list_add(contexto->vars, variable);
 			contexto->sizeVars++;
 		} else {
-			direccion_variable = armarProximaDireccion(direccion_variable);
+			direccionVariable = armarProximaDireccion(direccionVariable);
 			variable->etiqueta = identificador_variable;
-			variable->direccion = direccion_variable;
+			variable->direccion = direccionVariable;
 			list_add(contexto->vars, variable);
 			contexto->sizeVars++;
 		}
 
-		char* escribirUMC = malloc(16);
-		int valor;
-		log_info(logger,"Basura: %d", valor);
-		int direccionRetorno = convertirDireccionAPuntero(direccion_variable);
+		int* valor = 6451;
+		log_info(logger,"Basura: %i", valor);
+		int direccionRetorno = convertirDireccionAPuntero(direccionVariable);
+
 		if(direccionRetorno + 3 > var_max) {
+			log_error(logger, "STACK OVERFLOW");
 			log_error(logger,"No hay espacio para definir variable '%c'. Abortando programa", identificador_variable);
 			programaAbortado = true;
 			return EXIT_FAILURE_CUSTOM;
 		} else {
-			enviarDirecParaEscribirUMC(escribirUMC, direccion_variable, valor);
-			free(escribirUMC);
-			log_info(logger,"Devuelvo direccion: %d\n", direccionRetorno);
+			almacenarBytesEnMemoria(direccionVariable, valor);
+			log_info(logger,"Direccion de retorno: %i", direccionRetorno);
 			return direccionRetorno;
 		}
 	}
 
-	log_error(logger, "No se puede definir varialbe por programa abortado")
+	log_error(logger, "No se puede definir varialbe por programa abortado");
 	return EXIT_FAILURE_CUSTOM;
 }
-
-
-
 
 t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable){
 	log_info(logger, "Obteniendo posicion variable: %c", identificador_variable);
 
-	t_list* indiceStack = pcb->indiceStack;
+	t_list* indiceStack = pcb->contextoActual;
 	t_contexto* entradaActualStack = list_get(indiceStack, list_size(indiceStack) - 1);
 
-	if(esArgumentoDeFuncion(identificador_variable)) {
+	if((identificador_variable >= '0') && (identificador_variable <= '9')) {
 		t_list* args = entradaActualStack->args;
 
 		log_warning(logger, "Paso a int el identificador_varialbe '%c'",identificador_variable);
@@ -118,11 +115,35 @@ t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable){
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable){
-	printf("Dereferenciar");
+	log_info(logger, "Dereferenciando direccion de memoria %i", direccion_variable);
+
+	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
+	solicitarBytesAMemoria(direccion);
+	t_paquete* paquete = recibir(memoria);
+
+	if(paquete->codigo_operacion == SOLICITAR_BYTES_FALLO) {
+		log_error(logger, "Error al dereferenciar(%i)", direccion_variable);
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	int valor = (int) paquete->data;
+	log_info(logger,"Valor dereferenciado: %d", valor);
+
+	liberar_paquete(paquete);
+	free(direccion);
+
+	return valor;
 }
 
-void asignar(t_puntero direccion_variable,t_valor_variable valor){
+void asignar(t_puntero direccion_variable, t_valor_variable valor){
 	printf("Asigno el valor: %i a la variable en la posicion: %i", valor, direccion_variable);
+
+	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
+
+	log_info("Asignando valor %i en Pagina %i, Offset %i, Tamanio %i", direccion->pagina, direccion->offset, direccion->size);
+	almacenarBytesEnMemoria(direccion, valor); //VER SI TENGO QUE VERIFICAR QUE SE HAYA ALMACENADO OK
+
+	free(direccion);
 }
 
 t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
@@ -143,19 +164,26 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable,t_valor_variable valor){
-	char* variable_compartida = malloc(5+strlen(variable));
-	char* barra_cero="\0";
-	memcpy(variable_compartida, &valor, 4);
-	memcpy(variable_compartida, &variable, strlen(variable));
-	memcpy(variable_compartida+strlen(variable)+4, barra_cero,1);
-	log_info(logger,"Variable compartida %s le asignamos valor %d", variable_compartida+4, (int*)variable_compartida[0]);
-	enviar(kernel, ESCRIBIR_VARIABLE, 5+strlen(variable), variable_compartida);
-	free(variable_compartida);
+	char* variableCompartida = malloc(5+strlen(variable));
+	char* barraCero = "\0";
+	memcpy(variableCompartida, &valor, 4);
+	memcpy(variableCompartida, &variable, strlen(variable));
+	memcpy(variableCompartida + strlen(variable) + 4, barraCero, 1);
+	log_info(logger, "Variable compartida %s le asignamos valor %d", variableCompartida + 4, (int*) variableCompartida[0]);
+	enviar(kernel, ESCRIBIR_VARIABLE, 5 + strlen(variable), variableCompartida);
+	free(variableCompartida);
 	return valor;
 }
 
 void irAlLabel(t_nombre_etiqueta etiqueta){
-	printf("irALabel\n");
+	log_info(logger, "Busco etiqueta: %s y mide: %i", etiqueta, strlen(etiqueta));
+	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->indiceEtiquetas, pcb->sizeIndiceEtiquetas);
+	log_info(logger,"Ir a instruccion %i", instruccion);
+
+	pcb->programCounter = instruccion - 1;
+
+	log_info(logger,"Saliendo de label");
+	return;
 }
 
 void llamarSinRetorno(t_nombre_etiqueta etiqueta){

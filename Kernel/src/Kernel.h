@@ -39,6 +39,16 @@ typedef struct __attribute__((packed)){
 	int STACK_SIZE;
 }t_datos_kernel;
 
+typedef struct __attribute__((packed))t_entradaTablaGlobalArchivos{
+	int fd;
+	int cantidadDeVecesAbierto;
+}t_entradaTablaGlobalArchivos;
+
+typedef struct __attribute__((packed))t_entradaTablaArchivosPorProceso{
+	char* flags;
+	int globalFD;
+}t_entradaTablaArchivosPorProceso;
+
 
 //VARIABLES
 
@@ -200,5 +210,10 @@ void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido);
 void escribirVariable(int* socketActivo, t_paquete* paqueteRecibido);
 int* valorVariable(char* variable);
 
-
-
+//CAPA Filesystem
+void abrirArchivo(int* socketActivo, t_paquete* paquete);
+bool validarPermisoDeApertura(int pid, char* path, char* permisos);
+bool existeArchivo(char* path);
+void escribirArchivo(int* socketActivo, t_paquete* paquete);
+void leerArchivo(int* socketActivo, t_paquete* paquete);
+void cerrarArchivo(int* socketActivo, t_paquete* paquete);

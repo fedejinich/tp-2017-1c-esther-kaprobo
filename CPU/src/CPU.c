@@ -268,7 +268,7 @@ int conectarConMemoria(){
 
 //Funcion que toma lo que envio el Kernel y lo convierte en el PCB.
 t_pcb* deserializarPCB(char* buffer){
-	t_pcb* pcb;
+	/*t_pcb* pcb;
 
 	pcb = malloc(sizeof(t_pcb));
 	memcpy(pcb, buffer, sizeof(t_pcb));
@@ -282,5 +282,10 @@ t_pcb* deserializarPCB(char* buffer){
 	memcpy(pcb->pageCounter, buffer, sizeof(int));
 	buffer =+ sizeof(int);
 
-	return pcb;
+	return pcb;*/
+
+	log_error(logger, "Hay que implementar bien el desserializarPCB()");
+	exit(EXIT_FAILURE_CUSTOM);
+
+	return EXIT_FAILURE_CUSTOM;
 }

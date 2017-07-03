@@ -15,10 +15,7 @@
 
 int main(int argc, char **argv){
 
-	printf("Entrada vars tamanio %i \n", sizeof(t_variable));
-	printf("Direccion tamanio %i\n", sizeof(t_direccion));
-
-/*	logger = iniciarLog("memoria.log","Memoria");
+	logger = iniciarLog("memoria.log","Memoria");
 
 	printf("%s", "\n====== INICIO MEMORIA ======\n\n");
 

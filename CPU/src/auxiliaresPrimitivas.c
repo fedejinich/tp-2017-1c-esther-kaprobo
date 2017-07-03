@@ -58,7 +58,7 @@ t_direccion* armarDireccionDeArgumento() {
 	return direccion;
 }
 
-t_direccion* proximaDireccion(int posStack, int posUltVar){
+t_direccion* proximaDireccion(int posStack, int posUltVar) {
 	t_direccion* direccion = malloc(sizeof(t_direccion));
 	direccion->pagina = -1;
 	direccion->offset = -1;
@@ -86,7 +86,7 @@ t_direccion* proximaDireccion(int posStack, int posUltVar){
 }
 
 t_direccion* armarDirecccionDeFuncion() {
-	t_direccion direccion = malloc(sizeof(t_direccion));
+	t_direccion* direccion;
 	t_contexto* contextoActual = (t_contexto*)list_get(pcb->contextoActual, pcb->sizeContextoActual-1);
 
 	if(contextoActual->sizeArgs == 0 && contextoActual->sizeVars == 0) {
@@ -116,10 +116,75 @@ t_direccion* armarDirecccionDeFuncion() {
 	return direccion;
 }
 
-int convertirDireccionAPuntero(t_direccion* direccion){
+int armarProximaDireccion(t_direccion* direccionReal) {
+	int ultimaPosicionStack = pcb->sizeContextoActual - 1;
+	int posicionUltimaVariable = ((t_contexto*) (list_get(pcb->contextoActual, ultimaPosicionStack)))->sizeVars - 1;
+	int exito = proximaDireccion(ultimaPosicionStack, posicionUltimaVariable);
+
+	if(exito == EXIT_FAILURE_CUSTOM) {
+		log_error(logger, "Error en armarProximaDireccion()");
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	return EXIT_SUCCESS_CUSTOM;
+}
+
+t_direccion* proximaDireccionArg(int posStack, int posUltVar) {
+	t_direccion* direccion = malloc(sizeof(t_direccion));
+	direccion->pagina = -1;
+	direccion->offset = -1;
+	direccion->size = -1;
+
+	log_info(logger,"Entre a proximadirecArg");
+	int offset = ((t_direccion*)(list_get(((t_contexto*)(list_get(pcb->contextoActual, posStack)))->args, posUltVar)))->offset + 4;
+	log_info(logger,"Offset siguiente es %i", offset);
+
+	if(offset >= tamanioPagina){
+		direccion->pagina = ((t_direccion*)(list_get(((t_contexto*)(list_get(pcb->contextoActual, posStack)))->args, posUltVar)))->pagina + 1;
+		direccion->offset = 0;
+		direccion->size=4;
+	} else {
+		direccion->pagina = ((t_direccion*)(list_get(((t_contexto*)(list_get(pcb->contextoActual, posStack)))->args, posUltVar)))->pagina;
+		direccion->offset = offset;
+		direccion->size=4;
+	}
+
+	if(direccion->pagina == -1 || direccion->offset == -1 || direccion->size == -1) {
+		log_error(logger, "Error en proximaDireccion. Posicion Stack %i, Posicion Ultima Variable %i", posStack, posUltVar);
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	return direccion;
+}
+
+int convertirDireccionAPuntero(t_direccion* direccion) {
 	int direccion_real,pagina,offset;
 	pagina = (direccion->pagina) * tamanioPagina;
 	offset = direccion->offset;
 	direccion_real = pagina + offset;
 	return direccion_real;
+}
+
+t_direccion* convertirPunteroADireccion(int puntero) {
+	t_direccion* direccion = malloc(sizeof(t_direccion));
+	direccion->pagina = -1;
+	direccion->offset = -1;
+	direccion->size = -1;
+
+	if(tamanioPagina > puntero){
+		direccion->pagina = 0;
+		direccion->offset = puntero;
+		direccion->size = 4;
+	} else {
+		direccion->pagina = (puntero / tamanioPagina);
+		direccion->offset = puntero%tamanioPagina;
+		direccion->size = 4;
+	}
+
+	if(direccion->pagina == -1 || direccion->offset == -1 || direccion->size == -1) {
+		log_error(logger, "Error en convertirPunteroADireccion(%i)", puntero);
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	return direccion;
 }

@@ -14,6 +14,12 @@ typedef struct __attribute__((packed))t_direccion{
 	int size;
 } t_direccion;
 
+
+typedef struct __attribute__ ((packed))t_envioDeDatosKernelFS{
+	int pid;
+	char* path;
+}t_envioDeDatosKernelFS;
+
 typedef struct __attribute__((packed))t_contexto{
 	int pos;
 	t_list* args;
