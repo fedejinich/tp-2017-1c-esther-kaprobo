@@ -15,10 +15,19 @@ typedef struct __attribute__((packed))t_direccion{
 } t_direccion;
 
 
-typedef struct __attribute__ ((packed))t_envioDeDatosKernelFS{
+typedef struct __attribute__ ((packed))t_envioDeDatosKernelFSAbrir{
 	int pid;
 	char* path;
-}t_envioDeDatosKernelFS;
+	char* permisos;
+}t_envioDeDatosKernelFSAbrir;
+
+typedef struct __attribute__ ((packed))t_envioDeDatosKernelFSLecturaYEscritura{
+	int pid;
+	int fd;
+	int offset;
+	int tamanio;
+	char* contenido;
+}t_envioDeDatosKernelFSLecturaYEscritura;
 
 typedef struct __attribute__((packed))t_contexto{
 	int pos;

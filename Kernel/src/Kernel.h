@@ -40,14 +40,19 @@ typedef struct __attribute__((packed)){
 }t_datos_kernel;
 
 typedef struct __attribute__((packed))t_entradaTablaGlobalArchivos{
-	int fd;
-	int cantidadDeVecesAbierto;
+	int path;
+	int open;
 }t_entradaTablaGlobalArchivos;
 
-typedef struct __attribute__((packed))t_entradaTablaArchivosPorProceso{
+typedef struct __attribute__((packed))t_tablaDeArchivosDeUnProceso{
 	char* flags;
 	int globalFD;
-}t_entradaTablaArchivosPorProceso;
+}t_tablaDeArchivosDeUnProceso;
+
+typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
+	int pid;
+	t_list* tablaDeUnProceso;
+}t_entradaTablaDeArchivosPorProceso;
 
 
 //VARIABLES
@@ -133,6 +138,9 @@ t_queue * cola_CPU_libres;
 
 t_queue ** cola_semaforos;
 
+//CAPA FILESYSTEM
+t_queue* tablaGlobalDeArchivos;
+t_queue* tablaDeArchivosPorProceso;
 
 /*
  *
@@ -245,7 +253,9 @@ int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, i
 void abrirArchivo(int* socketActivo, t_paquete* paquete);
 bool validarPermisoDeApertura(int pid, char* path, char* permisos);
 bool existeArchivo(char* path);
+int chequearTablaGlobal(char* path);
+int buscarEntradaEnTablaGlobal(char* path);
+
 void escribirArchivo(int* socketActivo, t_paquete* paquete);
 void leerArchivo(int* socketActivo, t_paquete* paquete);
 void cerrarArchivo(int* socketActivo, t_paquete* paquete);
-

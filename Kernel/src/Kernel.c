@@ -367,11 +367,11 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			break;
 
 		case OBTENER_DATOS: //Proceso CPU nos pide leer un archivo para un proceso dado
-			leerArchivo(socketActivo, paqueteRecibido);
+			accederArchivo(socketActivo, paqueteRecibido, 'r');
 			break;
 
 		case GUARDAR_DATOS: //Proceso CPU nos pide escribir un archivo para un proceso dado
-			escribirArchivo(socketActivo, paqueteRecibido);
+			accederArchivo(socketActivo, paqueteRecibido, 'w');
 			break;
 
 		case CERRAR_ARCHIVO: //Proceso CPU nos pide cerrar un archivo para un proceso dado
@@ -546,11 +546,10 @@ void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido){
 
 void abrirArchivo(int* socketActivo, t_paquete* paquete){
 	//en el paquete esta el path del archivo y los permisos de apertura
-	int pid;
-	char* path;
-	char* permisos;
-
-
+	t_envioDeDatosKernelFSAbrir* datosProcesoArchivo = paquete->data;
+	int pid = datosProcesoArchivo->pid;
+	char* path = datosProcesoArchivo->path;
+	char* permisos = datosProcesoArchivo->permisos;
 
 	if(validarPermisoDeApertura(pid, path, permisos)){
 		//se manda al fs el path
@@ -561,10 +560,20 @@ void abrirArchivo(int* socketActivo, t_paquete* paquete){
 		int resultado = paqueteResultado->codigo_operacion;
 
 		//si esta ok, se genera un nuevo FD para el archivo y se lo ingresa en la tabla de archivos del proceso
-		if(resultado == 1/*definir codigo en ENUM*/){
-			//crear fd
-			//ingresarlo en la tabla de archivos del proceso
-			//se actualiza la tabla global de archivos
+		if(resultado == ARCHIVO_ABIERTO){
+			t_tablaDeArchivosDeUnProceso* entradaLocal = malloc(sizeof(t_tablaDeArchivosDeUnProceso));
+
+			//Se fija si esta en la tabla global, si esta, agarra el fd
+			entradaLocal->flags = permisos;
+			entradaLocal->globalFD = chequearTablaGlobal(path);
+
+			//Agrego la entrada a la tabla en el indice = pid, que es la tabla correspondiente
+			list_add_in_index(tablaDeArchivosPorProceso, pid, entradaLocal);
+		}
+		else{
+			finalizarProcesoPorPID(pid, ErrorSinDefinicion);
+			enviar(fileSystem, ARCHIVO_NO_SE_PUDO_ABRIR, sizeof(resultado), resultado);
+			return;
 		}
 
 		//se avisa a cpu si se pudo o no abrir el archivo
@@ -574,7 +583,7 @@ void abrirArchivo(int* socketActivo, t_paquete* paquete){
 
 bool validarPermisoDeApertura(int pid, char* path, char* permisos){
 	bool permisoParaSeguir = false;
-	if(strchr(path, 'c' != NULL)){
+	if(strchr(&permisos, 'c') != NULL){
 		permisoParaSeguir = true;
 	}
 	else{
@@ -595,27 +604,76 @@ bool existeArchivo(char* path){
 
 	t_paquete* paqueteResultado = recibir(fileSystem);
 
-	if(paqueteResultado->codigo_operacion == ARCHIVO_VALIDADO)
+	if(paqueteResultado->codigo_operacion == ARCHIVO_EXISTE)
 		resultado = true;
 
 	return resultado;
 }
 
-void leerArchivo(int* socketActivo, t_paquete* paquete){
-	//el paquete contiene FD
-	//valida permisos
+int chequearTablaGlobal(char* path){
+	int fd;
+	int indiceEntrada = buscarEntradaEnTablaGlobal(path);
+	if(indiceEntrada != -1){
+		fd = indiceEntrada;
+	}
+	else{
+		t_entradaTablaGlobalArchivos* entrada = malloc(sizeof(t_entradaTablaGlobalArchivos));
+		entrada->path = path;
+		entrada->open = 1;
+		list_add(tablaGlobalDeArchivos, entrada);
+		fd = buscarEntradaEnTablaGlobal(path);
+	}
+	return fd;
+}
+
+int buscarEntradaEnTablaGlobal(char* path){
+	int a;
+	t_entradaTablaGlobalArchivos* entrada;
+	while(entrada = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos->elements, a)){
+		if (entrada->path == path){
+			entrada->open++;
+			return a;
+		}
+		a++;
+	}
+	return -1;
+}
+
+
+void accederArchivo(int* socketActivo, t_paquete* paquete, char operacion){
+	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
+	int pid = datos->pid;
+	int fd = datos->fd;
+
+	t_tablaDeArchivosDeUnProceso* tablaDeUnProceso = malloc(sizeof(t_tablaDeArchivosDeUnProceso));
+
+	tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
+	t_tablaDeArchivosDeUnProceso* entrada = list_get(tablaDeUnProceso, fd);
+
+	char* permisos = entrada->flags;
+
+	int codigoOperacion;
+	int exitCode;
+	if(strchr(operacion, 'r') ){
+		codigoOperacion = SOLICITUD_OBTENCION_DATOS;
+		exitCode = IntentoDeLecturaSinPermisos;
+	}
+	else{
+		codigoOperacion = SOLICITUD_GUARDADO_DATOS;
+		exitCode = IntentoDeEscrituraSinPermisos;
+	}
+	if(strchr(permisos, 'r') != NULL){
+		enviar(fileSystem, codigoOperacion, sizeof(datos), datos);
+		char* buffer = recibir(fileSystem);
+		enviar(socketActivo, OBTENER_DATOS, datos->tamanio, buffer);
+	}
+	else{
+		finalizarProceso(pid, exitCode);
+	}
 	//hay que traducir ese FD a un path
 	//realizar peticion de lectura al fs con valores de path, offset y tamaño de lo que se desea leer
 	//recibir lo que se queria leer
 	//luego, enviar a cpu lo leido, o informar de error
-}
-
-void escribirArchivo(int* socketActivo, t_paquete* paquete){
-	//el paquete contiene FD
-	//valida permisos
-	//hay que traducir ese FD a un path
-	//realizar peticion de escritura con valores de path, offset, tamaño y contenido a escribir
-	//se informa que se escribio ok a CPU, o se informa que fallo, finzalizando el programa
 }
 
 void cerrarArchivo(int* socketActivo, t_paquete* paquete){
@@ -623,6 +681,7 @@ void cerrarArchivo(int* socketActivo, t_paquete* paquete){
 	//solicitar cierre de archivo al fs, enviando FD
 	//si no quedan instancias abiertas del archivo, eliminarlo de la tabla global de archivos
 }
+
 
 void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido){
 	int* valor;
