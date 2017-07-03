@@ -359,6 +359,22 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			//VER - ADEMAS DE IMPRIMIR POR CONSOLA TIENE QUE ESCRIBIR EN ARCHIVO
 			break;
 
+		case ABRIR_ARCHIVO: //Proceso CPU nos pide abrir un archivo para un proceso dado
+			abrirArchivo(socketActivo, paqueteRecibido);
+			break;
+
+		case OBTENER_DATOS: //Proceso CPU nos pide leer un archivo para un proceso dado
+			leerArchivo(socketActivo, paqueteRecibido);
+			break;
+
+		case GUARDAR_DATOS: //Proceso CPU nos pide escribir un archivo para un proceso dado
+			escribirArchivo(socketActivo, paqueteRecibido);
+			break;
+
+		case CERRAR_ARCHIVO: //Proceso CPU nos pide cerrar un archivo para un proceso dado
+			cerrarArchivo(socketActivo, paqueteRecibido);
+			break;
+
 		case SOLICITAR_VARIABLE: //Proceso CPU nos pide variable compartida
 			log_info(logger, "KERNEL: Proceso nos solicita variable compartida");
 			solicitaVariable(socketActivo, paqueteRecibido);
@@ -519,6 +535,85 @@ void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido){
 	return;
 }
 
+void abrirArchivo(int* socketActivo, t_paquete* paquete){
+	//en el paquete esta el path del archivo y los permisos de apertura
+	int pid;
+	char* path;
+	char* permisos;
+
+
+
+	if(validarPermisoDeApertura(pid, path, permisos)){
+		//se manda al fs el path
+		enviar(fileSystem, SOLICITUD_APERTURA_ARCHIVO, sizeof(path), path);
+
+		t_paquete* paqueteResultado = recibir(memoria);
+
+		int resultado = paqueteResultado->codigo_operacion;
+
+		//si esta ok, se genera un nuevo FD para el archivo y se lo ingresa en la tabla de archivos del proceso
+		if(resultado == 1/*definir codigo en ENUM*/){
+			//crear fd
+			//ingresarlo en la tabla de archivos del proceso
+			//se actualiza la tabla global de archivos
+		}
+
+		//se avisa a cpu si se pudo o no abrir el archivo
+		enviar(fileSystem, resultado, sizeof(resultado), resultado);
+	}
+}
+
+bool validarPermisoDeApertura(int pid, char* path, char* permisos){
+	bool permisoParaSeguir = false;
+	if(strchr(path, 'c' != NULL)){
+		permisoParaSeguir = true;
+	}
+	else{
+		if(existeArchivo(path)){
+			permisoParaSeguir = true;
+		}
+		else{
+			finalizarProceso(pid, ArchivoInexistente);
+		}
+	}
+	return permisoParaSeguir;
+}
+
+bool existeArchivo(char* path){
+	bool resultado = false;
+
+	enviar(fileSystem, VALIDAR_ARCHIVO, sizeof(path), path);
+
+	t_paquete* paqueteResultado = recibir(fileSystem);
+
+	if(paqueteResultado->codigo_operacion == ARCHIVO_VALIDADO)
+		resultado = true;
+
+	return resultado;
+}
+
+void leerArchivo(int* socketActivo, t_paquete* paquete){
+	//el paquete contiene FD
+	//valida permisos
+	//hay que traducir ese FD a un path
+	//realizar peticion de lectura al fs con valores de path, offset y tamaño de lo que se desea leer
+	//recibir lo que se queria leer
+	//luego, enviar a cpu lo leido, o informar de error
+}
+
+void escribirArchivo(int* socketActivo, t_paquete* paquete){
+	//el paquete contiene FD
+	//valida permisos
+	//hay que traducir ese FD a un path
+	//realizar peticion de escritura con valores de path, offset, tamaño y contenido a escribir
+	//se informa que se escribio ok a CPU, o se informa que fallo, finzalizando el programa
+}
+
+void cerrarArchivo(int* socketActivo, t_paquete* paquete){
+	//el paquete contiene el FD
+	//solicitar cierre de archivo al fs, enviando FD
+	//si no quedan instancias abiertas del archivo, eliminarlo de la tabla global de archivos
+}
 
 void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido){
 	int* valor;
@@ -978,7 +1073,7 @@ void hiloConKer(){
 			pthread_mutex_lock(&mutexEjecuta);
 			printf("Ingrese PID del proceso a finalizar\n");
 			scanf("%i",&opcionPID);
-			forzarFinalizacionDeProceso(opcionPID);
+			finalizarProcesoPorPID(opcionPID, FinalizacionPorConsolaDeKernel);
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
 		case 6:
@@ -1066,11 +1161,11 @@ void cambiarGradoMultiprogramacion(int gradoNuevo){
 	pthread_mutex_unlock(&mutexGradoMultiprogramacion);
 }
 
-void forzarFinalizacionDeProceso(int pid){
+void finalizarProcesoPorPID(int pid, int exitCode){
 	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
 	t_proceso* proceso = obtenerProcesoPorPID(colaDelProceso, pid);
 	if(proceso != NULL){
-		finalizarProceso(proceso, FinalizacionPorConsolaDeKernel);
+		finalizarProceso(proceso, exitCode);
 		printf("El proceso %i se ha finalizado.\n", pid);
 	}
 	else{

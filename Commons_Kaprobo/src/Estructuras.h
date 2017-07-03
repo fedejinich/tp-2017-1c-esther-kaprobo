@@ -17,7 +17,10 @@ typedef struct __attribute__ ((packed))t_variable{
 	t_direccion* direccion;
 }t_variable;
 
-
+typedef struct __attribute__ ((packed))t_envioDeDatosKernelFS{
+	int pid;
+	char* path;
+}t_envioDeDatosKernelFS;
 
 typedef struct __attribute__((packed))t_contexto{
 	int pos;
