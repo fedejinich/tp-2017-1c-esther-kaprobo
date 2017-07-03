@@ -18,6 +18,7 @@ t_direccion* proximaDireccionArg(int posStack, int posUltVar);
 t_direccion* convertirPunteroADireccion(int puntero); //NOMBRES FEOS
 int convertirDireccionAPuntero(t_direccion* direccion); //NOMBRES FEOS
 int armarProximaDireccion(t_direccion* direccionReal);
+void destruirPCB(t_pcb* pcb);
 
 
 #endif /* AUXILIARESPRIMITVAS_H_ */

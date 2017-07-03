@@ -15,17 +15,17 @@ int flag = 0;
 
 
 AnSISOP_funciones primitivas = {
-.AnSISOP_definirVariable			= definirVariable,
-.AnSISOP_obtenerPosicionVariable	= obtenerPosicionVariable,
-.AnSISOP_dereferenciar				= dereferenciar,
-.AnSISOP_asignar					= asignar,
-.AnSISOP_obtenerValorCompartida		= obtenerValorCompartida,
-.AnSISOP_asignarValorCompartida		= asignarValorCompartida,
-.AnSISOP_irAlLabel					= irAlLabel,
-.AnSISOP_llamarSinRetorno			= llamarSinRetorno,
-.AnSISOP_llamarConRetorno			= llamarConRetorno,
-.AnSISOP_finalizar					= finalizar,
-.AnSISOP_retornar					= retornar,
+		.AnSISOP_definirVariable			= definirVariable,
+		.AnSISOP_obtenerPosicionVariable	= obtenerPosicionVariable,
+		.AnSISOP_dereferenciar				= dereferenciar,
+		.AnSISOP_asignar					= asignar,
+		.AnSISOP_obtenerValorCompartida		= obtenerValorCompartida,
+		.AnSISOP_asignarValorCompartida		= asignarValorCompartida,
+		.AnSISOP_irAlLabel					= irAlLabel,
+		.AnSISOP_llamarSinRetorno			= llamarSinRetorno,
+		.AnSISOP_llamarConRetorno			= llamarConRetorno,
+		.AnSISOP_finalizar					= finalizar,
+		.AnSISOP_retornar					= retornar,
 };
 
 

@@ -60,7 +60,9 @@ int stack_size;
 int tamanio_pag;
 int programaBloqueado;
 bool programaAbortado;
+bool programaFinalizado;
 int var_max; //NO SE QUE VERGA ES PERO LO NECESITO PARA UNA PRIMITIVA, AVERIGUAR QUE ES Y HACERLE UN REFACTOR AL NOMBRE DE MIERDA QUE TIENE
+
 
 void iniciarCPU();
 void crearArchivoLog();

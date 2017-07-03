@@ -17,6 +17,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 
 	//RESERVA EL ESPACIO EN MEMORIA? O EN TEORIA YA HAY ESPACIO RESERVADO EN MEMORIA PARA LA VARIABLE A DEFINIR?
 	//QUE ONDA LA PARTE DEL DICCIONARIO?
+	log_warning(logger, "definirVariable");
 
 	programaAbortado = false; //ESTO ESTA HARDCODEADO, ADAPTAR;
 
@@ -82,6 +83,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 }
 
 t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable){
+	log_warning(logger, "obtenerPosicionVariable");
 	log_info(logger, "Obteniendo posicion variable: %c", identificador_variable);
 
 	t_list* indiceStack = pcb->contextoActual;
@@ -115,6 +117,7 @@ t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable){
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable){
+	log_warning(logger, "dereferenciar");
 	log_info(logger, "Dereferenciando direccion de memoria %i", direccion_variable);
 
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
@@ -136,7 +139,8 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 }
 
 void asignar(t_puntero direccion_variable, t_valor_variable valor){
-	printf("Asigno el valor: %i a la variable en la posicion: %i", valor, direccion_variable);
+	log_warning(logger, "asignar");
+	log_info(logger, "Asigno el valor: %i a la variable en la posicion: %i", valor, direccion_variable);
 
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
 
@@ -147,6 +151,8 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor){
 }
 
 t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
+	log_warning(logger, "obtenerValorCompartida");
+
 	char* variable_compartida = malloc(strlen(variable)+1);
 	char* barra_cero = "\0";
 	t_paquete* paquete;
@@ -164,6 +170,8 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable,t_valor_variable valor){
+	log_warning(logger, "asignarValorCompartida");
+
 	char* variableCompartida = malloc(5+strlen(variable));
 	char* barraCero = "\0";
 	memcpy(variableCompartida, &valor, 4);
@@ -176,6 +184,7 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable,t_valor_var
 }
 
 void irAlLabel(t_nombre_etiqueta etiqueta){
+	log_warning(logger, "irALabel");
 	log_info(logger, "Busco etiqueta: %s y mide: %i", etiqueta, strlen(etiqueta));
 	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->indiceEtiquetas, pcb->sizeIndiceEtiquetas);
 	log_info(logger,"Ir a instruccion %i", instruccion);
@@ -191,15 +200,106 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta){
 }
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
-	printf("llamarConRetorno\n");
-}
-void retornar(t_valor_variable retorno){
-	printf("retornar\n");
+	log_warning(logger, "llamarConRetorno");
+	t_direccion* direccion_nueva = convertirPunteroADireccion(donde_retornar);
+
+	int posicionStack = pcb->sizeContextoActual;
+	log_info(logger, "Tamanio contexto actual %i", pcb->sizeContextoActual);
+
+	t_contexto* contexto_nuevo = malloc(sizeof(t_contexto));
+	contexto_nuevo->pos = posicionStack;
+	contexto_nuevo->args = list_create();
+	contexto_nuevo->vars = list_create();
+	contexto_nuevo->sizeArgs = 0;
+	contexto_nuevo->sizeVars = 0;
+	contexto_nuevo->retPos = pcb->programCounter; //VER QUE ONDA ACA
+	contexto_nuevo->retVar = direccion_nueva;
+
+	log_info(logger, "Creo nuevo contexto con posicion: %i que debe volver en la sentencia %i y retorno en la variable de posicion Pagina %i,  Offset %i",
+			contexto_nuevo->pos, contexto_nuevo->retPos, contexto_nuevo->retVar->pagina, contexto_nuevo->retVar->offset);
+	list_add(pcb->contextoActual, contexto_nuevo);
+	pcb->sizeContextoActual++;
+
+	irAlLabel(etiqueta);
 }
 
+void retornar(t_valor_variable retorno){
+	log_warning(logger, "retornar");
+
+	log_info(logger,"Posicion de retorno %d", retorno);
+	int posConextoActual = pcb->sizeContextoActual - 1;
+	t_contexto* contexto_final = list_get(pcb->contextoActual, posConextoActual);
+	int direccion = convertirDireccionAPuntero(contexto_final->retVar);
+	asignar(direccion,retorno);
+	pcb->programCounter = contexto_final->retPos; //VER QUE ONDA ACA
+
+	//Destruyo Contexto de Funcion
+
+	while(contexto_final->sizeVars!=0){
+		free(((t_variable*) list_get(contexto_final->vars, contexto_final->sizeVars-1))->direccion);
+		free(list_get(contexto_final->vars, contexto_final->sizeVars-1));
+		contexto_final->sizeVars--;
+	}
+	list_destroy(contexto_final->vars);
+	log_info(logger,"Destrui vars de funcion");
+
+	while(contexto_final->sizeArgs!=0){
+		free((t_direccion*) list_get(contexto_final->args, contexto_final->sizeArgs-1));
+		contexto_final->sizeArgs--;
+	}
+
+	list_destroy(contexto_final->args);
+	log_info(logger,"Destrui args de funcion");
+
+
+	free(list_get(pcb->contextoActual, pcb->sizeContextoActual-1));
+	log_info(logger,"Contexto Destruido\n");
+	pcb->sizeContextoActual--;
+}
 
 void finalizar(){
-	printf("Termino el programa");
+	log_warning(logger, "finalizar");
+
+	t_contexto *contexto_a_finalizar = list_get(pcb->contextoActual, pcb->sizeContextoActual-1);
+
+	while(contexto_a_finalizar->sizeVars != 0){
+		t_variable * variable_borrar = (t_variable *)list_get(contexto_a_finalizar->vars, contexto_a_finalizar->sizeVars-1);
+
+		log_info(logger,"Direccion: Pagina %i, Offset %i, Tamanio %i", variable_borrar->direccion->pagina, variable_borrar->direccion->offset, variable_borrar->direccion->size);
+		free(variable_borrar->direccion);
+
+		log_info(logger,"Etiqueta: %c", variable_borrar->etiqueta);
+
+		//free(list_get(contexto_a_finalizar->vars, contexto_a_finalizar->sizeVars-1)); //FALTA LA MIERDA DE ESTE FREE :)
+		free(variable_borrar); //ANTES ESTABA EL DE ARRIBA PERO ASI TAMBIEN DEBERIA ANDAR
+
+
+		contexto_a_finalizar->sizeVars--;
+	}
+
+	list_destroy(contexto_a_finalizar->vars);
+	log_info(logger,"Destrui la lista de vars");
+
+	while(contexto_a_finalizar->sizeArgs != 0){
+		free((t_direccion*)list_get(contexto_a_finalizar->args, contexto_a_finalizar->sizeArgs-1));
+		contexto_a_finalizar->sizeArgs--;
+	}
+
+	list_destroy(contexto_a_finalizar->args);
+	log_info(logger,"Destrui la lista de args\n");
+
+	free(contexto_a_finalizar);
+
+	pcb->sizeContextoActual--;
+	log_info(logger,"El programa finalizo\n");
+
+	programaFinalizado = true;
+
+	int* ok = (int*) 1;
+	enviar(kernel, PROGRAMA_FINALIZADO, sizeof(int), ok);
+	//enviar(kernel, PROGRAMA_FINALIZADO, sizeof(int), (int*) programaFinalizado);
+
+	destruirPCB(pcb);
 }
 
 
