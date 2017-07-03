@@ -6,18 +6,19 @@
 #ifndef ESTRUCTURAS_H_
 #define ESTRUCTURAS_H_
 
+int tamanioPagina;
+
 typedef struct __attribute__((packed))t_direccion{
 	int pagina;
 	int offset;
 	int size;
-}t_direccion;
-
-typedef struct __attribute__ ((packed))t_variable{
-	char etiqueta;
-	t_direccion* direccion;
-}t_variable;
+} t_direccion;
 
 
+typedef struct __attribute__ ((packed))t_envioDeDatosKernelFS{
+	int pid;
+	char* path;
+}t_envioDeDatosKernelFS;
 
 typedef struct __attribute__((packed))t_contexto{
 	int pos;
@@ -27,7 +28,13 @@ typedef struct __attribute__((packed))t_contexto{
 	t_direccion retVar;
 	int sizeArgs;
 	int sizeVars;
-}t_contexto;
+} t_contexto;
+
+
+typedef struct __attribute__((packed)) t_variable {
+	char etiqueta;
+	t_direccion* direccion;
+} t_variable;
 
 typedef struct __attribute__((packed))t_pcb{
 	int pid;

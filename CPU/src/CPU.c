@@ -44,7 +44,6 @@ AnSISOP_kernel primitivas_kernel = {
 };
 
 int main(int argc, char **argv) {
-
 	iniciarCPU();
 	sigusr1_desactivado=1;
 	//manejo de señales
@@ -80,6 +79,7 @@ int main(int argc, char **argv) {
 
 		paquete_recibido = recibir(kernel);
 		pcb = deserializarPCB(paquete_recibido->data);
+		var_max = (tamanioPagina * (stack_size+pcb->paginasDeCodigo))-1;
 		int pid = pcb->pid;
 		liberar_paquete(paquete_recibido);
 		log_info(logger, "Obteniendo PCB. PID %d \n",pid);
@@ -268,7 +268,7 @@ int conectarConMemoria(){
 
 //Funcion que toma lo que envio el Kernel y lo convierte en el PCB.
 t_pcb* deserializarPCB(char* buffer){
-	t_pcb* pcb;
+	/*t_pcb* pcb;
 
 	pcb = malloc(sizeof(t_pcb));
 	memcpy(pcb, buffer, sizeof(t_pcb));
@@ -282,5 +282,10 @@ t_pcb* deserializarPCB(char* buffer){
 	memcpy(pcb->pageCounter, buffer, sizeof(int));
 	buffer =+ sizeof(int);
 
-	return pcb;
+	return pcb;*/
+
+	log_error(logger, "Hay que implementar bien el desserializarPCB()");
+	exit(EXIT_FAILURE_CUSTOM);
+
+	return EXIT_FAILURE_CUSTOM;
 }
