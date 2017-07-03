@@ -24,12 +24,6 @@ typedef struct __attribute__((packed))t_contexto{
 	int sizeVars;
 } t_contexto;
 
-typedef struct __attribute__((packed)) t_entradaStack {
-	t_list* args;
-	t_list* vars;
-	int retPos;
-	t_direccion retVar;
-} t_entradaStack;
 
 typedef struct __attribute__((packed)) t_variable {
 	char etiqueta;
@@ -48,12 +42,8 @@ typedef struct __attribute__((packed))t_pcb{
 	int sizeIndiceEtiquetas;
 	int sizeIndiceDeCodigo;
 
-	int instrucciones;
-
 	int exitCode;
-
-
-	t_list* indiceStack;
+	int sizeTotal;
 }t_pcb;
 
 typedef struct __attribute__((packed))t_proceso{
@@ -62,6 +52,11 @@ typedef struct __attribute__((packed))t_proceso{
 	int socketCPU;
 	bool abortado;
 }t_proceso;
+
+void destruirPCB(t_pcb* pcb);
+t_pcb* desserializarPCB(char* serializado);
+char *serializarPCB(t_pcb *pcb);
+
 
 
 #endif

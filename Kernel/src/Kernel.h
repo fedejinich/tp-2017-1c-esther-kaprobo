@@ -4,6 +4,7 @@
 #include <commons/config.h>
 #include "src/Commons_Kaprobo.h"
 
+
 #include <pthread.h>
 #include <commons/log.h>
 #include <math.h>
@@ -31,7 +32,12 @@
  *
  * */
 
-
+typedef struct __attribute__((packed)){
+	int QUANTUM;
+	int QUANTUM_SLEEP;
+	int TAMANIO_PAG;
+	int STACK_SIZE;
+}t_datos_kernel;
 
 
 //VARIABLES
