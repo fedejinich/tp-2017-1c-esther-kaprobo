@@ -6,12 +6,18 @@
 #ifndef ESTRUCTURAS_H_
 #define ESTRUCTURAS_H_
 
-
 typedef struct __attribute__((packed))t_direccion{
 	int pagina;
 	int offset;
 	int size;
 }t_direccion;
+
+typedef struct __attribute__ ((packed))t_variable{
+	char etiqueta;
+	t_direccion* direccion;
+}t_variable;
+
+
 
 typedef struct __attribute__((packed))t_contexto{
 	int pos;
@@ -35,12 +41,8 @@ typedef struct __attribute__((packed))t_pcb{
 	int sizeIndiceEtiquetas;
 	int sizeIndiceDeCodigo;
 
-	int instrucciones;
-
 	int exitCode;
-
-
-	t_list* indiceStack;
+	int sizeTotal;
 }t_pcb;
 
 typedef struct __attribute__((packed))t_proceso{
@@ -49,6 +51,11 @@ typedef struct __attribute__((packed))t_proceso{
 	int socketCPU;
 	bool abortado;
 }t_proceso;
+
+void destruirPCB(t_pcb* pcb);
+t_pcb* desserializarPCB(char* serializado);
+char *serializarPCB(t_pcb *pcb);
+
 
 
 #endif

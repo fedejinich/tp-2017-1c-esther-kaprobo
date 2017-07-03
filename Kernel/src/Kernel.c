@@ -574,13 +574,8 @@ void escribirVariable(int* socketActivo, t_paquete* paqueteRecibido){
 
 
 
-t_pcb* desserializarPCB(char* serializado){
-	t_pcb* pcb;
-	return pcb;
-}
-void destruirPCB(t_pcb* pcb){
 
-}
+
 
 int* buscarSemaforo(char*semaforo){
 	int i;
@@ -851,7 +846,7 @@ int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemo
 }
 
 void planificadorCortoPlazo(){
-	//printf("hilo Ejecutador\n");
+
 	t_proceso* proceso;
 	int socketCPULibre;
 
@@ -887,7 +882,7 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 
 	t_pcb* pcbSerializado;
 
-	//pcbSerializado = (t_pcb*)serializarPCB(proceso->pcb);
+	pcbSerializado = (t_pcb*)serializarPCB(proceso->pcb);
 
 	proceso->socketCPU = socket;
 
@@ -895,10 +890,16 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 	queue_push(cola_exec, proceso);
 	pthread_mutex_unlock(&mutex_exec);
 
-	//preparar datos de Kernel
-	//enviar primero datos
-	//enviar paquete serializado
+	t_datos_kernel datos_kernel;
 
+	datos_kernel.QUANTUM= quantum;
+	datos_kernel.QUANTUM_SLEEP = quantum_sleep;
+	datos_kernel.TAMANIO_PAG = TAMPAG;
+	datos_kernel.STACK_SIZE = stack_size;
+
+	enviar(socket, DATOS_KERNEL, sizeof(t_datos_kernel), &datos_kernel);
+
+	enviar(socket, PCB_SERIALIZADO, pcbSerializado->sizeTotal, (char*)pcbSerializado);
 
 	/*SIMULACION DE EJECUCION PARA PRUEBAS SECCION 1*/
 
