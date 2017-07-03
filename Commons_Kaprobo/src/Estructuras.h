@@ -25,7 +25,7 @@ typedef struct __attribute__((packed))t_contexto{
 	t_list* args;
 	t_list* vars;
 	int retPos;
-	t_direccion retVar;
+	t_direccion* retVar;
 	int sizeArgs;
 	int sizeVars;
 } t_contexto;

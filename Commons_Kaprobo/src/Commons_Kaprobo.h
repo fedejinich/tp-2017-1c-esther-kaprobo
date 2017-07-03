@@ -57,7 +57,7 @@ typedef enum {
 	HandshakeFileSystemKernel = 14,
 	EnvioFinalizacionAConsola = 102,
 	EnvioErrorAConsola = 105,
-}Kernel;
+} Kernel;
 
 typedef enum {
 	FaltaDeMemoria = -1,
@@ -70,7 +70,7 @@ typedef enum {
 	IntentoDeReservaDeMemoriaErroneo = -8,
 	NoSePuedenAsignarMasPaginas = -9,
 	ErrorSinDefinicion = -20
-}ExitCodes;
+} ExitCodes;
 
 typedef struct {
 	int codigo_operacion;
@@ -208,8 +208,9 @@ typedef enum {
 	ABRIR_ARCHIVO = 12,
 	OBTENER_DATOS = 13,
 	GUARDAR_DATOS = 14,
-	CERRAR_ARCHIVO = 15
-}codigosKernelCPU;
+	CERRAR_ARCHIVO = 15,
+	PROGRAMA_FINALIZADO = 16
+} codigosKernelCPU;
 
 //CODIGOS DE OPERACION CONSOLA-KERNEL
 typedef enum{
@@ -220,7 +221,7 @@ typedef enum{
 	SIN_ESPACIO_MEMORIA = 104,
 	ABORTADO_KERNEL = 105,
 	ERROR_MULTIPROGRAMACION = 106
-}codigosKernelConsola;
+} codigosKernelConsola;
 
 //CODIGOS DE OPERACION KERNEL-FILE SYSTEM
 typedef enum{
@@ -233,7 +234,7 @@ typedef enum{
 	SOLICITUD_CERRAR_ARCHIVO  = 206,
 	CERRAR_ARCHIVOS = 207,
 	ARCHIVO_VALIDADO = 208
-}codigosKernelFileSystem;
+} codigosKernelFileSystem;
 
 
 #endif /* COMMONS_KAPROBO_H_ */
