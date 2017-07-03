@@ -39,6 +39,7 @@ void inicializar(){
 	pthread_mutex_init(&mutex_new, NULL);
 	pthread_mutex_init(&mutex_ready, NULL);
 	pthread_mutex_init(&mutexEjecuta, NULL);
+	pthread_mutex_init(&mutex_listaHeap, NULL);
 
 	sem_init(&sem_new, 0, 0);
 	sem_init(&sem_ready, 0, 0);
@@ -64,6 +65,8 @@ void inicializar(){
 	cola_block = queue_create();
 	cola_exit = queue_create();
 	cola_CPU_libres = queue_create();
+
+	listaAdminHeap = list_create();
 }
 
 void cargarConfiguracion() {
@@ -356,12 +359,18 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 		case ESCRIBIR_ARCHIVO: //Proceso CPU nos pide escribir texto, a traves de print. Se envia tb a Consola
 			log_info(logger,"KERNEL: Proceso nos solicita imprimir texto");
 			imprimirConsola(socketActivo, paqueteRecibido);
-			//VER - ADEMAS DE IMPRIMIR POR CONSOLA TIENE QUE ESCRIBIR EN ARCHIVO
+			//VER - Si el FD es 1 se imprime por consola CAMBIAR ESTO
 			break;
 
 		case SOLICITAR_VARIABLE: //Proceso CPU nos pide variable compartida
 			log_info(logger, "KERNEL: Proceso nos solicita variable compartida");
 			solicitaVariable(socketActivo, paqueteRecibido);
+			break;
+
+		case SOLICITAR_HEAP:
+			log_info(logger,"KERNEL: Proceso nos solicita espacio Dinamico");
+
+			reservarHeap(socketActivo, paqueteRecibido);
 			break;
 
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
@@ -619,6 +628,7 @@ t_proceso* crearPrograma(int socketC , t_paquete* paquete){
 	procesoNuevo->pcb->pid = pidcounter;
 	procesoNuevo->socketConsola = socketC;
 	procesoNuevo->abortado = false;
+	procesoNuevo->sizePaginasHeap = 0;
 	pidcounter ++;
 
 	metadata = metadata_desde_literal(codigo);
@@ -1116,4 +1126,71 @@ int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instruccio
 		indice[i][1] = (instrucciones_serializados +1)->offset;
 	}
 	return indice;
+}
+
+void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
+	t_datosHeap* puntero;
+	t_proceso *proceso;
+	pthread_mutex_lock(&mutex_exec);
+	proceso = obtenerProcesoSocketCPU(cola_exec, socketCPU);
+	queue_push(cola_exec, proceso);
+	pthread_mutex_unlock(&cola_exec);
+
+	int pid;
+	int tamanio;
+	tamanio = *((int*)paqueteRecibido->data);
+	pid = proceso->pcb->pid;
+
+
+	if(tamanio > TAMPAG - sizeof(t_heapMetadata)*2){
+			// VER EL PROCESO TIENE QUE ABORTAR POR HEAP
+		}
+	puntero = verificarEspacioLibreHeap(pid, tamanio);
+	if(puntero->pagina == -1){
+		puntero->pagina = proceso->pcb->paginasDeCodigo + stack_size + proceso->sizePaginasHeap;
+
+		//VER mutex memoria?
+
+
+	}
+
+	//VER mando a CPU el retorno con el puntero? si falla se dentro de procesoPideHeap?
+
+
+
+}
+
+
+t_datosHeap* verificarEspacioLibreHeap( int pid, int tamanio){
+	int i = 0;
+	t_datosHeap* puntero = malloc(sizeof(t_datosHeap));
+	t_adminHeap * aux;
+	puntero->pagina = -1;
+
+	pthread_mutex_lock(&mutex_listaHeap);
+
+	while(i<list_size(listaAdminHeap)){
+		aux= (t_adminHeap*) list_get(listaAdminHeap, i);
+
+		if(aux->disponible >= tamanio + sizeof(t_datosHeap) && aux->pid){
+			compactarPaginaHeap(aux->pagina, aux->pid);
+			puntero->offset = paginaHeapConBloqueSuficiente(i,aux->pagina, aux->pid, tamanio);
+			if(puntero->offset>0){
+				puntero->pagina=aux->pagina;
+				break;
+			}
+		}
+		i++;
+	}
+	pthread_mutex_unlock(&mutex_listaHeap);
+	return puntero;
+}
+
+
+void compactarPaginaHeap( int pagina, int pid){
+
+}
+
+int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, int tamanio){
+	return 1;
 }

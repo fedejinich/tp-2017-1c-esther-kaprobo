@@ -50,6 +50,7 @@ typedef struct __attribute__((packed))t_proceso{
 	int socketConsola;
 	int socketCPU;
 	bool abortado;
+	int sizePaginasHeap;
 }t_proceso;
 
 void destruirPCB(t_pcb* pcb);

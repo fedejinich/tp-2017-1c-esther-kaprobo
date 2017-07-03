@@ -140,8 +140,30 @@ un_socket socketMasGrande;
 int numeroClientes = 0;
 un_socket memoria;
 
- //DESPUES HAY QUE HACER UN FIX DE ESTO Y DEFINIR ESTE STRUCT SOLO EN ESTRUCTURAS.H
-//PERO AHORA EL PUTO DE C NO C PORQUE NO ME ETA DEJANDO
+
+//HEAP
+typedef struct{
+	int pagina;
+	int pid;
+	int disponible;
+}t_adminHeap;
+
+typedef struct __attribute__ ((packed))t_heapMetadata{
+	int size;
+	int uso;
+}t_heapMetadata;
+
+typedef struct __attribute__ ((packed))t_datosHeap{
+	int pagina;
+	int offset;
+}t_datosHeap;
+
+t_list* listaAdminHeap;
+
+pthread_mutex_t mutex_listaHeap;
+
+
+
 
 //FUNCIONES
 
@@ -200,5 +222,10 @@ void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido);
 void escribirVariable(int* socketActivo, t_paquete* paqueteRecibido);
 int* valorVariable(char* variable);
 
+void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido);
+t_datosHeap* verificarEspacioLibreHeap( int pid, int tamanio);
+void compactarPaginaHeap( int pagina, int pid);
+
+int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, int tamanio);
 
 
