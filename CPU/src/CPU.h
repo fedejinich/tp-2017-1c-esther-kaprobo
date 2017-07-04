@@ -30,14 +30,7 @@ signed int memoria;
 t_paquete* paquete_recibido;
 
 
-//Estructura
-typedef struct {
-	int QUANTUM;
-	int QUANTUM_SLEEP;
-	// VER ESTO // int TAMPAG;
-	int STACK_SIZE;
-	char* ALGORITMO;
-}t_datos_kernel;
+
 
 //señales
 int sigusr1_desactivado;
@@ -59,9 +52,9 @@ int quantum_sleep;
 int stack_size;
 int tamanio_pag;
 int programaBloqueado;
-bool programaAbortado;
-bool programaFinalizado;
-int var_max; //NO SE QUE VERGA ES PERO LO NECESITO PARA UNA PRIMITIVA, AVERIGUAR QUE ES Y HACERLE UN REFACTOR AL NOMBRE DE MIERDA QUE TIENE
+int programaAbortado;
+int programaFinalizado;
+int var_max;
 
 
 void iniciarCPU();
@@ -75,12 +68,10 @@ t_pcb* deserializarPCB(char* buffer);
 //char * leerArchivo(FILE *archivo);
 char* depurarSentencia(char* sentencia);
 
-void asignarDatosKernel(t_paquete * datos_kernel);
+
 
 void sig_handler(int signo);
 void sig_handler2(int signo);
-void ejecutarConFIFO();
-void ejecutarConRR();
-
+void asignarDatosDelKernel(t_paquete* datos_kernel);
 
 #endif

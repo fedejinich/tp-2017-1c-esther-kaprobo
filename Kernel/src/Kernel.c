@@ -287,6 +287,14 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 		infoAlgoritmo = algoritmo;
 
 		enviar(clienteCPUtmp,ENVIAR_ALGORITMO,sizeof(int), &infoAlgoritmo);
+		t_datos_kernel datos_kernel;
+
+		datos_kernel.QUANTUM= quantum;
+		datos_kernel.QUANTUM_SLEEP = quantum_sleep;
+		datos_kernel.TAMANIO_PAG = TAMPAG;
+		datos_kernel.STACK_SIZE = stack_size;
+
+		enviar(socket, DATOS_KERNEL, sizeof(t_datos_kernel), &datos_kernel);
 
 		//Ponemos la CPU libre en la cola y hacemos Signal del semaforo CPU
 		queue_push(cola_CPU_libres, (void*)clienteCPUtmp);
@@ -997,6 +1005,18 @@ int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemo
 	memcpy(paqueteAEnviar+sizeof(int), &paginas, sizeof(int));
 	memcpy(paqueteAEnviar+2*sizeof(int),&size, sizeof(int));
 	memcpy(paqueteAEnviar+3*sizeof(int), codigo, size);
+
+	//VER - ENVIAR EN ESTRUCTURA
+	/*
+	 * PID
+	 * PAGINAS TOTALES
+	 * SIZE DEL CODIGO
+	 * PAGINAS DE STACK
+	 * PAGINAS DE CODIGO
+	 * CODIGO
+	 *
+	 * STRUCT t_inicializar_Proceso
+	 */
 
 	enviar(memoria, codigoOperacion, (size+3*sizeof(int)),paqueteAEnviar);
 

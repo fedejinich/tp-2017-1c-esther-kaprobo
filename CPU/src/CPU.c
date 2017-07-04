@@ -46,76 +46,76 @@ AnSISOP_kernel primitivas_kernel = {
 int main(int argc, char **argv) {
 	iniciarCPU();
 	sigusr1_desactivado=1;
+
 	//manejo de señales
 	signal(SIGUSR1, sig_handler);
 	signal(SIGINT, sig_handler2);
+
 	crearArchivoLog();
+
+	char* serializado;
 	pthread_mutex_init(&mutex_pcb, NULL);
 
 	cargarConfiguracion();
 	kernel = conectarConElKernel();
-	//memoria = conectarConMemoria();
+	memoria = conectarConMemoria();
+
 
 	paq_algoritmo = recibir(kernel);
 	if(paq_algoritmo->codigo_operacion  == ENVIAR_ALGORITMO){
 		algoritmo = *(int*)paq_algoritmo->data;
 		log_info(logger, "Obteniendo algoritmo a utilizar. \n");
-
 	}
+
 	liberar_paquete(paq_algoritmo);
+
+	t_paquete* datos_kernel = recibir(kernel);
+
+	asignarDatosDelKernel(datos_kernel);
+	liberar_paquete(datos_kernel);
 
 
 	while (sigusr1_desactivado){
+		log_info(logger,"sigusr1: %d", sigusr1_desactivado);
+		programaBloqueado = 0;
+		programaAbortado = 0;
+		programaFinalizado = 0;
 
-		t_paquete* datos_kernel = recibir(kernel);
+		int quantumAux = quantum;
 
-		if(algoritmo==1){
-			quantum = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM;
-			quantum_sleep = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM_SLEEP;
-			stack_size = ((t_datos_kernel*)(datos_kernel->data))->STACK_SIZE;
-			log_info(logger, "Cargando datos de Kernel. \n");
-		}
+		log_info(logger, "Aguardando la llegada de PCB");
+
+		flag = 1;
+
+		datos_kernel = recibir(kernel);
+		asignarDatosDelKernel(datos_kernel);
 		liberar_paquete(datos_kernel);
 
+		flag=0;
+
 		paquete_recibido = recibir(kernel);
-		pcb = deserializarPCB(paquete_recibido->data);
-		var_max = (tamanioPagina * (stack_size+pcb->paginasDeCodigo))-1;
+		log_info(logger,"Se recibio PCB, envio a deserializar");
+		pcb = desserializarPCB(paquete_recibido->data);
+
+		log_info(logger,"Program Counter: %d", pcb->programCounter);
+		log_info(logger, "PID: %d", pcb->pid);
+
 		int pid = pcb->pid;
-		liberar_paquete(paquete_recibido);
-		log_info(logger, "Obteniendo PCB. PID %d \n",pid);
+		var_max = (tamanio_pag*(stack_size+pcb->paginasDeCodigo))-1;
 
-		if(algoritmo==0){
-			ejecutarConFIFO();
-		}
-		else{
-			ejecutarConRR(quantum,quantum_sleep,stack_size);
-		}
+
+
+
+
+
+
+
+
+
+
 	}
 
 
-	//prueboParser();
-	/*t_paquete* datos_kernel = recibir(kernel);
-	algoritmo = ((t_datos_kernel*)(datos_kernel->data))->ALGORITMO;
-
-	//No se que manera ver que algoritmo estamos usando
-	bool resultado = string_equals_ignore_case(algoritmo, "FIFO");
-
-	if(resultado){
-		ejecutarConFIFO();
-	}
-	else{
-		ejecutarConRR(datos_kernel);
-	}*/
-
-
-	/*
-	while (1){
-		paquete_recibido = recibir(kernel);
-		pcb = deserializarPCB(paquete_recibido->data);
-		int pid = pcb->pid;
-		free(paquete_recibido);
-	}
-*/
 	return 0;
 }
 
@@ -157,17 +157,7 @@ char* depurarSentencia(char* sentencia){
 	}
 	return sentencia;
 }
-/*
-char * leerArchivo(FILE *archivo){
-	fseek(archivo, 0, SEEK_END);
-	long fsize = ftell(archivo);
-	fseek(archivo, 0, SEEK_SET);
-	char *script = malloc(fsize + 1);
-	fread(script, fsize, 1, archivo);
-	script[fsize] = '\0';
-	return script;
-}
-*/
+
 void cargarConfiguracion(){
 	t_config* config = config_create(getenv("archivo_configuracion_CPU"));
 	puerto_kernel = config_get_int_value(config, "PUERTO_KERNEL");
@@ -192,23 +182,12 @@ void sig_handler(int signo) {
 void sig_handler2(int signo) {
 	sigusr1_desactivado = 0;
 	if(flag==1) exit(0);
-	//programaAbortado=1;
+	programaAbortado=1;
 
 	log_info(logger,"Se detecto señal sig int CRT C.\n");
 	return;
 }
 
-void ejecutarConRR(int quantum, int quantum_sleep, int stack_size){
-	int quantum_aux = quantum;
-	//Hay que agregar ademas que el programa no este bloqueado, finalizado, abortado.
-	while(quantum_aux!=0){
-
-	}
-}
-
-void ejecutarConFIFO(){
-	//Hay que agregar un while mientras el programa no este bloqueado, finalizado, abortado.
-}
 
 //funcion que conecta CPU con Kernel utilizando sockets
 int conectarConElKernel(){
@@ -234,7 +213,7 @@ int conectarConElKernel(){
 	else{
 		printf("Fallo en el handshake, se aborta conexion\n");
 		log_info(logger, "Conexion fallida con Kernel. \n");
-		//exit (EXIT_FAILURE);
+		exit (EXIT_FAILURE);
 	}
 }
 
@@ -266,26 +245,10 @@ int conectarConMemoria(){
 	}
 }
 
-//Funcion que toma lo que envio el Kernel y lo convierte en el PCB.
-t_pcb* deserializarPCB(char* buffer){
-	/*t_pcb* pcb;
+void asignarDatosDelKernel(t_paquete* datos_kernel){
+	quantum = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM;
+	tamanio_pag = ((t_datos_kernel*)(datos_kernel->data))->TAMANIO_PAG;
+	quantum_sleep = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM_SLEEP;
+	stack_size = ((t_datos_kernel*)(datos_kernel->data))->STACK_SIZE;
 
-	pcb = malloc(sizeof(t_pcb));
-	memcpy(pcb, buffer, sizeof(t_pcb));
-	buffer += sizeof(t_pcb);
-
-	pcb->pid = malloc(sizeof(int));
-	memcpy(pcb->pid, buffer, sizeof(int));
-	buffer =+ sizeof(int);
-
-	pcb->pageCounter = malloc(sizeof(int));
-	memcpy(pcb->pageCounter, buffer, sizeof(int));
-	buffer =+ sizeof(int);
-
-	return pcb;*/
-
-	log_error(logger, "Hay que implementar bien el desserializarPCB()");
-	exit(EXIT_FAILURE_CUSTOM);
-
-	return EXIT_FAILURE_CUSTOM;
 }

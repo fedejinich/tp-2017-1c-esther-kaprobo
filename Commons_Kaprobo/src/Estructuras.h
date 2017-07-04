@@ -8,6 +8,13 @@
 
 int tamanioPagina;
 
+typedef struct __attribute__((packed)){
+	int QUANTUM;
+	int QUANTUM_SLEEP;
+	int TAMANIO_PAG;
+	int STACK_SIZE;
+}t_datos_kernel;
+
 typedef struct __attribute__((packed))t_direccion{
 	int pagina;
 	int offset;
