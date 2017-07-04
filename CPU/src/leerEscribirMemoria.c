@@ -20,7 +20,7 @@ void almacenarBytesEnMemoria(t_direccion* direccion, void* buffer) {
 	enviar(memoria, ALMACENAR_BYTES, almacenarBytes->tamanio, almacenarBytes);
 }
 
-void solicitarBytesAMemoria(t_direccion* direccion) {
+void* solicitarBytesAMemoria(t_direccion* direccion) {
 	t_solicitudBytes* solicitarBytes = malloc(sizeof(t_almacenarBytes));
 
 	solicitarBytes->pid = pcb->pid;
@@ -28,5 +28,5 @@ void solicitarBytesAMemoria(t_direccion* direccion) {
 	solicitarBytes->offset = direccion->offset;
 	solicitarBytes->tamanio = direccion->size;
 
-	enviar(memoria, ALMACENAR_BYTES, solicitarBytes->tamanio, solicitarBytes);
+	enviar(memoria, SOLICITAR_BYTES, solicitarBytes->tamanio, solicitarBytes);
 }
