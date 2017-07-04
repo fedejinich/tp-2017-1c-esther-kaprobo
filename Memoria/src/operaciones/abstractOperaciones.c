@@ -13,7 +13,7 @@ void retardo() {
 
 void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 	retardo(); //EL RETARDO VA ACA O VA CUANDO EMPIEZA EL ELSE? LA CACHE SE AFECTA POR EL RETARDO?
-	void* buffer = -1;
+	void* buffer = -911;
 	log_info(logger, "Solicitando bytes de PID: %i, pagina: %i, offset: %i y tamanio: %i", pid, pagina, offset, tamanio);
 
 	if(estaEnCache(pid, pagina))
@@ -29,7 +29,18 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 
 		log_info(logger, "Los bytes del PID: %i, pagina: %i se encuentran en el frame %i", pid, pagina, entrada->frame);
 		void* buffer = leerFrame(entrada->frame, offset, tamanio);
+
+		if(buffer == EXIT_FAILURE_CUSTOM) {
+			log_error(logger, "No se pudo cumplir la solicutd de bytes. PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
+			return EXIT_FAILURE_CUSTOM;
+		}
+
 		escribirCache(pid, pagina, buffer);
+	}
+
+	if(buffer == -911) {
+		log_error(logger, "No se pudo cumplir la solicutd de bytes. PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
+		return EXIT_FAILURE_CUSTOM;
 	}
 
 	return buffer;
