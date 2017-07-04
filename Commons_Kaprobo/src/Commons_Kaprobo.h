@@ -17,6 +17,8 @@
 #include <commons/config.h>
 #include <commons/collections/list.h>
 #include "Estructuras.h"
+#include <math.h>
+
 
 #define EXIT_FAILURE_CUSTOM -23
 #define EXIT_SUCCESS_CUSTOM -99
@@ -243,6 +245,7 @@ typedef enum{
 	ARCHIVO_VALIDADO = 211
 } codigosKernelFileSystem;
 
+int cantidadPaginasCodigo(char* codigo);
 
 
 #endif /* COMMONS_KAPROBO_H_ */

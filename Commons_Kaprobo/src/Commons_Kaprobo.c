@@ -159,3 +159,16 @@ int getParteEntera(double numeroDecimal) {
 double getParteDecimal(double numeroDecimal) {
 	return numeroDecimal - getParteEntera(numeroDecimal);
 }
+
+int cantidadPaginasCodigo(char* codigo) {
+	int cantidad = -1;
+
+	cantidad = ceil((double)strlen(codigo)/(double)tamanioPagina);
+
+	if(cantidad == -1) {
+		perror("Error cantidad paginas codigo");
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	return cantidad;
+}
