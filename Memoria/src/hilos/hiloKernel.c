@@ -44,7 +44,7 @@ void* hiloServidorKernel(void* arg) {
 
             	memcpy(&pid, paqueteRecibido->data, sizeof(int));
             	memcpy(&paginasRequeridas, paqueteRecibido->data + sizeof(int), sizeof(int));
-            	memcpy(&tamanioCodigo, paqueteRecibido->data+sizeof(int)*2, sizeof(int));
+            	memcpy(&tamanioCodigo, paqueteRecibido->data + sizeof(int)*2, sizeof(int));
 
             	codigo = malloc(tamanioCodigo);
             	memcpy(codigo, paqueteRecibido->data + sizeof(int)*3, tamanioCodigo);
