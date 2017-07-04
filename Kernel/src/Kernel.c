@@ -447,6 +447,10 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	//Envio todos los datos a Memoria y espero respuesta
 	exito = enviarCodigoAMemoria(paquete->data, paquete->tamanio, proceso, INICIALIZAR_PROCESO);
 
+	if(exito == INICIALIZAR_PROCESO_OK) {
+		exito = almacenarCodigoEnMemoria(proceso->pcb->pid, proceso->pcb->paginasDeCodigo, paquete->data);
+	}
+
 	if(exito == INICIALIZAR_PROCESO_OK){
 		//Hay espacio asignado
 		cantidadDeProgramas++; //sumo un pid mas en ejecucion
@@ -995,7 +999,7 @@ void * nalloc(int tamanio){
 	return retorno;
 }
 
-int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion){
+int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoria codigoOperacion){
 	t_inicializar_proceso* paqueteProceso;
 
 	int paginas = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria;
@@ -1018,6 +1022,11 @@ int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemo
 
 	liberar_paquete(paquete);
 	return resultado;
+}
+
+int almacenarCodigoEnMemoria(int pid, int paginasCodigo, char* codigo) {
+	//implementar
+
 }
 
 void planificadorCortoPlazo(){

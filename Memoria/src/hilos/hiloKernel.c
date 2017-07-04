@@ -46,7 +46,7 @@ void* hiloServidorKernel(void* arg) {
             	paginasCodigo = ((t_inicializar_proceso*) paqueteRecibido->data)->paginasCodigo;
             	tamanioCodigo = ((t_inicializar_proceso*) paqueteRecibido->data)->sizeCodigo;
             	inicializarProceso(pid, paginasRequeridas);
-                almacenarCodigo(pid, paginasCodigo, codigo);
+                almacenarCodigo(pid, paginasCodigo, codigo); //esto no va a aca
                 //codigo y stack o stack y heap
                 break;
             case ASIGNAR_PAGINAS:
