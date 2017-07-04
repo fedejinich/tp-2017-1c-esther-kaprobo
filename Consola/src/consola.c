@@ -318,8 +318,14 @@ void hiloNuevoPrograma(){
 			mostrarMenu();
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
-
-
+		case ABORTADO_CPU:
+			pthread_mutex_lock(&mutexEjecuta);
+			printf("Proceso abortado por CPU\n");
+			programaFinalizado=0;
+			close(kernel);
+			mostrarMenu();
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
 		case -1:
 			pthread_mutex_lock(&mutexEjecuta);
 			printf("CONSOLA: Kernel se desconecto\n");

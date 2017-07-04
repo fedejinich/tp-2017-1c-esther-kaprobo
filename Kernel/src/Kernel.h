@@ -54,6 +54,9 @@ typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
 
 //Globales
 
+volatile int flag=0;
+int flagCPU = 0;
+
 //PID dando vueltas
 int cantidadDeProgramas  = 0;
 
@@ -124,9 +127,6 @@ t_queue * cola_block;
 t_queue * cola_exit;
 
 int cant_new, cant_ready, cant_exec, cant_block, cant_exit = 0;
-
-
-t_queue** colas_ios;
 
 
 t_queue * cola_CPU_libres;
@@ -242,6 +242,8 @@ t_datosHeap* verificarEspacioLibreHeap( int pid, int tamanio);
 void compactarPaginaHeap( int pagina, int pid);
 
 int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, int tamanio);
+void finalizarProgramaKernel(int* socket, t_paquete* paquete);
+void abortar(t_proceso* proceso);
 
 
 
