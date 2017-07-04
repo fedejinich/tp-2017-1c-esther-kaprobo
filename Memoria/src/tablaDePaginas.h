@@ -36,6 +36,7 @@ int esPaginaLiberable(int pid, int pagina);
 int liberarPagina(int pid, int pagina);
 int getFrameByPIDPagina(int pid, int pagina);
 bool existePIDPagina(int pid, int pagina);
+int getFramePrimeraPagina(int pid);
 
 
 #endif /* TABLADEPAGINAS_H_ */

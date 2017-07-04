@@ -61,3 +61,15 @@ char* getCodigoDeOperacion(int codigoInt) {
 	}
 
 }
+
+t_list* getCodigosParciales(char* codigo, int size) {
+	t_list* codigosParciales = list_create();
+	int i;
+	int tamanioCodigo = strlen(codigo);
+	for(i = 0; i < tamanioCodigo; i = i + size) {
+		char* codigoParcial = string_substring(codigo, i, size);
+		list_add(codigosParciales,codigoParcial);
+	}
+
+	return codigosParciales;
+}

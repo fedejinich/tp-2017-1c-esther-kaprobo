@@ -36,4 +36,6 @@ int numeroDeFrameBy(int numeroDeEntradaTablaDePaginas);
 int numeroDeEntradaEnFrameBy(int numeroDeEntradaTablaDePaginas);
 
 char* getCodigoDeOperacion(int codigoInt);
+
+t_list* getCodigosParciales(char* codigo, int size);
 #endif /* FUNCIONESAUXILIARES_FUNCIONESAUXILIARES_H_ */

@@ -53,6 +53,9 @@ void* hiloServidorKernel(void* arg) {
                 //pid = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->pid;
 
                 inicializarProceso(pid, paginasRequeridas);
+                almacenarCodigo(pid, codigo);
+
+                //codigo y stack o stack y heap
                 break;
             case ASIGNAR_PAGINAS:
             	paginasRequeridas = ((t_asignarPaginasKernel*)(paqueteRecibido->data))->paginasAsignar;

@@ -346,3 +346,24 @@ int getFrameByPIDPagina(int pid, int pagina) {
 	log_warning(logger, "No existe PID %i Pagina %i en tabla de paginas", pid, pagina);
 	return EXIT_FAILURE_CUSTOM;
 }
+
+int getFramePrimeraPagina(int pid) {
+	int primeraPagina = -1;
+	int i;
+	bool encontre = false;
+	t_list* entradasDePID = getEntradasDePID(pid);
+	for(i = 0; i < list_size(entradasDePID) && !encontre; i++) {
+		t_entradaTablaDePaginas* entrada = list_get(entradasDePID,i);
+		if(entrada->pagina == 0) {
+			encontre = true;
+			primeraPagina = entrada->frame;
+		}
+	}
+
+	if(encontre == false && primeraPagina < 0) {
+		log_error(logger, "Error en getPrimeraPagina(%i)", pid);
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	return primeraPagina;
+}
