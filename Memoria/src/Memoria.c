@@ -30,21 +30,21 @@ int main(int argc, char **argv) {
 	inicializarFramePointer();
 	inicializarCache();
 	iniciarHilos();
-/*
-	escribirTablaDePaginas(8, 1, 0);
+
+	/*escribirTablaDePaginas(8, 1, 0);
 	escribirTablaDePaginas(9, 1, 1);
 	escribirTablaDePaginas(10, 1, 2);
 	escribirTablaDePaginas(11, 1, 3);
 
 	char* codigo = malloc(320);
-	codigo = "p111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111f";
+	codigo = "p11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111f";
 
-	almacenarCodigo(1, codigo);
+	almacenarCodigo(1, 2, codigo);
 	char* test = leerFrame(8,0,256);
 
-	log_debug(logger, "Codigo almacenado %s", test);
+	log_info(logger, "Codigo almacenado %s", test);
 	char* test2 = leerFrame(9,0,256);
-	log_debug(logger, "codigo pag 2 %s",test2);*/
+	log_info(logger, "codigo pag 2 %s",test2);*/
 
 
 	/*liberarProcesoDeCache(2);

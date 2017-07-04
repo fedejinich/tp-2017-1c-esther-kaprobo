@@ -162,6 +162,14 @@ int liberarPaginaProceso(int pid, int pagina) {
 }
 
 int almacenarCodigo(int pid, int paginasCodigo, char* codigo) {
+	int paginasCodigoVerificador = cantidadPaginasCodigo(codigo);
+
+	if(paginasCodigoVerificador != paginasCodigo) {
+		log_error(logger, "Error en almacenarCodigo(%i, %i, %s)", pid, paginasCodigo, codigo);
+		log_error(logger, "La cantidad de paginas que desea almacenar es incorrecta");
+		return EXIT_FAILURE_CUSTOM;
+	}
+
 	int primeraPagina = getFramePrimeraPagina(pid);
 
 	t_list* codigosParciales = getCodigosParciales(codigo, frame_size);
