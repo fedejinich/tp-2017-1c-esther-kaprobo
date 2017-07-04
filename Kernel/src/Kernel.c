@@ -401,6 +401,11 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			finalizarProcesoCPU(paqueteRecibido, socketActivo);
 			break;
 
+
+			//VER BLOQUEADO POR SEÑAL
+			//VER BLOQUEADO POR SEMAFORO
+			//VER ABORTADO
+
 		default:
 			break;
 	}
