@@ -996,29 +996,20 @@ void * nalloc(int tamanio){
 }
 
 int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion){
-	char* paqueteAEnviar;
-	paqueteAEnviar = malloc(size+3*sizeof(int));
+	t_inicializar_proceso* paqueteProceso;
+
 	int paginas = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria;
 	log_info(logger, "KERNEL: cantidad de paginas de pid %d: %d", proceso->pcb->pid, paginas);
 
-	memcpy(paqueteAEnviar, &(proceso->pcb->pid), sizeof(int));
-	memcpy(paqueteAEnviar+sizeof(int), &paginas, sizeof(int));
-	memcpy(paqueteAEnviar+2*sizeof(int),&size, sizeof(int));
-	memcpy(paqueteAEnviar+3*sizeof(int), codigo, size);
+	paqueteProceso->codigo=codigo;
+	paqueteProceso->paginasTotales=paginas;
+	paqueteProceso->paginasCodigo=proceso->pcb->paginasDeCodigo;
+	paqueteProceso->paginasStack= proceso->pcb->paginasDeMemoria;
+	paqueteProceso->sizeCodigo = size;
+	paqueteProceso->pid = proceso->pcb->pid;
 
-	//VER - ENVIAR EN ESTRUCTURA
-	/*
-	 * PID
-	 * PAGINAS TOTALES
-	 * SIZE DEL CODIGO
-	 * PAGINAS DE STACK
-	 * PAGINAS DE CODIGO
-	 * CODIGO
-	 *
-	 * STRUCT t_inicializar_Proceso
-	 */
 
-	enviar(memoria, codigoOperacion, (size+3*sizeof(int)),paqueteAEnviar);
+	enviar(memoria, codigoOperacion, (size+3*sizeof(int)),paqueteProceso);
 
 	t_paquete * paquete;
 	paquete = recibir(memoria);

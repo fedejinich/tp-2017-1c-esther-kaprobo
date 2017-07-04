@@ -46,6 +46,15 @@ typedef struct __attribute__((packed))t_contexto{
 	int sizeVars;
 } t_contexto;
 
+typedef struct __attribute__((packed))t_inicializar_proceso{
+	int pid;
+	int paginasTotales;
+	int paginasStack;
+	int paginasCodigo;
+	int sizeCodigo;
+	char* codigo;
+}t_inicializar_proceso;
+
 
 typedef struct __attribute__((packed)) t_variable {
 	char etiqueta;
