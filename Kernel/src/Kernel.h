@@ -214,7 +214,8 @@ un_socket conectarConLaMemoria();
 //Creacion Programa
 void planificadorCortoPlazo();
 void mandarAEjecutar(t_proceso* proceso, int socket);
-int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion);
+int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoria codigoOperacion);
+int almacenarCodigoMemoria(int pid, int paginasCodigo, char* codigo);
 int pedirPaginasParaProceso(int pid);
 t_proceso* crearPrograma(int socketC , t_paquete* paquete);
 int nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
