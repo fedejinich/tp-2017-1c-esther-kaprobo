@@ -230,6 +230,7 @@ t_pcb* desserializarPCB(char* serializado);
 void destruirPCB(t_pcb* pcb);
 int* buscarSemaforo(char*semaforo);
 void escribeSemaforo(char* semaforo, int valor);
+void bloqueoSemaforo(t_proceso* proceso, char* semaforo);
 void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido);
 
 void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido);

@@ -558,7 +558,7 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 	char* semaforo = paqueteRecibido->data;
 	t_proceso* proceso;
-	pthhread_mutex_lock(&mutex_exec);
+	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
 	queue_push(cola_exec, proceso);
 	pthread_mutex_unlock(&mutex_exec);
@@ -1442,4 +1442,18 @@ void finalizarProgramaKernel(int* socket, t_paquete* paquete){
 	sem_post(&sem_cpu);
 	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
 	enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
+}
+
+
+void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
+	int i;
+
+	for(i=0; i < strlen((char*)sem_ids)/sizeof(char*);i++){
+		if(strcmp((char*)sem_ids[i], semaforo) == 0){
+			queue_push(cola_semaforos[i], proceso);
+			return;
+		}
+	}
+	log_error(logger,"No encontre el semaforo");
+	exit(0);
 }

@@ -15,7 +15,7 @@ char* ip_kernel;
 int puerto_kernel;
 
 //log
-t_log * log;
+t_log * loggerConsola;
 
 //Varias
 char* script;
