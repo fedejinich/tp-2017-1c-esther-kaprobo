@@ -28,7 +28,7 @@ void* hiloServidorKernel(void* arg) {
     }
 
     t_paquete * paqueteRecibido;
-    int pid, paginasRequeridas, pagina, tamanio, offset, tamanioCodigo;
+    int pid, paginasRequeridas, pagina, tamanio, offset, tamanioCodigo, paginasCodigo;
     char* codigo;
 
     t_asignarPaginasKernel* data;
@@ -41,20 +41,12 @@ void* hiloServidorKernel(void* arg) {
         log_warning(logger, "Codigo de operacion Memoria-Kernel: %s", codigoDeOperacion);
         switch (paqueteRecibido->codigo_operacion) {
             case INICIALIZAR_PROCESO:
-
-            	memcpy(&pid, paqueteRecibido->data, sizeof(int));
-            	memcpy(&paginasRequeridas, paqueteRecibido->data + sizeof(int), sizeof(int));
-            	memcpy(&tamanioCodigo, paqueteRecibido->data + sizeof(int)*2, sizeof(int));
-
-            	codigo = malloc(tamanioCodigo);
-            	memcpy(codigo, paqueteRecibido->data + sizeof(int)*3, tamanioCodigo);
-
-                //paginasRequeridas = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->paginasAPedir;
-                //pid = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->pid;
-
-                inicializarProceso(pid, paginasRequeridas);
-                almacenarCodigo(pid, codigo);
-
+            	pid = ((t_inicializar_proceso*) paqueteRecibido->data)->pid;
+            	paginasRequeridas = ((t_inicializar_proceso*) paqueteRecibido->data)->paginasTotales;
+            	paginasCodigo = ((t_inicializar_proceso*) paqueteRecibido->data)->paginasCodigo;
+            	tamanioCodigo = ((t_inicializar_proceso*) paqueteRecibido->data)->sizeCodigo;
+            	inicializarProceso(pid, paginasRequeridas);
+                almacenarCodigo(pid, paginasCodigo, codigo);
                 //codigo y stack o stack y heap
                 break;
             case ASIGNAR_PAGINAS:

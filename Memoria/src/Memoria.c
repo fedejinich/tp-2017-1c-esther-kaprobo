@@ -29,8 +29,8 @@ int main(int argc, char **argv) {
 	inicializarTablaDePaginas();
 	inicializarFramePointer();
 	inicializarCache();
-	//iniciarHilos();
-
+	iniciarHilos();
+/*
 	escribirTablaDePaginas(8, 1, 0);
 	escribirTablaDePaginas(9, 1, 1);
 	escribirTablaDePaginas(10, 1, 2);
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
 
 	log_debug(logger, "Codigo almacenado %s", test);
 	char* test2 = leerFrame(9,0,256);
-	log_debug(logger, "codigo pag 2 %s",test2);
+	log_debug(logger, "codigo pag 2 %s",test2);*/
 
 
 	/*liberarProcesoDeCache(2);

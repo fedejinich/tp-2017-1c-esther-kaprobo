@@ -161,18 +161,18 @@ int liberarPaginaProceso(int pid, int pagina) {
 	return EXIT_FAILURE_CUSTOM;
 }
 
-int almacenarCodigo(int pid, char* codigo) {
+int almacenarCodigo(int pid, int paginasCodigo, char* codigo) {
 	int primeraPagina = getFramePrimeraPagina(pid);
-	int paginas = cantidadPaginasCodigo(codigo);
 
 	t_list* codigosParciales = getCodigosParciales(codigo, frame_size);
 
 	int i;
-	for(i = 0; i < paginas; i++) {
+	for(i = 0; i < paginasCodigo; i++) {
 		char* codigoParcial = list_get(codigosParciales, i);
 		int tamanioCodigoParcial = strlen(codigoParcial);
 		log_warning(logger, "escribirFrame(%i + %i, 0, %i, %i", primeraPagina, i, tamanioCodigoParcial, strlen(codigoParcial));
 		escribirFrame(primeraPagina + i, 0, tamanioCodigoParcial, codigoParcial);
+
 	}
 
 	log_info(logger, "Codigo almacenado en memoria");

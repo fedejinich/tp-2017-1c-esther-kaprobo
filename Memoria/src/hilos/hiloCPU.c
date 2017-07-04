@@ -55,7 +55,8 @@ void* hiloConexionCPU(void* socket) {
 				tamanio = ((t_solicitudBytes*)(paqueteRecibido->data))->tamanio;
 				void* bufferAux = solicitarBytesDePagina(pid, pagina, offset, tamanio);
 				if(bufferAux == EXIT_FAILURE_CUSTOM) {
-					enviar(socket, SOLICITAR_BYTES_FALLO, sizeof(int), -1);
+					int* fallo = EXIT_FAILURE_CUSTOM;
+					enviar(socket, SOLICITAR_BYTES_FALLO, sizeof(int), &fallo);
 					log_error(logger, "No se encontraron los bytes solicitados: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
 				}
 				enviar(socket, SOLICITAR_BYTES_OK, tamanio, bufferAux);
@@ -69,11 +70,11 @@ void* hiloConexionCPU(void* socket) {
 				buffer = ((t_almacenarBytes*)(paqueteRecibido->data))->buffer;
 				int exito = almacenarBytesEnPagina(pid, pagina, offset, tamanio, buffer);
 				if(exito == EXIT_FAILURE_CUSTOM) {
-					int* fallo = -1;
+					int* fallo = EXIT_FAILURE_CUSTOM;
 					enviar(socket, ALMACENAR_BYTES_FALLO, sizeof(int), &fallo);
 					log_error(logger, "No se pudieron almacenar bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
 				}
-				int* ok = 1;
+				int* ok = EXIT_SUCCESS_CUSTOM;
 				enviar(socket, ALMACENAR_BYTES_OK, sizeof(int), &ok);
 				log_debug(logger, "Almacenados bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
 
