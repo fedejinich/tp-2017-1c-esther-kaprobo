@@ -8,6 +8,13 @@
 
 int tamanioPagina;
 
+typedef struct __attribute__((packed)){
+	int QUANTUM;
+	int QUANTUM_SLEEP;
+	int TAMANIO_PAG;
+	int STACK_SIZE;
+}t_datos_kernel;
+
 typedef struct __attribute__((packed))t_direccion{
 	int pagina;
 	int offset;
@@ -38,6 +45,15 @@ typedef struct __attribute__((packed))t_contexto{
 	int sizeArgs;
 	int sizeVars;
 } t_contexto;
+
+typedef struct __attribute__((packed))t_inicializar_proceso{
+	int pid;
+	int paginasTotales;
+	int paginasStack;
+	int paginasCodigo;
+	int sizeCodigo;
+	char* codigo;
+}t_inicializar_proceso;
 
 
 typedef struct __attribute__((packed)) t_variable {

@@ -287,6 +287,14 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 		infoAlgoritmo = algoritmo;
 
 		enviar(clienteCPUtmp,ENVIAR_ALGORITMO,sizeof(int), &infoAlgoritmo);
+		t_datos_kernel datos_kernel;
+
+		datos_kernel.QUANTUM= quantum;
+		datos_kernel.QUANTUM_SLEEP = quantum_sleep;
+		datos_kernel.TAMANIO_PAG = TAMPAG;
+		datos_kernel.STACK_SIZE = stack_size;
+
+		enviar(socket, DATOS_KERNEL, sizeof(t_datos_kernel), &datos_kernel);
 
 		//Ponemos la CPU libre en la cola y hacemos Signal del semaforo CPU
 		queue_push(cola_CPU_libres, (void*)clienteCPUtmp);
@@ -988,17 +996,20 @@ void * nalloc(int tamanio){
 }
 
 int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoriaKernel codigoOperacion){
-	char* paqueteAEnviar;
-	paqueteAEnviar = malloc(size+3*sizeof(int));
+	t_inicializar_proceso* paqueteProceso;
+
 	int paginas = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria;
 	log_info(logger, "KERNEL: cantidad de paginas de pid %d: %d", proceso->pcb->pid, paginas);
 
-	memcpy(paqueteAEnviar, &(proceso->pcb->pid), sizeof(int));
-	memcpy(paqueteAEnviar+sizeof(int), &paginas, sizeof(int));
-	memcpy(paqueteAEnviar+2*sizeof(int),&size, sizeof(int));
-	memcpy(paqueteAEnviar+3*sizeof(int), codigo, size);
+	paqueteProceso->codigo=codigo;
+	paqueteProceso->paginasTotales=paginas;
+	paqueteProceso->paginasCodigo=proceso->pcb->paginasDeCodigo;
+	paqueteProceso->paginasStack= proceso->pcb->paginasDeMemoria;
+	paqueteProceso->sizeCodigo = size;
+	paqueteProceso->pid = proceso->pcb->pid;
 
-	enviar(memoria, codigoOperacion, (size+3*sizeof(int)),paqueteAEnviar);
+
+	enviar(memoria, codigoOperacion, (size+3*sizeof(int)),paqueteProceso);
 
 	t_paquete * paquete;
 	paquete = recibir(memoria);
