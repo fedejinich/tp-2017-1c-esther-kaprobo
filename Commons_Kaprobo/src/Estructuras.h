@@ -53,7 +53,7 @@ typedef struct __attribute__((packed))t_inicializar_proceso{
 	int paginasCodigo;
 	int sizeCodigo;
 	char* codigo;
-}t_inicializar_proceso;
+} t_inicializar_proceso;
 
 
 typedef struct __attribute__((packed)) t_variable {

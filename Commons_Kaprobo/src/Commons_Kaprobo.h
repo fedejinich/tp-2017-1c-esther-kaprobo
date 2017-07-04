@@ -162,6 +162,8 @@ bool esperar_handshake(un_socket socket_del_cliente, int codigo);
 //CODIGOS DE OPERACION MEMORIA-KERNEL
 
 typedef enum {
+	//MEMORIA - KERNEL
+
 	TAMANIO_PAGINA,
 
 	INICIALIZAR_PROCESO,
@@ -178,12 +180,10 @@ typedef enum {
 
 	LIBERAR_PAGINA,
 	LIBERAR_PAGINA_OK,
-	LIBERAR_PAGINA_FALLO
-} codigosMemoriaKernel;
+	LIBERAR_PAGINA_FALLO,
 
-//CODIGOS DE OPERACION MEMORIA-CPU
+	//MEMORIA - CPU
 
-typedef enum {
 	PID_EN_EJECUCION,
 	SOLICITAR_BYTES,
 	SOLICITAR_BYTES_OK,
@@ -192,7 +192,8 @@ typedef enum {
 	ALMACENAR_BYTES,
 	ALMACENAR_BYTES_OK,
 	ALMACENAR_BYTES_FALLO
-} codigosMemoriaCPU;
+} codigosMemoria;
+
 
 //CODIGOS DE OPERACION KERNEL-CPU
 typedef enum {
