@@ -116,17 +116,17 @@ t_direccion* armarDirecccionDeFuncion() {
 	return direccion;
 }
 
-int armarProximaDireccion(t_direccion* direccionReal) {
+t_direccion* armarProximaDireccion() {
 	int ultimaPosicionStack = pcb->sizeContextoActual - 1;
 	int posicionUltimaVariable = ((t_contexto*) (list_get(pcb->contextoActual, ultimaPosicionStack)))->sizeVars - 1;
-	int exito = proximaDireccion(ultimaPosicionStack, posicionUltimaVariable);
+	t_direccion* direccion = proximaDireccion(ultimaPosicionStack, posicionUltimaVariable);
 
-	if(exito == EXIT_FAILURE_CUSTOM) {
+	if(direccion == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "Error en armarProximaDireccion()");
 		return EXIT_FAILURE_CUSTOM;
 	}
 
-	return EXIT_SUCCESS_CUSTOM;
+	return direccion;
 }
 
 t_direccion* proximaDireccionArg(int posStack, int posUltVar) {

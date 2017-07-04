@@ -19,7 +19,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	//QUE ONDA LA PARTE DEL DICCIONARIO?
 	log_warning(logger, "definirVariable");
 
-	programaAbortado = false; //ESTO ESTA HARDCODEADO, ADAPTAR;
+	programaAbortado = 0; //ESTO ESTA HARDCODEADO, ADAPTAR;
 
 	if(!programaAbortado) {
 		log_info(logger, "Definiendo variable: %c", identificador_variable);
@@ -55,14 +55,14 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			list_add(contexto->vars, variable);
 			contexto->sizeVars++;
 		} else {
-			direccionVariable = armarProximaDireccion(direccionVariable);
+			direccionVariable = armarProximaDireccion();
 			variable->etiqueta = identificador_variable;
 			variable->direccion = direccionVariable;
 			list_add(contexto->vars, variable);
 			contexto->sizeVars++;
 		}
 
-		int* valor = 6451;
+		int* valor = (int*) 6451;
 		log_info(logger,"Basura: %i", valor);
 		int direccionRetorno = convertirDireccionAPuntero(direccionVariable);
 
