@@ -56,7 +56,8 @@ int getFirstFrame() {
 void* leerFrame(int frame, int offset, int tamanio) {
 	//aca funcion de hash
 	void* contenido = malloc(tamanio);
-	memcpy(&contenido, &framePointer[frame] + offset, tamanio); //no se si funk bien
+
+	memcpy(contenido, &framePointer[frame] + offset, tamanio); //no se si funk bien
 
 	return contenido;
 }
