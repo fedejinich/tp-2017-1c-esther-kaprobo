@@ -316,10 +316,18 @@ int conectarConMemoria(){
 }
 
 void asignarDatosDelKernel(t_paquete* datos_kernel){
-	quantum = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM;
-	tamanio_pag = ((t_datos_kernel*)(datos_kernel->data))->TAMANIO_PAG;
-	quantum_sleep = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM_SLEEP;
+
+	if(algoritmo==1){
+		quantum = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM;
+		quantum_sleep = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM_SLEEP;
+	}
+	else{
+		quantum = 20;
+		quantum_sleep = 10;
+	}
+
 	stack_size = ((t_datos_kernel*)(datos_kernel->data))->STACK_SIZE;
+	tamanio_pag = ((t_datos_kernel*)(datos_kernel->data))->TAMANIO_PAG;
 
 }
 
