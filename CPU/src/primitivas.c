@@ -327,14 +327,58 @@ void signal_kernel(t_nombre_semaforo identificador_semaforo){
 }
 
 t_puntero reservarEnHeap(t_valor_variable espacio){
-	printf("reservar en Heap\n");
-	t_puntero * puntero;
+	log_info(logger, "Primitiva alocar");
+	t_pedidoHeap* pedido = malloc(sizeof(t_pedidoHeap));
+	t_paquete* paquete = malloc(sizeof(t_paquete));
+	int pagina, offset;
+	int resultado;
+	int pid = pcb->pid;
+
+	pedido->pid = pid;
+	pedido->tamanio = espacio;
+
+	enviar(kernel, SOLICITAR_HEAP, sizeof(t_pedidoHeap), pedido);
+	paquete = recibir(kernel);
+
+	if(paquete->codigo_operacion == SOLICITAR_HEAP_FALLO){
+		//VER ABORTAR PROCESO
+	}
+
+	t_direccion* dire = (t_direccion*)paquete->data;
+
+	t_puntero puntero = dire->pagina * tamanio_pag + dire->offset;
+	log_info(logger, "Puntero %d", puntero);
 	return puntero;
-	// aca me manda un paquete t_direccion
+
 }
 
 void liberarEnHeap(t_puntero puntero){
-	printf("liberar\n");
+	t_heapMetadata* metadata = malloc(sizeof(t_heapMetadata));
+	t_direccion* direccion = malloc(sizeof(t_direccion));
+	t_paquete* paquete;
+	int pagina = puntero / tamanio_pag;
+	int offset = puntero - (pagina*tamanio_pag);
+
+	direccion->pagina = pagina;
+	direccion->offset = offset;
+	direccion->size = sizeof(t_heapMetadata);
+
+	solicitarBytesAMemoria(direccion);
+
+	paquete = recibir(memoria);
+
+	if(paquete->codigo_operacion == SOLICITAR_BYTES_FALLO){
+		//VER FALLO
+	}
+
+	metadata
+
+
+
+
+
+
+
 }
 
 t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flags){

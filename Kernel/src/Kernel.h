@@ -161,10 +161,7 @@ typedef struct{
 	int disponible;
 }t_adminHeap;
 
-typedef struct __attribute__ ((packed))t_heapMetadata{
-	int size;
-	int uso;
-}t_heapMetadata;
+
 
 typedef struct __attribute__ ((packed))t_datosHeap{
 	int pagina;
