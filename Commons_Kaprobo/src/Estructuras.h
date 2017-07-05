@@ -84,7 +84,7 @@ typedef struct __attribute__((packed))t_proceso{
 	bool abortado;
 	int sizePaginasHeap;
 }t_proceso;
-void destruirCONTEXTO(t_pcb * pcb);
+
 void destruirPCB(t_pcb* pcb);
 t_pcb* desserializarPCB(char* serializado);
 char *serializarPCB(t_pcb *pcb);

@@ -330,6 +330,7 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 	printf("reservar en Heap\n");
 	t_puntero * puntero;
 	return puntero;
+	// aca me manda un paquete t_direccion
 }
 
 void liberarEnHeap(t_puntero puntero){

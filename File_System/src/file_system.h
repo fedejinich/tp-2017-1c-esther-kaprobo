@@ -25,6 +25,7 @@
 #define ARCHIVOLOG "File_System.log"
 #define KernelValidacion 11
 
+typedef uint32_t t_num;
 /**
  * Variables
  */

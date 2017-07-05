@@ -17,7 +17,6 @@
 #include <commons/config.h>
 #include <commons/collections/list.h>
 #include "Estructuras.h"
-
 #include <math.h>
 
 
@@ -25,6 +24,13 @@
 #define EXIT_SUCCESS_CUSTOM -99
 
 //Estructuras
+
+	//Estructuras Memoria
+	typedef struct __attribute__((packed)) t_entradaTablaDePaginas {
+		int frame;
+		int pid;
+		int pagina;
+	} t_entradaTablaDePaginas;
 
 	//Estructuras Memoria - Kernel
 	typedef struct __attribute__((packed))t_pedidoDePaginasKernel{
@@ -221,7 +227,10 @@ typedef enum {
 	PROGRAMA_BLOQUEADO_SEMAFORO = 19,
 	PROGRAMA_ABORTADO = 20,
 	FIN_QUANTUM = 21,
-	SENIAL_SIGUSR1
+	SENIAL_SIGUSR1 = 22,
+	SOLICITAR_HEAP_OK = 23,
+	SOLICITAR_HEAP_FALLO = 24
+
 
 } codigosKernelCPU;
 
@@ -234,8 +243,7 @@ typedef enum{
 	FINALIZAR_PROGRAMA = 103,
 	SIN_ESPACIO_MEMORIA = 104,
 	ABORTADO_KERNEL = 105,
-	ERROR_MULTIPROGRAMACION = 106,
-	ABORTADO_CPU = 107
+	ERROR_MULTIPROGRAMACION = 106
 } codigosKernelConsola;
 
 //CODIGOS DE OPERACION KERNEL-FILE SYSTEM

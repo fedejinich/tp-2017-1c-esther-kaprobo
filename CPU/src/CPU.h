@@ -14,7 +14,6 @@
 #include <signal.h>
 #include <commons/log.h>
 #include "leerEscribirMemoria.h"
-#include <math.h>
 
 #define ARCHIVOLOG "CPU.log"
 
@@ -74,8 +73,5 @@ char* depurarSentencia(char* sentencia);
 void sig_handler(int signo);
 void sig_handler2(int signo);
 void asignarDatosDelKernel(t_paquete* datos_kernel);
-t_solicitudBytes * armoPedidoInstruccionAMemoria(t_pcb* pcb, int tamanioPag);
-void enviarSolicitudAMemoria(int pid, int pagina, int offset, int tamanio);
-char* leer(int pid, int pagina, int offset, int tamanio);
 
 #endif
