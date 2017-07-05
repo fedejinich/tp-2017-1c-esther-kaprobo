@@ -63,13 +63,23 @@ void* leerFrame(int frame, int offset, int tamanio) {
 }
 
 bool superaLimiteFrame(int offset, int tamanio) {
-	bool exito = tamanio <= frame_size && offset <= frame_size && (offset + tamanio) <= frame_size;
-	if(!exito) {
+	log_warning(logger, "(tamanio %i <= frameSize %i) && (offset %i < frameSize %i) && ((offset %i + tamanio %i) <= frameSize %i)",
+			tamanio, frame_size, offset, frame_size, offset, tamanio, frame_size);
+
+	bool exito = (tamanio <= frame_size) && (offset < frame_size) && ((offset + tamanio) <= frame_size);
+
+	if(exito == true)
+		log_warning(logger, "Exito =  true");
+	else
+		log_warning(logger, "Exito =  false");
+
+	if(exito == false) {
 		log_error(logger, "Supera limite de frame. Offset %i, Tamanio %i", offset, tamanio);
 		return false;
 	}
 
-	return exito;
+	log_debug(logger, "Saliendo de superaLLimite");
+	return !exito;
 }
 
 
