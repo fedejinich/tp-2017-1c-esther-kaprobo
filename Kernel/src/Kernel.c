@@ -445,10 +445,12 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	}
 
 	//Envio todos los datos a Memoria y espero respuesta
-	exito = inicializarProcesoYAlmacenarEnMemoria(paquete->data, paquete->tamanio, proceso);
+	char* codigo = (char*) paquete->data;
+	exito = inicializarProcesoYAlmacenarEnMemoria(codigo, paquete->tamanio, proceso);
 
 	if(exito == EXIT_SUCCESS_CUSTOM){
 		//Hay espacio asignado
+		//Y se almaceno el codigo en un pid existente em pagina existente
 		cantidadDeProgramas++; //sumo un pid mas en ejecucion
 
 		//SACO DE NEW Y MANDO A READY
@@ -1036,7 +1038,6 @@ int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* pro
 }
 
 int almacenarCodigoEnMemoria(int pid, int paginasCodigo, char* codigo) {
-	//implementar
 	log_info(logger, "Almacenando codigo en memoria. PID %i Paginas codigo %i, Codigo %s", pid, paginasCodigo, codigo);
 
 	t_list* codigosParciales = getCodigosParciales(codigo, tamanioPagina);
