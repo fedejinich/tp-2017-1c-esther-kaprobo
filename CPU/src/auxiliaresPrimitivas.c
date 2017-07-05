@@ -116,7 +116,7 @@ t_direccion* armarDirecccionDeFuncion() {
 	return direccion;
 }
 
-t_direccion* armarProximaDireccion() {
+t_direccion* armarProximaDireccion(){
 	int ultimaPosicionStack = pcb->sizeContextoActual - 1;
 	int posicionUltimaVariable = ((t_contexto*) (list_get(pcb->contextoActual, ultimaPosicionStack)))->sizeVars - 1;
 	t_direccion* direccion = proximaDireccion(ultimaPosicionStack, posicionUltimaVariable);

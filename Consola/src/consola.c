@@ -81,17 +81,17 @@ void iniciarConsola(){
 }
 
 void crearArchivoLog(){
-	log = iniciarLog(ARCHIVOLOG,"Consola");
-	log_info(log, "Iniciando Consola. \n");
+	logger = iniciarLog(ARCHIVOLOG,"Consola");
+	log_info(logger, "Iniciando Consola. \n");
 }
 void cargarConfiguracion(){
 
 	t_config* config = config_create(getenv("archivo_configuracion_consola"));
 	puerto_kernel = config_get_int_value(config, "PUERTO_KERNEL");
 	ip_kernel = config_get_string_value(config, "IP_KERNEL");
-	log_info("IP KERNEL: %s", ip_kernel);
-	log_info("PUERTO_KERNEL: %i", puerto_kernel);
-	log_info(log, "El archivo de configuracion fue cargado correctamente.\n");
+	log_info(logger,"IP KERNEL: %s", ip_kernel);
+	log_info(logger,"PUERTO_KERNEL: %i", puerto_kernel);
+	log_info(logger, "El archivo de configuracion fue cargado correctamente.\n");
 }
 
 
@@ -129,7 +129,7 @@ void finalizarPrograma(){
 void desconectarConsola(){
 	int i;
 	signed int soc;
-	log_info(log, "Desconectar Consola\n\n");
+	log_info(logger, "Desconectar Consola\n\n");
 	for( i= 0; i< MAXPID; i++){
 		soc = matriz[i];
 		if (soc > 0){
@@ -176,7 +176,7 @@ void hiloNuevoPrograma(){
 	//Solicito archivo, lo abro y en caso de no poder, salgo con error
 	archivo = fopen(nomArchi, "r");
 	if(archivo == NULL){
-		log_error(log, "NO SE PUDO ABRIR EL ARCHIVO");
+		log_error(logger, "NO SE PUDO ABRIR EL ARCHIVO");
 		exit (EXIT_FAILURE);
 	}
 
@@ -191,23 +191,23 @@ void hiloNuevoPrograma(){
 	memcpy(scriptParaEnviar, script, strlen(script));
 
 	//Abro conexion con Kernel, realizo Handshake
-	log_info(log,"Inicio de conexion con Kernel");
+	log_info(logger,"Inicio de conexion con Kernel");
 
 	// funcion deSockets
 	kernel = conectar_a(ip_kernel,puerto_kernel);
 
 	if (kernel==0){
-		log_error(log,"CONSOLA: No se pudo conectar con el Kernel");
+		log_error(logger,"CONSOLA: No se pudo conectar con el Kernel");
 		exit (EXIT_FAILURE);
 	}
-	log_info(log,"CONSOLA: Kernel recibio nuestro pedido de conexion, iniciando HANDSHAKE");
+	log_info(logger,"CONSOLA: Kernel recibio nuestro pedido de conexion, iniciando HANDSHAKE");
 
 	bool resultado = realizar_handshake(kernel, 11);
 	if (resultado){
-		log_info(log,"Handshake exitoso! Conexion establecida");
+		log_info(logger,"Handshake exitoso! Conexion establecida");
 	}
 	else{
-		log_error(log,"Fallo en el handshake, se aborta conexion");
+		log_error(logger,"Fallo en el handshake, se aborta conexion");
 		exit (EXIT_FAILURE);
 		}
 
@@ -221,18 +221,18 @@ void hiloNuevoPrograma(){
 
 	enviar(kernel, ENVIAR_SCRIPT, strlen(script),scriptParaEnviar);
 
-	log_info(log,"Se envio el script a ejecutar");
+	log_info(logger,"Se envio el script a ejecutar");
 	newPid = recibir(kernel);
 	if(newPid->codigo_operacion == ENVIAR_PID){
 		pid = *(int*)newPid->data;
-		log_info(log, "Se recibió el PID %d", pid);
+		log_info(logger, "Se recibió el PID %d", pid);
 
 		//me guardo el pid y el socket en la matriz para tener referencia siempre
 		matriz[pid]= kernel;
 		matrizHilos[pid] = pthread_self();
 	}
 	else
-		log_error(log,"fallo envio pid");
+		log_error(logger,"fallo envio pid");
 
 	pthread_mutex_unlock(&mutexConexion);
 
@@ -268,7 +268,7 @@ void hiloNuevoPrograma(){
 			pthread_mutex_lock(&mutexEjecuta);
 
 			memcpy(&info_cadena, &paquete->data, paquete->tamanio);
-			log_info(log,"Imprimiendo información del pid %d",pid);
+			log_info(logger,"Imprimiendo información del pid %d",pid);
 			printf("%s\n", info_cadena);
 			estadisticasPrograma.impresiones ++;
 			mostrarMenu();
