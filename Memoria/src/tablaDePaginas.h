@@ -10,11 +10,7 @@
 
 #include "Memoria.h"
 
-typedef struct {
-	int frame;
-	int pid;
-	int pagina;
-} t_entradaTablaDePaginas;
+
 
 t_entradaTablaDePaginas* tablaDePaginas;
 
