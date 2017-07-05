@@ -397,23 +397,9 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			reservarHeap(socketActivo, paqueteRecibido);
 			break;
 
-		case PROGRAMA_BLOQUEADO_SIGUSR1:
-			flagCPU=1;
-			break;
-
-		case PROGRAMA_FINALIZADO:
-			log_info(logger,"Finalizar Programa");
-			finalizarProgramaKernel(socketActivo, paqueteRecibido);
-			break;
-
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
 			finalizarProcesoCPU(paqueteRecibido, socketActivo);
 			break;
-
-
-			//VER BLOQUEADO POR SEÑAL
-			//VER BLOQUEADO POR SEMAFORO
-			//VER ABORTADO
 
 		default:
 			break;
@@ -459,14 +445,12 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	}
 
 	//Envio todos los datos a Memoria y espero respuesta
-	exito = enviarCodigoAMemoria(paquete->data, paquete->tamanio, proceso, INICIALIZAR_PROCESO);
+	char* codigo = (char*) paquete->data;
+	exito = inicializarProcesoYAlmacenarEnMemoria(codigo, paquete->tamanio, proceso);
 
-	if(exito == INICIALIZAR_PROCESO_OK) {
-		exito = almacenarCodigoEnMemoria(proceso->pcb->pid, proceso->pcb->paginasDeCodigo, paquete->data);
-	}
-
-	if(exito == INICIALIZAR_PROCESO_OK){
+	if(exito == EXIT_SUCCESS_CUSTOM){
 		//Hay espacio asignado
+		//Y se almaceno el codigo en un pid existente em pagina existente
 		cantidadDeProgramas++; //sumo un pid mas en ejecucion
 
 		//SACO DE NEW Y MANDO A READY
@@ -484,7 +468,10 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 		sem_post(&sem_ready);
 		printf("pase todos semaforos bien \n");
 	}
-	else{
+	else {
+		//NO SIEMPRE VA A SER POR FALTA DE MEMORIA
+		//PUEDE FALLAR PORQUE SE QUIERE ALMACENAR CODIGO DE UN PID INEXISTENTE EN TABLA DE PAGINAS
+
 		log_error(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
 		//ENVIO A CONSOLA ERROR POR MEMORIA
 		enviar(socket, EnvioErrorAConsola, sizeof(int), NULL);
@@ -527,10 +514,10 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 		destruirPCB(procesoPideSem->pcb);
 		procesoPideSem->pcb = pcb_temporal;
 
-
+		/* VER
 		if(procesoPideSem->abortado == false){
 			bloqueoSemaforo(procesoPideSem, paqueteRecibido->data);
-			if(flagCPU==0){
+			if(flag==0){
 				queue_push(cola_CPU_libres, (void*)socketActivo);
 				sem_post(&sem_cpu);
 			}
@@ -541,7 +528,7 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 			log_info(logger,"KERNEL: Se recibio proceso %d por fin de quantum, abortado", procesoPideSem->pcb->pid);
 			abortar(procesoPideSem);
 		}
-
+		*/
 	}
 	else{
 		escribeSemaforo(paqueteNuevo->data,*buscarSemaforo(paqueteRecibido)-1);
@@ -556,35 +543,7 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 }
 
 void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
-	char* semaforo = paqueteRecibido->data;
-	t_proceso* proceso;
-	pthread_mutex_lock(&mutex_exec);
-	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
-	queue_push(cola_exec, proceso);
-	pthread_mutex_unlock(&mutex_exec);
-	pthread_mutex_lock(&mutex_config);
-	log_info(logger, "Proceso %d libera el semaforo %s",proceso->pcb->pid, paqueteRecibido->data);
 
-	int i;
-
-	for(i=0; i< strlen((char*)sem_ids)/sizeof(char*);i++){
-		if(strcmp((char*)sem_ids[i],semaforo)==0){
-			if(list_size(cola_semaforos[i]->elements)){
-				proceso = queue_pop(cola_semaforos[i]);
-				pthread_mutex_lock(&mutex_ready);
-				queue_push(cola_ready, proceso);
-				pthread_mutex_unlock(&mutex_ready);
-				sem_post(&sem_ready);
-			}
-			else{
-				valor_semaforos[i]++;
-			}
-		}
-	}
-	log_error(logger, "No encontre el semaforo");
-
-	pthread_mutex_unlock(&mutex_config);
-	return;
 }
 
 void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido){
@@ -788,6 +747,11 @@ void escribirVariable(int* socketActivo, t_paquete* paqueteRecibido){
 	log_error(logger, "No se encontro Variable %s, EXIT",variable);
 	exit(0);
 }
+
+
+
+
+
 
 int* buscarSemaforo(char*semaforo){
 	int i;
@@ -1036,7 +1000,7 @@ void * nalloc(int tamanio){
 	return retorno;
 }
 
-int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoria codigoOperacion){
+int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* proceso){
 	t_inicializar_proceso* paqueteProceso;
 
 	int paginas = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria;
@@ -1049,21 +1013,74 @@ int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemo
 	paqueteProceso->sizeCodigo = size;
 	paqueteProceso->pid = proceso->pcb->pid;
 
-
-	enviar(memoria, codigoOperacion, sizeof(t_inicializar_proceso),paqueteProceso);
+	enviar(memoria, INICIALIZAR_PROCESO, (size+3*sizeof(int)),paqueteProceso); //al pedo el tamanio
 
 	t_paquete * paquete;
 	paquete = recibir(memoria);
 
-	int resultado = paquete->codigo_operacion;
+	if(paquete->codigo_operacion == INICIALIZAR_PROCESO_FALLO) {
+		log_error(logger, "No se pudo inicializar proceso");
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	log_debug(logger, "Proceso inicializado. PID %i");
 
 	liberar_paquete(paquete);
-	return resultado;
+
+	int exito = almacenarCodigoEnMemoria(proceso->pcb->pid, proceso->pcb->paginasDeCodigo, codigo);
+
+	if(exito == EXIT_FAILURE_CUSTOM) {
+		log_error(logger, "No se pudo almacenar en memoria el codigo");
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	return exito;
 }
 
 int almacenarCodigoEnMemoria(int pid, int paginasCodigo, char* codigo) {
-	//implementar
+	log_info(logger, "Almacenando codigo en memoria. PID %i Paginas codigo %i, Codigo %s", pid, paginasCodigo, codigo);
 
+	t_list* codigosParciales = getCodigosParciales(codigo, tamanioPagina);
+
+	int i;
+	for(i = 1; i <= paginasCodigo; i++) {
+		char* codigoParcial = list_get(codigosParciales, i-1);
+		int tamanioCodigoParcial = strlen(codigoParcial);
+		t_almacenarBytes* almacenarBytes = malloc(sizeof(t_almacenarBytes));
+		almacenarBytes->pid = pid;
+		almacenarBytes->pagina = i;
+		almacenarBytes->offset = 0;
+		almacenarBytes->tamanio = tamanioCodigoParcial;
+		almacenarBytes->buffer = codigoParcial;
+
+		enviar(memoria, ALMACENAR_BYTES, sizeof(t_almacenarBytes), almacenarBytes);
+
+		t_paquete* respuesta = recibir(memoria);
+		if(respuesta->codigo_operacion == ALMACENAR_BYTES_FALLO) {
+			log_error(logger, "No se pudo almacenar codigo en memoria. PID %i Pagina %i Codigo %s",
+					almacenarBytes->pid, almacenarBytes->pagina, (char*) almacenarBytes->buffer);
+			return EXIT_FAILURE_CUSTOM;
+		}
+
+		free(almacenarBytes);
+	}
+
+	list_destroy(codigosParciales);
+
+	log_debug(logger, "Codigo almacenado en memoria");
+	return EXIT_SUCCESS_CUSTOM;
+}
+
+t_list* getCodigosParciales(char* codigo, int size) {
+	t_list* codigosParciales = list_create();
+	int i;
+	int tamanioCodigo = strlen(codigo);
+	for(i = 0; i < tamanioCodigo; i = i + size) {
+		char* codigoParcial = string_substring(codigo, i, size);
+		list_add(codigosParciales,codigoParcial);
+	}
+
+	return codigosParciales;
 }
 
 void planificadorCortoPlazo(){
@@ -1078,26 +1095,19 @@ void planificadorCortoPlazo(){
 		}
 		if(estadoPlanificacion){
 			yaMeFijeReady = false;
-			sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
+			//sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
+			pthread_mutex_lock(&mutex_config);
+			//socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
 
-			if(flag==0){
-				pthread_mutex_lock(&mutex_config);
-				socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
+			pthread_mutex_lock(&mutex_ready);
+			proceso = queue_pop(cola_ready);
+			pthread_mutex_unlock(&mutex_ready);
 
-				pthread_mutex_lock(&mutex_ready);
-				proceso = queue_pop(cola_ready);
-				pthread_mutex_unlock(&mutex_ready);
+			log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
 
-				log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
+			mandarAEjecutar(proceso, socketCPULibre);
 
-				mandarAEjecutar(proceso, socketCPULibre);
-
-				pthread_mutex_unlock(&mutex_config);
-			}
-			else{
-				flag=0;
-			}
-
+			pthread_mutex_unlock(&mutex_config);
 		}
 		else{
 			printf("PLANIF DETENIDA \n");
@@ -1680,49 +1690,4 @@ t_paquete* almacenarBytesHeapMemoria(int pid, int pagina, int offset, int size, 
 
 
 
-}
-
-void abortar(t_proceso* proceso){
-	enviar(proceso->socketConsola, ABORTADO_CPU, sizeof(int), &proceso->pcb->pid);
-	pthread_mutex_lock(&mutex_exit);
-	destruirCONTEXTO(proceso->pcb);
-	queue_push(cola_exit, proceso);
-	pthread_mutex_unlock(&mutex_exit);
-
-	enviar(memoria, FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
-
-}
-
-
-void finalizarProgramaKernel(int* socket, t_paquete* paquete){
-	t_proceso* proceso;
-
-	pthread_mutex_lock(&mutex_exec);
-	proceso= obtenerProcesoSocketCPU(cola_exec, socket);
-	pthread_mutex_unlock(&mutex_exec);
-
-	log_info("Se recibio proceso %d por fin de ejecucion", proceso->pcb->pid);
-
-	pthread_mutex_lock(&mutex_exit);
-	destruirCONTEXTO(proceso->pcb);
-	queue_push(cola_exit, proceso);
-	pthread_mutex_unlock(&mutex_exit);
-	queue_push(cola_CPU_libres, (void*)socket);
-	sem_post(&sem_cpu);
-	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
-	enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
-}
-
-
-void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
-	int i;
-
-	for(i=0; i < strlen((char*)sem_ids)/sizeof(char*);i++){
-		if(strcmp((char*)sem_ids[i], semaforo) == 0){
-			queue_push(cola_semaforos[i], proceso);
-			return;
-		}
-	}
-	log_error(logger,"No encontre el semaforo");
-	exit(0);
 }

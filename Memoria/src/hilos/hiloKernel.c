@@ -46,7 +46,7 @@ void* hiloServidorKernel(void* arg) {
             	paginasCodigo = ((t_inicializar_proceso*) paqueteRecibido->data)->paginasCodigo;
             	tamanioCodigo = ((t_inicializar_proceso*) paqueteRecibido->data)->sizeCodigo;
             	inicializarProceso(pid, paginasRequeridas);
-                almacenarCodigo(pid, paginasCodigo, codigo); //esto no va a aca
+
                 //codigo y stack o stack y heap
                 break;
             case ASIGNAR_PAGINAS:
@@ -63,7 +63,30 @@ void* hiloServidorKernel(void* arg) {
             	pagina = ((t_solicitudBytes*)(paqueteRecibido->data))->pagina;
             	offset = ((t_solicitudBytes*)(paqueteRecibido->data))->offset;
             	tamanio = ((t_solicitudBytes*)(paqueteRecibido->data))->tamanio;
-            	solicitarBytesDePagina(pid, pagina, offset, tamanio);
+            	void* bufferAux = solicitarBytesDePagina(pid, pagina, offset, tamanio);
+				if(bufferAux == EXIT_FAILURE_CUSTOM) {
+					int* fallo = EXIT_FAILURE_CUSTOM;
+					enviar(socketClienteKernel, SOLICITAR_BYTES_FALLO, sizeof(int), &fallo);
+					log_error(logger, "No se encontraron los bytes solicitados: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
+				}
+				enviar(socketClienteKernel, SOLICITAR_BYTES_OK, tamanio, bufferAux);
+				log_debug(logger, "PID: %i leyo %i bytes de la pagina %i con offset %i y tamanio %i", pid, pagina, offset, tamanio);
+            	break;
+            case ALMACENAR_BYTES:
+            	pid = ((t_almacenarBytes*)(paqueteRecibido->data))->pid;
+            	pagina = ((t_almacenarBytes*)(paqueteRecibido->data))->pagina;
+            	offset = ((t_almacenarBytes*)(paqueteRecibido->data))->offset;
+            	tamanio = ((t_almacenarBytes*)(paqueteRecibido->data))->tamanio;
+            	void* buffer = ((t_almacenarBytes*)(paqueteRecibido->data))->buffer;
+            	int exito = almacenarBytesEnPagina(pid, pagina, offset, tamanio, buffer);
+            	if(exito == EXIT_FAILURE_CUSTOM) {
+					int* fallo = EXIT_FAILURE_CUSTOM;
+					enviar(socketClienteKernel, ALMACENAR_BYTES_FALLO, sizeof(int), &fallo);
+					log_error(logger, "No se pudieron almacenar bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
+				}
+				int* ok = EXIT_SUCCESS_CUSTOM;
+				enviar(socketClienteKernel, ALMACENAR_BYTES_OK, sizeof(int), &ok);
+				log_debug(logger, "Almacenados bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
             	break;
             default:
 				log_error(logger, "Exit por hilo Kernel");

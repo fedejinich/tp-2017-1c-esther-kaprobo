@@ -25,7 +25,5 @@ int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* b
 	}
 
 	log_error(logger, "No se pudieron almacenar %i bytes de PID %i en pagina %i con offset %i", tamanio, pid, pagina, offset);
-	//escribirFrame();
-
-
+	return EXIT_FAILURE_CUSTOM;
 }

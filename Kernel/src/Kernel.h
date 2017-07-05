@@ -54,9 +54,6 @@ typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
 
 //Globales
 
-volatile int flag=0;
-int flagCPU = 0;
-
 //PID dando vueltas
 int cantidadDeProgramas  = 0;
 
@@ -127,6 +124,9 @@ t_queue * cola_block;
 t_queue * cola_exit;
 
 int cant_new, cant_ready, cant_exec, cant_block, cant_exit = 0;
+
+
+t_queue** colas_ios;
 
 
 t_queue * cola_CPU_libres;
@@ -214,8 +214,11 @@ un_socket conectarConLaMemoria();
 //Creacion Programa
 void planificadorCortoPlazo();
 void mandarAEjecutar(t_proceso* proceso, int socket);
-int enviarCodigoAMemoria(char* codigo, int size, t_proceso* proceso, codigosMemoria codigoOperacion);
+
+int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* proceso);
 int almacenarCodigoMemoria(int pid, int paginasCodigo, char* codigo);
+t_list* getCodigosParciales(char* codigo, int size);
+
 int pedirPaginasParaProceso(int pid);
 t_proceso* crearPrograma(int socketC , t_paquete* paquete);
 int nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
@@ -230,7 +233,6 @@ t_pcb* desserializarPCB(char* serializado);
 void destruirPCB(t_pcb* pcb);
 int* buscarSemaforo(char*semaforo);
 void escribeSemaforo(char* semaforo, int valor);
-void bloqueoSemaforo(t_proceso* proceso, char* semaforo);
 void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido);
 
 void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido);
@@ -250,9 +252,9 @@ int reservarPaginaHeap(int pid,int pagina);
 void compactarPaginaHeap( int pagina, int pid);
 
 int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, int tamanio);
+void liberarBloqueHeap(int pid, int pagina, int offset);
 t_paquete* solicitarBytesHeapMemoria(int pid, int pagina, int offset, int size);
 t_paquete* almacenarBytesHeapMemoria(int pid, int pagina, int offset, int size, void* buffer);
-
 
 
 //CAPA Filesystem

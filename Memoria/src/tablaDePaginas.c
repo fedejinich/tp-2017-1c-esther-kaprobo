@@ -217,7 +217,7 @@ int tablaDePaginasSize() {
 	return frames;
 }
 
-int reservarPaginas(int pid, int paginasAReservar) {
+int reservarPaginas(int pid, int paginasAReservar) { // LA PRIMERA PAGINA SIEMPRE ES LA 1
 	int i;
 	for(i = 1; i <= paginasAReservar; i++) {
 		int pagina = i;
@@ -231,7 +231,7 @@ int reservarPaginas(int pid, int paginasAReservar) {
 		int escribio = escribirTablaDePaginas(frameDisponible, pid, pagina);
 		if(escribio == EXIT_FAILURE_CUSTOM) {
 			log_error(logger, "No se pudo reservar la pagina %i para el PID %i", pagina, pid);
-			return EXIT_FAILURE;
+			return EXIT_FAILURE_CUSTOM;
 		}
 	}
 
