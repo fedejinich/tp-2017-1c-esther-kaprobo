@@ -337,6 +337,38 @@ void liberarEnHeap(t_puntero puntero){
 }
 
 t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flags){
+	//Defino variables locales
+	t_descriptor_archivo decriptorArchivo;
+	t_envioDeDatosKernelFSAbrir* paquete;
+	char* permisos = string_new();
+	int pid;
+	int resultado;
+	//Obtengo el pid
+	pid = pcb->pid;
+	//Genero la cadena de permisos
+	if(flags.creacion){
+		string_append(&permisos,'c');
+	}
+	if(flags.escritura){
+		string_append(&permisos,'r');
+	}
+	if(flags.lectura){
+		string_append(&permisos,'w');
+	}
+	//Cargo los datos en el paquete
+	paquete->pid = pid;
+	paquete->path = direccion;
+	paquete->permisos = permisos;
+	//Envio los datos a kernel con el codigo
+	enviar(kernel,ABRIR_ARCHIVO,sizeof(t_envioDeDatosKernelFSAbrir),paquete);
+	//recivo el resultado
+	resultado = recibir(kernel);
+	//Analizo el resultado
+	if(resultado != ARCHIVO_ABIERTO){
+		//Termina el proceso porque no se pudo abrir arhcivo
+		return 0;
+	}
+	//Deberia recibir de kernel el arch.
 	t_descriptor_archivo* archi;
 	return archi;
 }
