@@ -22,8 +22,20 @@ int inicializarProceso(int pid, int paginasRequeridas) {
 		log_info(logger, "Reservando una pagina");
 
 	if(paginasDisponibles(pid, paginasRequeridas)) {
-		reservarPaginas(pid, paginasRequeridas);
-		int* ok = (int*) 1; //si saco esto y dejo el 1  en el paquete me tira segmentation fault
+		int exito = reservarPaginas(pid, paginasRequeridas);
+
+		if(exito == EXIT_FAILURE_CUSTOM) {
+			int* fallo = (int*) EXIT_FAILURE_CUSTOM; //si saco esto y dejo el -1  en el paquete me tira segmentation fault
+			enviar(socketClienteKernel, INICIALIZAR_PROCESO_FALLO, sizeof(int), &fallo); //EL DATA ESTA AL PEDO PERO BUEN
+			if(paginasRequeridas > 1)
+				log_error(logger, "No se pueden reservar %i paginas para PID %i", paginasRequeridas, pid);
+			else
+				log_error(logger, "No se puede reservar una pagina para PID %i", pid);
+
+			return EXIT_FAILURE_CUSTOM;
+		}
+
+		int* ok = (int*) EXIT_SUCCESS_CUSTOM;
 		enviar(socketClienteKernel, INICIALIZAR_PROCESO_OK, sizeof(int), &ok); //EL DATA ESTA AL PEDO PERO BUEN
 
 		if(paginasRequeridas > 1)
@@ -180,7 +192,6 @@ int almacenarCodigo(int pid, int paginasCodigo, char* codigo) {
 		int tamanioCodigoParcial = strlen(codigoParcial);
 		log_warning(logger, "escribirFrame(%i + %i, 0, %i, %i", primeraPagina, i, tamanioCodigoParcial, strlen(codigoParcial));
 		escribirFrame(primeraPagina + i, 0, tamanioCodigoParcial, codigoParcial);
-
 	}
 
 	log_info(logger, "Codigo almacenado en memoria");
