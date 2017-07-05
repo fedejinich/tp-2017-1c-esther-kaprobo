@@ -64,7 +64,7 @@ int main() {
 			enviar(socketKernel, CREAR_ARCHIVO, 0, 0);
 			free(path);
 			break;
-		case BORRAR_ARCHIVO: //Porq no toma BORRAR_ARCHIVO?
+		case BORRAR_ARCHIVO:
 			path = malloc(paquete->tamanio);
 			memcpy(path, paquete->data, paquete->tamanio);
 			log_info(logger, "Path: %s", path);
@@ -86,7 +86,23 @@ int main() {
 			enviar(socketKernel, OBTENER_DATOS, size, data);
 			free(data);
 			break;
-		case GUARDAR_DATOS: //FALTA
+		case GUARDAR_DATOS:
+			memcpy(&tmpsize, paquete->data, sizeof(t_num));
+			tmpoffset += sizeof(t_num);
+			path = malloc(tmpsize);
+			memcpy(path, paquete->data + tmpoffset, tmpsize);
+			tmpoffset += tmpsize;
+			memcpy(&offset, paquete->data + tmpoffset, sizeof(t_num));
+			tmpoffset += sizeof(t_num);
+			memcpy(&size, paquete->data + tmpoffset, sizeof(t_num));
+			tmpoffset += sizeof(t_num);
+			buffer = malloc(size);
+			memcpy(buffer, paquete->data + tmpoffset, size);
+			log_info(logger, "Path: %s - Offset: %d - Size: %d \n Buffer: %s", path, offset, size, buffer);
+
+			escribirBloquesArchivo(path, offset, size, buffer);
+			enviar(socketKernel, GUARDAR_DATOS, 0, 0);
+			free(data);
 			break;
 		default:
 				log_error(logger, "Se ha desconectado el Kernel");
@@ -345,6 +361,42 @@ char* leerArchivo(void* path){
 	}
 	close(fd);
 	return data;
+}
+
+void escribirBloquesArchivo(void* path, int offset, int size, char* buffer){
+	char *tmpdata, *pathBloque;
+	int i, tmpoffset = 0;
+	char* rutaMetadata = string_new();
+	string_append(&rutaMetadata, puntoMontaje);
+	string_append(&rutaMetadata, path);
+	log_info(logger, "rutaMetadata %s", rutaMetadata);
+
+	t_config* metadata = config_create(rutaMetadata);
+	if(metadata == NULL){
+		log_error(logger, "No se encuentra metadata");
+		fprintf(stderr, "No se encuentra archivo %s\n", rutaMetadata);
+		free(rutaMetadata);
+		free(metadata);
+		return;
+	}
+	int tamanio = config_get_int_value(metadata, "TAMANIO");
+	char** bloques = config_get_array_value(metadata, "BLOQUES");
+
+	for(i = offset / tamanioBloques; i < tamanio; i += tamanioBloques, tmpoffset += tamanioBloques){
+		pathBloque = string_new();
+		string_append(&pathBloque, puntoMontaje);
+		string_append_with_format(&pathBloque, "/Bloques/%s.bin", bloques[i / tamanioBloques]);
+		tmpdata = leerArchivo(pathBloque);
+
+		if(size - tmpoffset > tamanioBloques){//falta
+			memcpy(tmpdata, buffer + tmpoffset, tamanioBloques);
+		}else{
+			memcpy(tmpdata, buffer + tmpoffset, size-tmpoffset);
+		}
+	}
+	free(rutaMetadata);
+	free(pathBloque);
+	free(bloques);
 }
 
 
