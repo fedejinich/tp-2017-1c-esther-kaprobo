@@ -352,7 +352,7 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 
 }
 
-void liberarEnHeap(t_puntero puntero){
+void liberarEnHeap(t_puntero puntero) {
 	t_heapMetadata* metadata = malloc(sizeof(t_heapMetadata));
 	t_direccion* direccion = malloc(sizeof(t_direccion));
 	t_paquete* paquete;
@@ -370,14 +370,6 @@ void liberarEnHeap(t_puntero puntero){
 	if(paquete->codigo_operacion == SOLICITAR_BYTES_FALLO){
 		//VER FALLO
 	}
-
-
-
-
-
-
-
-
 
 }
 
