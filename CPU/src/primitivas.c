@@ -371,7 +371,7 @@ void liberarEnHeap(t_puntero puntero){
 		//VER FALLO
 	}
 
-	metadata
+
 
 
 
