@@ -294,7 +294,7 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 		datos_kernel.TAMANIO_PAG = TAMPAG;
 		datos_kernel.STACK_SIZE = stack_size;
 
-		enviar(socket, DATOS_KERNEL, sizeof(t_datos_kernel), &datos_kernel);
+		enviar(clienteCPUtmp, DATOS_KERNEL, sizeof(t_datos_kernel), &datos_kernel);
 
 		//Ponemos la CPU libre en la cola y hacemos Signal del semaforo CPU
 		queue_push(cola_CPU_libres, (void*)clienteCPUtmp);
@@ -1242,7 +1242,7 @@ void hiloConKer(){
 		case 3:
 			//Obtiene la tabla global de archivos
 			pthread_mutex_lock(&mutexEjecuta);
-
+			mostrarTablaGlobalDeArchivos();
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
 		case 4:
@@ -1338,6 +1338,21 @@ void mostrarInformacionDeProceso(int pid){
 	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
 	t_proceso* proceso = obtenerProcesoPorPID(colaDelProceso, pid);
 	//TODO mostrar info
+}
+
+void mostrarTablaGlobalDeArchivos(){
+	int i = 0;
+	t_entradaTablaGlobalArchivos* entradaDeLaTablaGlobal;
+	printf("Tabla Global de Archivos\n");
+	printf("Index | Open | Path\n");
+	while(entradaDeLaTablaGlobal = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos->elements, i)){
+		printf("     %i |   %i   | %s\n", i, entradaDeLaTablaGlobal->open, entradaDeLaTablaGlobal->path);
+		i++;
+	}
+	if(i == 0){
+		printf("No hay procesos en esta cola\n");
+	}
+	printf("\n");
 }
 
 void cambiarGradoMultiprogramacion(int gradoNuevo){

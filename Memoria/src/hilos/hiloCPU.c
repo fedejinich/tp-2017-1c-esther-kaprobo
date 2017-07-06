@@ -27,7 +27,8 @@ void* hiloServidorCPU(void* arg) {
 		socketClienteTemp = malloc(sizeof(int));
 		*socketClienteTemp = socketCliente;
 		pthread_t conexionCPU;
-		pthread_create(&conexionCPU, NULL, hiloConexionCPU, (void*)socketClienteTemp);
+		//pthread_create(&conexionCPU, NULL, hiloConexionCPU, (void*)socketClienteTemp);
+		pthread_create(&conexionCPU, NULL, hiloConexionCPU, socketCliente);
 	}
 }
 
