@@ -262,7 +262,8 @@ typedef enum{
 	ARCHIVO_EXISTE = 208,
 	ARCHIVO_ABIERTO = 209,
 	ARCHIVO_NO_SE_PUDO_ABRIR = 210,
-	ARCHIVO_VALIDADO = 211
+	ARCHIVO_VALIDADO = 211,
+	CERRAR_ARCHIVO_FS = 212
 } codigosKernelFileSystem;
 
 int cantidadPaginasCodigo(char* codigo);
