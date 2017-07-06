@@ -67,6 +67,8 @@ void inicializar(){
 	cola_CPU_libres = queue_create();
 
 	listaAdminHeap = list_create();
+	tablaGlobalDeArchivos = list_create();
+	tablaDeArchivosPorProceso = list_create();;
 }
 
 void cargarConfiguracion() {
@@ -642,7 +644,7 @@ int chequearTablaGlobal(char* path){
 int buscarEntradaEnTablaGlobal(char* path){
 	int a;
 	t_entradaTablaGlobalArchivos* entrada;
-	while(entrada = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos->elements, a)){
+	while(entrada = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, a)){
 		if (entrada->path == path){
 			entrada->open++;
 			return a;
@@ -726,7 +728,7 @@ t_tablaDeArchivosDeUnProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int
 }
 
 t_entradaTablaGlobalArchivos* obtenerEntradaTablaGlobalDeArchivos(t_tablaDeArchivosDeUnProceso* entradaTablaDelProceso){
-	return list_get(tablaGlobalDeArchivos->elements, entradaTablaDelProceso->globalFD);
+	return list_get(tablaGlobalDeArchivos, entradaTablaDelProceso->globalFD);
 }
 
 void borrarArchivoDeTabla(int pid, int fd){
@@ -1341,16 +1343,20 @@ void mostrarInformacionDeProceso(int pid){
 }
 
 void mostrarTablaGlobalDeArchivos(){
-	int i = 0;
-	t_entradaTablaGlobalArchivos* entradaDeLaTablaGlobal;
 	printf("Tabla Global de Archivos\n");
-	printf("Index | Open | Path\n");
-	while(entradaDeLaTablaGlobal = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos->elements, i)){
-		printf("     %i |   %i   | %s\n", i, entradaDeLaTablaGlobal->open, entradaDeLaTablaGlobal->path);
-		i++;
+	if(list_size(tablaGlobalDeArchivos) > 0){
+		int i = 0;
+		t_entradaTablaGlobalArchivos* entradaDeLaTablaGlobal;
+		printf("Index | Open | Path\n");
+		entradaDeLaTablaGlobal = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, i);
+		printf("path %s\n", entradaDeLaTablaGlobal->path);
+		while(entradaDeLaTablaGlobal = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, i)){
+			printf("     %i |   %i   | %s\n", i, entradaDeLaTablaGlobal->open, entradaDeLaTablaGlobal->path);
+			i++;
+		}
 	}
-	if(i == 0){
-		printf("No hay procesos en esta cola\n");
+	else{
+		printf("No hay archivos en la tabla global\n");
 	}
 	printf("\n");
 }

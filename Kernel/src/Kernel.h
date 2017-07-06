@@ -134,8 +134,8 @@ t_queue * cola_CPU_libres;
 t_queue ** cola_semaforos;
 
 //CAPA FILESYSTEM
-t_queue* tablaGlobalDeArchivos;
-t_queue* tablaDeArchivosPorProceso;
+t_list* tablaGlobalDeArchivos;
+t_list* tablaDeArchivosPorProceso;
 
 /*
  *
