@@ -17,7 +17,8 @@
 #include "funcionHash/funcionHash.h"
 #include "cache/cache.h"
 #include "operaciones.h"
-
+#include "funcionHash/funcionHash.h"
+#include "cache/cache.h"
 
 #define CUSTOM_ERROR -23
 
