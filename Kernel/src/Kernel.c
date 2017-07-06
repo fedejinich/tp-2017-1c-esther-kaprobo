@@ -426,8 +426,8 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 	if(cantidadDeProgramas >= grado_multiprog){
 
-		int* basura = 1;
-		enviar(socket, ERROR_MULTIPROGRAMACION, sizeof(int), &basura);
+		int basura = 999;
+		enviar((un_socket)socket, ERROR_MULTIPROGRAMACION, sizeof(int), (void*)basura);
 
 		pthread_mutex_lock(&mutex_new);
 		t_proceso* proceso = queue_pop(cola_new);
@@ -445,7 +445,7 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	}
 
 	//Envio todos los datos a Memoria y espero respuesta
-	char* codigo = (char*) paquete->data;
+	char* codigo = paquete->data;
 	exito = inicializarProcesoYAlmacenarEnMemoria(codigo, paquete->tamanio, proceso);
 
 	if(exito == EXIT_SUCCESS_CUSTOM){
@@ -459,14 +459,14 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 		procesoin = queue_pop(cola_new);
 		pthread_mutex_unlock(&mutex_new);
 
-		log_info(logger, "KERNEL: saco proceso %d de NEW mando a READY", procesoin->pcb->pid);
+		log_debug(logger, "KERNEL: saco proceso %d de NEW mando a READY", procesoin->pcb->pid);
 
 		pthread_mutex_lock(&mutex_ready);
 		queue_push(cola_ready,procesoin);
 		pthread_mutex_unlock(&mutex_ready);
 
 		sem_post(&sem_ready);
-		printf("pase todos semaforos bien \n");
+
 	}
 	else {
 		//NO SIEMPRE VA A SER POR FALTA DE MEMORIA
@@ -474,7 +474,7 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 		log_error(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
 		//ENVIO A CONSOLA ERROR POR MEMORIA
-		enviar(socket, EnvioErrorAConsola, sizeof(int), NULL);
+		enviar((un_socket)socket, EnvioErrorAConsola, sizeof(int), NULL);
 
 		//Se pasa de NEW directo a la cola EXIT con ExitCode -1
 		sem_wait(&sem_new);
@@ -491,8 +491,8 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 
 void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
-	t_proceso* procesoPideSem;
-	t_paquete* paqueteNuevo;
+	t_proceso* procesoPideSem = malloc(sizeof(t_proceso));
+	t_paquete* paqueteNuevo = malloc(sizeof(t_paquete));
 	t_pcb* pcb_temporal;
 	pthread_mutex_lock(&mutex_exec);
 	procesoPideSem = obtenerProcesoSocketCPU(cola_exec, socketActivo);
@@ -507,7 +507,7 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 		mandar =1;
 		log_info(logger, "KERNEL: Recibi proceso %d mando a bloquear por semaforo %s", procesoPideSem->pcb->pid, paqueteRecibido->data);
 
-		enviar(socketActivo, PEDIDO_SEMAFORO_FALLO, sizeof(int), &mandar);//1 bloquea proceso
+		enviar((un_socket)socketActivo, PEDIDO_SEMAFORO_FALLO, sizeof(int), &mandar);//1 bloquea proceso
 		paqueteNuevo = recibir(socketActivo);
 		pcb_temporal = desserializarPCB(paqueteNuevo->data);
 		liberar_paquete(paqueteNuevo);
@@ -533,7 +533,7 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 	else{
 		escribeSemaforo(paqueteNuevo->data,*buscarSemaforo(paqueteRecibido)-1);
 		mandar = 0;
-		enviar(socketActivo, PEDIDO_SEMAFORO_OK, sizeof(int), &mandar);
+		enviar((un_socket)socketActivo, PEDIDO_SEMAFORO_OK, sizeof(int), &mandar);
 		pthread_mutex_lock(&mutex_exec);
 		queue_push(cola_exec, procesoPideSem);
 		pthread_mutex_unlock(&mutex_exec);
@@ -549,11 +549,11 @@ void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido){
 	t_proceso* proceso;
 	pthread_mutex_lock(&mutex_exec);
-	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
+	proceso = obtenerProcesoSocketCPU(cola_exec, (un_socket)socketActivo);
 	queue_push(cola_exec, proceso);
 	pthread_mutex_unlock(&mutex_exec);
 	if(proceso->abortado==false)
-		enviar(proceso->socketConsola, IMPRIMIR_CONSOLA, paqueteRecibido->tamanio, paqueteRecibido->data);
+		enviar((un_socket)(proceso->socketConsola), IMPRIMIR_CONSOLA, paqueteRecibido->tamanio, paqueteRecibido->data);
 	return;
 }
 
@@ -566,7 +566,7 @@ void abrirArchivo(int* socketActivo, t_paquete* paquete){
 
 	if(validarPermisoDeApertura(pid, path, permisos)){
 		//se manda al fs el path
-		enviar(fileSystem, SOLICITUD_APERTURA_ARCHIVO, sizeof(path), path);
+		enviar((un_socket)fileSystem, SOLICITUD_APERTURA_ARCHIVO, sizeof(path), path);
 
 		t_paquete* paqueteResultado = recibir(memoria);
 
@@ -631,8 +631,9 @@ int chequearTablaGlobal(char* path){
 	}
 	else{
 		t_entradaTablaGlobalArchivos* entrada = malloc(sizeof(t_entradaTablaGlobalArchivos));
-		entrada->path = path;
+		entrada->path = path;//VER
 		entrada->open = 1;
+
 		list_add(tablaGlobalDeArchivos, entrada);
 		fd = buscarEntradaEnTablaGlobal(path);
 	}
@@ -643,7 +644,7 @@ int buscarEntradaEnTablaGlobal(char* path){
 	int a;
 	t_entradaTablaGlobalArchivos* entrada;
 	while(entrada = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos->elements, a)){
-		if (entrada->path == path){
+		if (entrada->path == path){//VER
 			entrada->open++;
 			return a;
 		}
@@ -678,7 +679,7 @@ void accederArchivo(int* socketActivo, t_paquete* paquete, char operacion){
 	if(strchr(permisos, 'r') != NULL){
 		enviar(fileSystem, codigoOperacion, sizeof(datos), datos);
 		char* buffer = recibir(fileSystem);
-		enviar(socketActivo, OBTENER_DATOS, datos->tamanio, buffer);
+		enviar((un_socket)socketActivo, OBTENER_DATOS, datos->tamanio, buffer);
 	}
 	else{
 		finalizarProceso(pid, exitCode);
@@ -705,7 +706,7 @@ void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido){
 	pthread_mutex_unlock(&mutex_exec);
 	pthread_mutex_lock(&mutex_config);
 	valor = valorVariable(paqueteRecibido->data);
-	enviar(socketActivo,SOLICITAR_VARIABLE_OK, sizeof(int), &valor);
+	enviar((un_socket)socketActivo,SOLICITAR_VARIABLE_OK, sizeof(int), &valor);
 	pthread_mutex_unlock(&mutex_config);
 	return;
 }
@@ -782,11 +783,11 @@ void escribeSemaforo(char* semaforo, int valor){
 t_proceso* crearPrograma(int socketC , t_paquete* paquete){
 	int size = paquete->tamanio;
 	char* codigo = paquete->data;
+	//printf("codigo: \n %s \n", codigo);
 	t_proceso* procesoNuevo;
 	t_pcb * pcb;
-	int cuantasPaginas, estado, i;
-	int* indiceCodigo;
-	int sizeIndiceCodigo;
+	int   i;
+
 	t_metadata_program* metadata;
 
 	pcb = nalloc(sizeof(t_pcb));
@@ -799,6 +800,7 @@ t_proceso* crearPrograma(int socketC , t_paquete* paquete){
 	pidcounter ++;
 
 	metadata = metadata_desde_literal(codigo);
+	printf("intrucciones: %d \n", metadata->instrucciones_size);
 
 	procesoNuevo->pcb->paginasDeCodigo = ceil((double)size / (double)TAMPAG);
 	procesoNuevo->pcb->sizeIndiceDeCodigo = metadata->instrucciones_size;
@@ -1001,7 +1003,7 @@ void * nalloc(int tamanio){
 }
 
 int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* proceso){
-	t_inicializar_proceso* paqueteProceso;
+	t_inicializar_proceso* paqueteProceso = malloc(sizeof(t_inicializar_proceso));
 
 	int paginas = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria;
 	log_info(logger, "KERNEL: cantidad de paginas de pid %d: %d", proceso->pcb->pid, paginas);
@@ -1012,8 +1014,8 @@ int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* pro
 	paqueteProceso->paginasStack= proceso->pcb->paginasDeMemoria;
 	paqueteProceso->sizeCodigo = size;
 	paqueteProceso->pid = proceso->pcb->pid;
-
-	enviar(memoria, INICIALIZAR_PROCESO, (size+3*sizeof(int)),paqueteProceso); //al pedo el tamanio
+	printf("paquetearmado\n");
+	enviar(memoria, INICIALIZAR_PROCESO, sizeof(t_inicializar_proceso),paqueteProceso); //al pedo el tamanio
 
 	t_paquete * paquete;
 	paquete = recibir(memoria);
@@ -1040,7 +1042,7 @@ int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* pro
 int almacenarCodigoEnMemoria(int pid, int paginasCodigo, char* codigo) {
 	log_info(logger, "Almacenando codigo en memoria. PID %i Paginas codigo %i, Codigo %s", pid, paginasCodigo, codigo);
 
-	t_list* codigosParciales = getCodigosParciales(codigo, tamanioPagina);
+	t_list* codigosParciales = getCodigosParciales(codigo, TAMPAG);
 
 	int i;
 	for(i = 1; i <= paginasCodigo; i++) {
@@ -1078,6 +1080,7 @@ t_list* getCodigosParciales(char* codigo, int size) {
 	for(i = 0; i < tamanioCodigo; i = i + size) {
 		char* codigoParcial = string_substring(codigo, i, size);
 		list_add(codigosParciales,codigoParcial);
+
 	}
 
 	return codigosParciales;
@@ -1095,9 +1098,9 @@ void planificadorCortoPlazo(){
 		}
 		if(estadoPlanificacion){
 			yaMeFijeReady = false;
-			//sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
+			sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
 			pthread_mutex_lock(&mutex_config);
-			//socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
+			socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
 
 			pthread_mutex_lock(&mutex_ready);
 			proceso = queue_pop(cola_ready);
@@ -1363,7 +1366,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketCPU);
 	queue_push(cola_exec, proceso);
-	pthread_mutex_unlock(&cola_exec);
+	pthread_mutex_unlock(&mutex_exec);
 
 	int pid;
 	int tamanio;
@@ -1395,7 +1398,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	if(resultado<0){
 		// VER NO SE PUDO RESERVAR BLOQUE
 	}
-	t_direccion* direccion;
+	t_direccion* direccion = malloc(sizeof(t_direccion));
 	direccion->pagina = puntero->pagina;
 	direccion->offset = puntero->offset;
 	direccion->size = tamanio;
@@ -1550,7 +1553,7 @@ int reservarPaginaHeap(int pid,int pagina){
 
 	memcpy(buffer, &aux, sizeof(t_heapMetadata));
 
-	t_pedidoDePaginasKernel* pedido;
+	t_pedidoDePaginasKernel* pedido = malloc(sizeof(t_pedidoDePaginasKernel));
 	pedido->pid = pid;
 	pedido->paginasAPedir = 1;
 
