@@ -550,6 +550,7 @@ void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 }
 
 void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido){
+	// ver ME llega en el paquete el FD, la info y el tamanio, hay que definir como hacerlo bien
 	t_proceso* proceso;
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, (un_socket)socketActivo);

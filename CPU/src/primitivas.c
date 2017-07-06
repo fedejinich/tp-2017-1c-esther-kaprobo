@@ -323,15 +323,25 @@ void wait_kernel(t_nombre_semaforo identificador_semaforo){
 }
 
 void signal_kernel(t_nombre_semaforo identificador_semaforo){
-	printf("signal\n");
+	log_info(logger, "Primitiva Signal_Kernel");
+	char* semaforo = malloc(strlen(identificador_semaforo)+1);
+	char* barra_cero = "\0";
+	memcpy(semaforo, identificador_semaforo, strlen(identificador_semaforo));
+	memcpy(semaforo + strlen(identificador_semaforo), barra_cero, 1);
+
+	log_debug(logger, "Realizando signal de semaforo %s", semaforo);
+	enviar(kernel, LIBERAR_SEMAFORO, strlen(semaforo)+1, semaforo);
+	free(semaforo);
+
+	log_debug(logger, "Finalizo Signal_Kernel");
+	return;
 }
 
 t_puntero reservarEnHeap(t_valor_variable espacio){
 	log_info(logger, "Primitiva alocar");
 	t_pedidoHeap* pedido = malloc(sizeof(t_pedidoHeap));
 	t_paquete* paquete = malloc(sizeof(t_paquete));
-	int pagina, offset;
-	int resultado;
+
 	int pid = pcb->pid;
 
 	pedido->pid = pid;
@@ -344,7 +354,8 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 		//VER ABORTAR PROCESO
 	}
 
-	t_direccion* dire = (t_direccion*)paquete->data;
+	t_direccion* dire = malloc(sizeof(t_direccion));
+	dire = (t_direccion*)paquete->data;
 
 	t_puntero puntero = dire->pagina * tamanio_pag + dire->offset;
 	log_info(logger, "Puntero %d", puntero);
