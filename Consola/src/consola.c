@@ -189,15 +189,16 @@ void hiloNuevoPrograma(){
 
 	char* scriptParaEnviar = malloc(strlen(script));
 	memcpy(scriptParaEnviar, script, strlen(script));
+	log_debug(logger, "Se pudo armar el Script correctamente");
 
 	//Abro conexion con Kernel, realizo Handshake
 	log_info(logger,"Inicio de conexion con Kernel");
 
 	// funcion deSockets
-	kernel = conectar_a(ip_kernel,puerto_kernel);
+	//kernel = conectar_a(ip_kernel,puerto_kernel);
 
-	if (kernel==0){
-		log_error(logger,"CONSOLA: No se pudo conectar con el Kernel");
+	if (kernel=conectar_a(ip_kernel,puerto_kernel)<0){
+		log_warning(logger,"CONSOLA: No se pudo conectar con el Kernel");
 		exit (EXIT_FAILURE);
 	}
 	log_info(logger,"CONSOLA: Kernel recibio nuestro pedido de conexion, iniciando HANDSHAKE");

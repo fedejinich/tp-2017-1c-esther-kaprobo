@@ -919,7 +919,7 @@ int conectarConLaMemoria(){
 	log_info(logger, "MEMORIA: Inicio de conexion");
 	un_socket socketMemoria = conectar_a(ip_memoria, puerto_memoria);
 
-	if (socketMemoria == 0){
+	if (socketMemoria < 0){
 		log_error(logger, "MEMORIA: No se pudo conectar");
 		pthread_mutex_unlock(&mutex_config);
 		exit (EXIT_FAILURE);
@@ -955,7 +955,7 @@ int conectarConFileSystem(){
 	log_info(logger, "FILESYSTEM: Inicio de conexion");
 	un_socket socketFileSystem = conectar_a(ip_fs, (char*)puerto_fs);
 
-	if (socketFileSystem == 0){
+	if (socketFileSystem < 0){
 		log_error(logger, "No se pudo conectar con FileSystem");
 		exit (EXIT_FAILURE);
 	}

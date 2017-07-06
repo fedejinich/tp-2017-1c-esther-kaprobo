@@ -20,8 +20,7 @@ un_socket conectar_a(char *IP, char* Port) {
 	int socketCliente = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (connect(socketCliente, (void*) &direccionServidor, sizeof(direccionServidor)) !=0){
-		perror("No se pudo conectar");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	return socketCliente;
