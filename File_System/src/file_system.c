@@ -11,7 +11,7 @@ int main() {
 	log_info(logger,"Socket %d creado y escuchando", socketKernel);
 	socketKernel = aceptar_conexion(fileSystemServer);
 
-	bool resultado = esperar_handshake(socketKernel,KernelValidacion);
+	bool resultado = esperar_handshake(socketKernel,HandshakeFileSystemKernel);
 
 	if(resultado){
 		log_info(logger,"Conexión aceptada del KERNEL %d!!", socketKernel);
@@ -24,8 +24,10 @@ int main() {
 		exit (EXIT_FAILURE);
 	}
 	while(1){
+		log_info(logger, "Esperando Pedido de Kernel");
 		//Recibimos pedidos de kernel y se hace switch dependiendo operacion
 		paquete = recibir(socketKernel);
+		log_info(logger, "Se recibio paquete desde Kernel");
 		void* path, *buffer;
 		int tmpsize = 0, tmpoffset = 0;
 		t_num offset, size;

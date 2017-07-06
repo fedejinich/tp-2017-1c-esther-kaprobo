@@ -219,7 +219,7 @@ void hiloNuevoPrograma(){
 	//bloqueo mutex, para que solo exista la conexion de un hilo enviando los datos
 	pthread_mutex_lock(&mutexConexion);
 
-	enviar(kernel, ENVIAR_SCRIPT, strlen(script),scriptParaEnviar);
+	enviar(kernel, ENVIAR_SCRIPT, strlen(script)+1,scriptParaEnviar);
 
 	log_info(logger,"Se envio el script a ejecutar");
 	newPid = recibir(kernel);

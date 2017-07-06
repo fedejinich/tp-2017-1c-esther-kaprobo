@@ -58,7 +58,7 @@ typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
 int cantidadDeProgramas  = 0;
 
 //Numero pid a asignar a cada programa, no confundir
-int pidcounter = 0;
+int pidcounter = 1;
 
 //Logger
 t_log* logger;

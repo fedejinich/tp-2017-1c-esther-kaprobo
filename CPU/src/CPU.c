@@ -185,6 +185,7 @@ void sig_handler2(int signo) {
 	programaAbortado=1;
 
 	log_info(logger,"Se detecto señal sig int CRT C.\n");
+	exit(0);//VER SACAR DESPUES
 	return;
 }
 

@@ -53,7 +53,7 @@ void inicializar(){
 	mostrarConfiguracion();
 
 	//Sockets
-	//fileSystem = conectarConFileSystem();
+	fileSystem = conectarConFileSystem();
 	memoria = conectarConLaMemoria();
 	prepararSocketsServidores();
 
@@ -425,9 +425,9 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	queue_push(cola_new, proceso);
 	sem_post(&sem_new); // capaz que no es necesario, para que saque siempre 1, y no haga lio
 	pthread_mutex_unlock(&mutex_new);
-
+	pthread_mutex_lock(&mutexGradoMultiprogramacion);
 	if(cantidadDeProgramas >= grado_multiprog){
-
+		pthread_mutex_unlock(&mutexGradoMultiprogramacion);
 		int basura = 999;
 		enviar((un_socket)socket, ERROR_MULTIPROGRAMACION, sizeof(int), (void*)basura);
 
@@ -445,6 +445,7 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 		return -1;
 	}
+	pthread_mutex_unlock(&mutexGradoMultiprogramacion);
 
 	//Envio todos los datos a Memoria y espero respuesta
 	char* codigo = paquete->data;
@@ -951,7 +952,7 @@ int conectarConLaMemoria(){
 
 int conectarConFileSystem(){
 	log_info(logger, "FILESYSTEM: Inicio de conexion");
-	un_socket socketFileSystem = conectar_a(ip_fs, puerto_fs);
+	un_socket socketFileSystem = conectar_a(ip_fs, (char*)puerto_fs);
 
 	if (socketFileSystem == 0){
 		log_error(logger, "No se pudo conectar con FileSystem");
@@ -1066,7 +1067,7 @@ int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* pro
 		return EXIT_FAILURE_CUSTOM;
 	}
 
-	log_debug(logger, "Proceso inicializado. PID %i");
+	log_debug(logger, "Proceso inicializado. PID %i", proceso->pcb->pid);
 
 	liberar_paquete(paquete);
 
