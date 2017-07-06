@@ -14,7 +14,7 @@ void escribirFrame(int frame, int offset, int tamanio, void * contenido) {
 	//int desplazamiento = frame * frame_size;
 	//sleep(retardo_memoria); //retardo de memoria
 
-	memcpy(&framePointer[frame] + offset, contenido, tamanio);
+	memcpy(&framePointer[frame] + offset, &contenido, tamanio);
 
 }
 
