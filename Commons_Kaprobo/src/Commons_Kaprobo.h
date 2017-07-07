@@ -133,7 +133,7 @@ un_socket socket_escucha(char* IP, char* Port);
  *
  */
 
-void enviar(un_socket socket_envio, int codigo_operacion, int tamanio,
+void enviar(un_socket socket_envio, int codigo_operacion, int tamanioBuffer,
 		void * data);
 
 /**	@NAME: recibir
@@ -268,7 +268,7 @@ typedef enum{
 
 int cantidadPaginasCodigo(char* codigo);
 
-int almacenarEnMemoria(un_socket socketMemoria, int pid, int pagina, int offset, int tamanio, void* buffer, t_log* logger);
+int almacenarEnMemoria(un_socket socketMemoria, int pid, int pagina, int offset, int tamanioBuffer, void* buffer, t_log* logger);
 
 
 #endif /* COMMONS_KAPROBO_H_ */

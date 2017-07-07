@@ -176,8 +176,6 @@ int almacenarEnMemoria(un_socket socketMemoria, int pid, int pagina, int offset,
 	tamanio++; //el +1 es porque le voy a meter un \0 al buffer
 	void* bufferSerializado = malloc(sizeof(int) * 4 + tamanio);
 
-
-
 	memcpy(bufferSerializado, &pid, sizeof(int));
 	memcpy(bufferSerializado + sizeof(int), &pagina, sizeof(int));
 	memcpy(bufferSerializado + sizeof(int) * 2, &offset, sizeof(int));
