@@ -197,13 +197,15 @@ void hiloNuevoPrograma(){
 	// funcion deSockets
 	//kernel = conectar_a(ip_kernel,puerto_kernel);
 
-	if (kernel=conectar_a(ip_kernel,puerto_kernel)<0){
+	kernel = conectar_a(ip_kernel, puerto_kernel);
+
+	if (kernel < 0){
 		log_warning(logger,"CONSOLA: No se pudo conectar con el Kernel");
 		exit (EXIT_FAILURE);
 	}
 	log_info(logger,"CONSOLA: Kernel recibio nuestro pedido de conexion, iniciando HANDSHAKE");
 
-	bool resultado = realizar_handshake(kernel, 11);
+	bool resultado = realizar_handshake(kernel, HandshakeConsolaKernel);
 	if (resultado){
 		log_info(logger,"Handshake exitoso! Conexion establecida");
 	}

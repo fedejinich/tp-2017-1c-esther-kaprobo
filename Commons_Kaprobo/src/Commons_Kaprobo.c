@@ -186,9 +186,7 @@ int almacenarEnMemoria(un_socket socketMemoria, int pid, int pagina, int offset,
 
 	enviar(socketMemoria, ALMACENAR_BYTES, sizeof(int) * 4 + tamanio, bufferSerializado);
 
-	printf("Voy a recibir\n");
 	t_paquete* paqueteRecibido = recibir(socketMemoria);
-	printf("RECIBI\n");
 
 	if(paqueteRecibido->codigo_operacion == ALMACENAR_BYTES_FALLO) {
 		log_error(logger, "No se pudieron almacenar %i bytes del PID %i en Pagina %i con Offset %i", tamanio, pid, pagina, offset);

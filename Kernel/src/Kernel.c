@@ -447,13 +447,11 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	}
 	pthread_mutex_unlock(&mutexGradoMultiprogramacion);
 
-	//Envio todos los datos a Memoria y espero respuesta
 	char* codigo = paquete->data;
 	exito = inicializarProcesoYAlmacenarEnMemoria(codigo, paquete->tamanio, proceso);
 
 	if(exito == EXIT_SUCCESS_CUSTOM){
-		//Hay espacio asignado
-		//Y se almaceno el codigo en un pid existente em pagina existente
+
 		cantidadDeProgramas++; //sumo un pid mas en ejecucion
 
 		//SACO DE NEW Y MANDO A READY
@@ -476,7 +474,7 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 		//PUEDE FALLAR PORQUE SE QUIERE ALMACENAR CODIGO DE UN PID INEXISTENTE EN TABLA DE PAGINAS
 
 		log_error(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
-		//ENVIO A CONSOLA ERROR POR MEMORIA
+
 		enviar((un_socket)socket, EnvioErrorAConsola, sizeof(int), NULL);
 
 		//Se pasa de NEW directo a la cola EXIT con ExitCode -1
@@ -1045,23 +1043,25 @@ void * nalloc(int tamanio){
 	return retorno;
 }
 
-int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* proceso){
+int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int tamanioCodigo, t_proceso* proceso){
+	log_info(logger, "Inicializando proceso. PID %i", proceso->pcb->pid);
 	t_inicializar_proceso* paqueteProceso = malloc(sizeof(t_inicializar_proceso));
 
-	int paginas = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria;
-	log_info(logger, "KERNEL: cantidad de paginas de pid %d: %d", proceso->pcb->pid, paginas);
+	int paginasTotales = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria;
+	log_info(logger, "Cantidad de paginas totales de PID %i: %i", proceso->pcb->pid, paginasTotales);
+	log_info(logger, "Cantidad de paginas de codigo de PID %i: %i", proceso->pcb->pid, proceso->pcb->paginasDeCodigo);
+	log_info(logger, "Cantidad de paginas de stack de PID %i: %i", proceso->pcb->pid, proceso->pcb->paginasDeMemoria);
 
-	paqueteProceso->codigo=codigo;
-	paqueteProceso->paginasTotales=paginas;
-	paqueteProceso->paginasCodigo=proceso->pcb->paginasDeCodigo;
-	paqueteProceso->paginasStack= proceso->pcb->paginasDeMemoria;
-	paqueteProceso->sizeCodigo = size;
+	paqueteProceso->codigo = codigo;
+	paqueteProceso->paginasTotales = paginasTotales;
+	paqueteProceso->paginasCodigo = proceso->pcb->paginasDeCodigo;
+	paqueteProceso->paginasStack = proceso->pcb->paginasDeMemoria;
+	paqueteProceso->sizeCodigo = tamanioCodigo;
 	paqueteProceso->pid = proceso->pcb->pid;
 
-	enviar(memoria, INICIALIZAR_PROCESO, sizeof(t_inicializar_proceso),paqueteProceso); //al pedo el tamanio
+	enviar(memoria, INICIALIZAR_PROCESO, sizeof(t_inicializar_proceso), paqueteProceso);
 
-	t_paquete * paquete;
-	paquete = recibir(memoria);
+	t_paquete * paquete = recibir(memoria);
 
 	if(paquete->codigo_operacion == INICIALIZAR_PROCESO_FALLO) {
 		log_error(logger, "No se pudo inicializar proceso");
@@ -1072,12 +1072,7 @@ int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* pro
 
 	liberar_paquete(paquete);
 
-	char* codAux = malloc(3);
-	codAux = "asd";
-
-	log_warning(logger, "cod aux %s", codAux);
-
-	int exito = almacenarCodigoEnMemoria(proceso->pcb->pid, proceso->pcb->paginasDeCodigo, codAux);
+	int exito = almacenarCodigoEnMemoria(proceso->pcb->pid, proceso->pcb->paginasDeCodigo, codigo);
 
 	if(exito == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "No se pudo almacenar en memoria el codigo");
@@ -1088,7 +1083,7 @@ int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* pro
 }
 
 int almacenarCodigoEnMemoria(int pid, int paginasCodigo, char* codigo) {
-	log_info(logger, "Almacenando codigo en memoria. PID %i Paginas codigo %i, Codigo %s", pid, paginasCodigo, codigo);
+	log_info(logger, "Almacenando codigo en memoria. PID %i, Paginas codigo %i, Tamanio codigo", pid, paginasCodigo, codigo, strlen(codigo));
 
 	t_list* codigosParciales = getCodigosParciales(codigo, TAMPAG);
 
@@ -1104,7 +1099,7 @@ int almacenarCodigoEnMemoria(int pid, int paginasCodigo, char* codigo) {
 
 	list_destroy(codigosParciales);
 
-	log_debug(logger, "Codigo almacenado en memoria");
+	log_debug(logger, "Codigo de PID %i almacenado en memoria", pid);
 	return EXIT_SUCCESS_CUSTOM;
 }
 

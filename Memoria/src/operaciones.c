@@ -13,14 +13,15 @@ void retardo() {
 }
 
 void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
-	retardo(); //EL RETARDO VA ACA O VA CUANDO EMPIEZA EL ELSE? LA CACHE SE AFECTA POR EL RETARDO?
 	void* buffer = -911;
+
 	log_info(logger, "Solicitando bytes de PID: %i, pagina: %i, offset: %i y tamanio: %i", pid, pagina, offset, tamanio);
 
-	if(estaEnCache(pid, pagina))
+	if(estaEnCache(pid, pagina)) {
 		leerDeCache(pid, pagina);
-	else {
+	} else {
 		retardo();
+
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginasHash(pid, pagina);
 
 		if(entrada == EXIT_FAILURE_CUSTOM) {
@@ -48,7 +49,6 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 }
 
 int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer) {
-	//PEDIDO D ESCRITURA POR PARTE DE CPU
 	retardo();
 
 	tamanio--; //por el \0
@@ -62,7 +62,7 @@ int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* b
 		return EXIT_FAILURE_CUSTOM;
 	}
 
-	log_info(logger, "Frame en el que se van a almacenar %i", frame);
+	log_info(logger, "Frame en el que se va a almacenar %i", frame);
 
 	if(!superaLimiteFrame(offset, tamanio)) {
 		escribirFrame(frame, offset, tamanio, buffer);
