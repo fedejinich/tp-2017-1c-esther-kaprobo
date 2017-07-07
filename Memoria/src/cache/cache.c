@@ -53,16 +53,18 @@ int escribirCache(int pid, int pagina, void* contenido) {
 }
 
 void* leerDeCache(int pid, int pagina) {
+	log_info(logger, "Solicitando bytes de cache. PID %i, Pagina %i ...", pid, pagina);
+
 	incrementarCantidadDeLecturas();
 	t_entradaCache* entrada = getEntradaCache(pid, pagina);
 
 	if(entrada == EXIT_FAILURE_CUSTOM) {
-		log_warning(logger, "No se pudo leer de cache PID %i Pagina %i", pid, pagina);
+		log_warning(logger, "No se pudo completar la solicitud de bytes de cache. PID %i Pagina %i", pid, pagina);
 		return EXIT_FAILURE_CUSTOM;
 	}
 
 	entrada->cantidadDeLecturasSinUsar = 0;
-	log_debug(logger, "Leido de cache PID %i, pagina %i", pid, pagina);
+	log_debug(logger, "Solicitud de bytes de cache exitosa. PID %i Pagina %i", pid, pagina);
 
 	return entrada->contenido;
 }

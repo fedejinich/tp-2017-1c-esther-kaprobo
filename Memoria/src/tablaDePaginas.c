@@ -11,10 +11,8 @@
 void inicializarTablaDePaginas() {
 	log_info(logger,"Inicializando tabla de paginas...");
 
-	//Ubico el puntero a tabla de paginas donde inicia la memoria
 	tablaDePaginas = &memoria[0];
 
-	//Un for para ir escribiendo la tabla de pagians en memoria
 	int nroDeFrameTablaDePaginas;
 	for(nroDeFrameTablaDePaginas = 0; nroDeFrameTablaDePaginas <= frames; nroDeFrameTablaDePaginas++) {
 		t_entradaTablaDePaginas* entradaTablaDePaginas = malloc(sizeof(t_entradaTablaDePaginas));
