@@ -60,8 +60,6 @@ void enviar(un_socket socket_para_enviar, int codigo_operacion, int tamanio, voi
 
 	free(buffer);
 
-	//POR QUE NO ENVIA UN PAQUETE DIRECTAMENTE EN VEZ DE UN BUFFER?
-
 }
 
 t_paquete* recibir(un_socket socket_para_recibir) {
@@ -171,4 +169,36 @@ int cantidadPaginasCodigo(char* codigo) {
 	}
 
 	return cantidad;
+}
+
+int almacenarEnMemoria(un_socket socketMemoria, int pid, int pagina, int offset, int tamanio, void* buffer, t_log* logger) {
+	strcpy(buffer + tamanio, "\0");
+
+	tamanio++; //el +1 es porque le voy a meter un \0 al buffer
+	void* bufferSerializado = malloc(sizeof(int) * 4 + tamanio);
+
+
+
+	memcpy(bufferSerializado, &pid, sizeof(int));
+	memcpy(bufferSerializado + sizeof(int), &pagina, sizeof(int));
+	memcpy(bufferSerializado + sizeof(int) * 2, &offset, sizeof(int));
+	memcpy(bufferSerializado + sizeof(int) * 3, &tamanio, sizeof(int));
+	memcpy(bufferSerializado + sizeof(int) * 4, buffer, tamanio);
+
+	enviar(socketMemoria, ALMACENAR_BYTES, sizeof(int) * 4 + tamanio, bufferSerializado);
+
+	printf("Voy a recibir\n");
+	t_paquete* paqueteRecibido = recibir(socketMemoria);
+	printf("RECIBI\n");
+
+	if(paqueteRecibido->codigo_operacion == ALMACENAR_BYTES_FALLO) {
+		log_error(logger, "No se pudieron almacenar %i bytes del PID %i en Pagina %i con Offset %i", tamanio, pid, pagina, offset);
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	log_debug(logger, "Almacenados %i bytes del PID %i en Pagina %i con Offset %i", tamanio, pid, pagina, offset);
+	return EXIT_SUCCESS_CUSTOM;
+
+
+
 }

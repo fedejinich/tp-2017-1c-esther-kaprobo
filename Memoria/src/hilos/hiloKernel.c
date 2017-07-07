@@ -30,8 +30,12 @@ void* hiloServidorKernel(void* arg) {
     t_paquete * paqueteRecibido;
     int pid, paginasRequeridas, pagina, tamanio, offset, tamanioCodigo, paginasCodigo;
     char* codigo;
+    void* datas;
 
     t_asignarPaginasKernel* data;
+    void* buffer; char* string;
+
+
 
     while (1) {
     	paqueteRecibido = recibir(socketClienteKernel);
@@ -73,13 +77,25 @@ void* hiloServidorKernel(void* arg) {
 				log_debug(logger, "PID: %i leyo %i bytes de la pagina %i con offset %i y tamanio %i", pid, pagina, offset, tamanio);
             	break;
             case ALMACENAR_BYTES:
-            	pid = ((t_almacenarBytes*)(paqueteRecibido->data))->pid;
-            	pagina = ((t_almacenarBytes*)(paqueteRecibido->data))->pagina;
-            	offset = ((t_almacenarBytes*)(paqueteRecibido->data))->offset;
-            	tamanio = ((t_almacenarBytes*)(paqueteRecibido->data))->tamanio;
-            	void* buffer = ((t_almacenarBytes*)(paqueteRecibido->data))->buffer;
+            	memcpy(&pid, paqueteRecibido->data, sizeof(int));
+            	printf("PID %i\n", pid);
+
+            	memcpy(&pagina, paqueteRecibido->data + sizeof(int), sizeof(int));
+            	printf("Pagina %i\n", pagina);
+
+            	memcpy(&offset, paqueteRecibido->data + sizeof(int) * 2, sizeof(int));
+            	printf("Offset %i\n", offset);
+
+            	memcpy(&tamanio, paqueteRecibido->data + sizeof(int) * 3, sizeof(int));
+            	printf("Tamanio %i\n", tamanio);
+
+            	printf("Malloqueo\n");
+            	buffer = malloc(tamanio);
+            	memcpy(buffer, paqueteRecibido->data + sizeof(int) * 4, tamanio);
+            	printf("Buffer %s\n", (char*)buffer);
+
             	int exito = almacenarBytesEnPagina(pid, pagina, offset, tamanio, buffer);
-            	if(exito == EXIT_FAILURE_CUSTOM) {
+				if(exito == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
 					enviar(socketClienteKernel, ALMACENAR_BYTES_FALLO, sizeof(int), &fallo);
 					log_error(logger, "No se pudieron almacenar bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
@@ -87,7 +103,31 @@ void* hiloServidorKernel(void* arg) {
 				int* ok = EXIT_SUCCESS_CUSTOM;
 				enviar(socketClienteKernel, ALMACENAR_BYTES_OK, sizeof(int), &ok);
 				log_debug(logger, "Almacenados bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
+				free(buffer);
+
+
+
             	break;
+            	/*printf("Voy a guardar buffer serializado\n");
+            	int tamanioTotalPaquete = sizeof(int) * 4 + paqueteRecibido->tamanio;
+            	void* bufferSerializado = malloc(tamanioTotalPaquete);
+            	memcpy(bufferSerializado, paqueteRecibido->data, tamanioTotalPaquete);
+            	printf("Guarde buffer serializado\n");
+
+            	memcpy(&pid, bufferSerializado, sizeof(int));
+            	printf("PID = %i\n", pid);
+            	memcpy(&pagina, paqueteRecibido->data + sizeof(int), sizeof(int));
+            	printf("Pagina = %i\n", pagina);
+            	memcpy(&offset, &bufferSerializado + sizeof(int) * 2, sizeof(int));
+            	printf("Offset = %i\n", offset);
+            	memcpy(&tamanio, &bufferSerializado + sizeof(int) * 3, sizeof(int));
+            	printf("Tamanio = %i\n", tamanio);
+
+            	void* buffer = malloc(tamanio);
+            	memcpy(buffer, bufferSerializado + sizeof(int) * 4, tamanio);
+
+
+            	*/
             default:
 				log_error(logger, "Exit por hilo Kernel");
 				log_error(logger, "Tiro un exit(EXIT_FAILURE_CUSTOM) desde hilo-Kernel");

@@ -1014,7 +1014,7 @@ int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* pro
 	paqueteProceso->paginasStack= proceso->pcb->paginasDeMemoria;
 	paqueteProceso->sizeCodigo = size;
 	paqueteProceso->pid = proceso->pcb->pid;
-	printf("paquetearmado\n");
+
 	enviar(memoria, INICIALIZAR_PROCESO, sizeof(t_inicializar_proceso),paqueteProceso); //al pedo el tamanio
 
 	t_paquete * paquete;
@@ -1025,11 +1025,16 @@ int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* pro
 		return EXIT_FAILURE_CUSTOM;
 	}
 
-	log_debug(logger, "Proceso inicializado. PID %i");
+	log_debug(logger, "Proceso inicializado. PID %i", proceso->pcb->pid);
 
 	liberar_paquete(paquete);
 
-	int exito = almacenarCodigoEnMemoria(proceso->pcb->pid, proceso->pcb->paginasDeCodigo, codigo);
+	char* codAux = malloc(3);
+	codAux = "asd";
+
+	log_warning(logger, "cod aux %s", codAux);
+
+	int exito = almacenarCodigoEnMemoria(proceso->pcb->pid, proceso->pcb->paginasDeCodigo, codAux);
 
 	if(exito == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "No se pudo almacenar en memoria el codigo");
@@ -1048,23 +1053,10 @@ int almacenarCodigoEnMemoria(int pid, int paginasCodigo, char* codigo) {
 	for(i = 1; i <= paginasCodigo; i++) {
 		char* codigoParcial = list_get(codigosParciales, i-1);
 		int tamanioCodigoParcial = strlen(codigoParcial);
-		t_almacenarBytes* almacenarBytes = malloc(sizeof(t_almacenarBytes));
-		almacenarBytes->pid = pid;
-		almacenarBytes->pagina = i;
-		almacenarBytes->offset = 0;
-		almacenarBytes->tamanio = tamanioCodigoParcial;
-		almacenarBytes->buffer = codigoParcial;
+		int pagina = i;
+		int offset = 0;
 
-		enviar(memoria, ALMACENAR_BYTES, sizeof(t_almacenarBytes), almacenarBytes);
-
-		t_paquete* respuesta = recibir(memoria);
-		if(respuesta->codigo_operacion == ALMACENAR_BYTES_FALLO) {
-			log_error(logger, "No se pudo almacenar codigo en memoria. PID %i Pagina %i Codigo %s",
-					almacenarBytes->pid, almacenarBytes->pagina, (char*) almacenarBytes->buffer);
-			return EXIT_FAILURE_CUSTOM;
-		}
-
-		free(almacenarBytes);
+		almacenarEnMemoria(memoria, pid, pagina, offset, tamanioCodigoParcial, codigoParcial, logger);
 	}
 
 	list_destroy(codigosParciales);

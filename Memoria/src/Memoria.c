@@ -17,9 +17,23 @@ int main(int argc, char **argv) {
 
 
 	logger = iniciarLog("memoria.log","Memoria");
+/*
+	char* string = malloc(strlen("hola"));
+	string = "hola";
 
+	log_info(logger, "String %s", string);
 
+	void* bufferTest = almacenarEnMemoria(1, 13, 1, 0, 4, string, logger);
 
+	int tamanio;
+	memcpy(&tamanio, bufferTest + sizeof(int) * 3, sizeof(int));
+
+	log_debug(logger, "Tamanio %i", tamanio);
+
+	char* stringTest = malloc(tamanio);
+	memcpy(stringTest, bufferTest + sizeof(int) * 4, tamanio);
+
+	log_debug(logger, "%s", stringTest);*/
 
 	printf("%s", "\n====== INICIO MEMORIA ======\n\n");
 
@@ -114,6 +128,8 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 	tamanioMemoria = (frames * frame_size) + (tablaDePaginasSize); //VER SI MI TABLA DE PAGINAS OCUPA LUGAR DENTRO DE MI MEMORIA
 	//SI LLEGA A OCUPAR LUGAR, TENGO QUE RESERVAR LOS N PRIMEROS LUGARES DE MI TABLA DE PAGIAS INVERTIDA
 	memoria = malloc(tamanioMemoria);
+
+	memset(memoria, '\0', tamanioMemoria);
 
 	if (memoria == NULL) {
 		log_error(logger,"No se pudo otorgar la memoria solicitada.");

@@ -48,9 +48,10 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 }
 
 int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer) {
-	log_warning(logger, "Buffer %s", (char*) buffer);
-	//PEDIDO DE ESCRITURA POR PARTE DE CPU
 	retardo();
+
+	tamanio--; //por el \0
+
 	log_info(logger, "Almacenando %i bytes de PID %i en pagina %i con offset %i ...", tamanio, pid, pagina, offset);
 
 	int frame = getFrameByPIDPagina(pid, pagina);
@@ -66,16 +67,13 @@ int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* b
 
 	if(noSuperaLimite) {
 		log_debug(logger, "no supera limite");
-	} else {
-		log_error(logger, "supera limite");
-	}
-
-	if(noSuperaLimite) {
-		//log_warning(logger, "escribirFrame(%i, %i, %i, %s)", frame, offset, tamanio, (char*)buffer);
+		printf("VOU ADEOPWK\n");
 		escribirFrame(frame, offset, tamanio, buffer);
 		log_debug(logger, "Almacenados %i bytes de PID %i en pagina %i con offset %i", tamanio, pid, pagina, offset);
 
 		return EXIT_SUCCESS_CUSTOM;
+	} else {
+		log_error(logger, "supera limite");
 	}
 
 	log_error(logger, "No se pudieron almacenar %i bytes de PID %i en pagina %i con offset %i", tamanio, pid, pagina, offset);
