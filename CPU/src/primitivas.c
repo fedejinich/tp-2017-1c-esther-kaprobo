@@ -408,16 +408,19 @@ t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flag
 	paquete->path = direccion;
 	paquete->permisos = permisos;
 	//Envio los datos a kernel con el codigo
+	log_info(logger, "Enviando datos al Kernel para abrir archivo con el PID %d.",pid);
 	enviar(kernel,ABRIR_ARCHIVO,sizeof(t_envioDeDatosKernelFSAbrir),paquete);
-	//recivo el resultado
+	//recibo el resultado
 	resultado = recibir(kernel);
 	//Analizo el resultado
 	if(resultado != ARCHIVO_ABIERTO){
 		//Termina el proceso porque no se pudo abrir arhcivo
+		log_info(logger, "Hubo un problema intentando abrir archivo con el PID %d.",pid);
 		return 0;
 	}
 	//Deberia recibir de kernel el arch.
 	t_descriptor_archivo* archi;
+	log_info(logger, "Archivo abierto con el PID %d.",pid);
 	return archi;
 }
 
@@ -426,7 +429,19 @@ void borrarArchivo(t_descriptor_archivo descriptor_archivo){
 }
 
 void cerrarArchivo(t_descriptor_archivo descriptor_archivo){
-
+	//Defino variables locales
+	t_envioDeDatosKernelFSLecturaYEscritura* paquete;
+	int pid;
+	int resultado;
+	//Obtengo el pid
+	pid = pcb->pid;
+	//Cargo los datos en el paquete
+	paquete->pid = pid;
+	paquete->fd = descriptor_archivo;
+	//Envio los datos a kernel con el codigo
+	log_info(logger, "Enviando datos al Kernel para cerrar archivo con el PID %d.",pid);
+	enviar(kernel,CERRAR_ARCHIVO,sizeof(t_envioDeDatosKernelFSLecturaYEscritura),paquete);
+	//Corto aca o espero el resultado?
 }
 
 void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posicion){
@@ -438,6 +453,29 @@ void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion,
 }
 
 void leerArchivo(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio){
-
+	//Defino variables locales
+	t_envioDeDatosKernelFSLecturaYEscritura* paquete;
+	int pid;
+	int resultado;
+	//Obtengo el pid
+	pid = pcb->pid;
+	//Cargo los datos en el paquete
+	paquete->pid = pid;
+	paquete->fd = descriptor_archivo;
+	paquete->tamanio = tamanio;
+	paquete->offset = informacion;
+	//Envio los datos a kernel con el codigo
+	log_info(logger, "Enviando datos al Kernel para leer datos de archivo con el PID %d.",pid);
+	enviar(kernel,OBTENER_DATOS,sizeof(t_envioDeDatosKernelFSLecturaYEscritura),paquete);
+	//Recibo resultado de la operacion de lectura.
+	resultado = recibir(kernel);
+	//Ver que resultado espera desde kernel.
+	if(resultado != 1){
+		//Termina el proceso porque no se pudo leer el arhcivo.
+		log_info(logger, "Hubo un problema intentando leer archivo con el PID %d.",pid);
+	}
+	//Recibo lo leido.
+	char* datosLeidos = recibir(kernel);
+	log_info(logger, "La informacion leida es: %s.",datosLeidos);
 }
 
