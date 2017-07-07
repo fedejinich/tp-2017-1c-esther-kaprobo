@@ -268,7 +268,9 @@ typedef enum{
 
 int cantidadPaginasCodigo(char* codigo);
 
-int almacenarEnMemoria(un_socket socketMemoria, int pid, int pagina, int offset, int tamanioBuffer, void* buffer, t_log* logger);
+int almacenarEnMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanioBuffer, void* buffer);
+void* solicitarBytesAMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanio);
+
 
 
 #endif /* COMMONS_KAPROBO_H_ */

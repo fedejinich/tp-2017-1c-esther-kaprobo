@@ -1094,7 +1094,7 @@ int almacenarCodigoEnMemoria(int pid, int paginasCodigo, char* codigo) {
 		int pagina = i;
 		int offset = 0;
 
-		almacenarEnMemoria(memoria, pid, pagina, offset, tamanioCodigoParcial, codigoParcial, logger);
+		almacenarEnMemoria(memoria, logger, pid, pagina, offset, tamanioCodigoParcial, codigoParcial);
 	}
 
 	list_destroy(codigosParciales);

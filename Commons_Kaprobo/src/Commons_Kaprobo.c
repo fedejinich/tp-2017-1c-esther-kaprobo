@@ -170,7 +170,7 @@ int cantidadPaginasCodigo(char* codigo) {
 	return cantidad;
 }
 
-int almacenarEnMemoria(un_socket socketMemoria, int pid, int pagina, int offset, int tamanio, void* buffer, t_log* logger) {
+int almacenarEnMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanio, void* buffer) {
 	strcpy(buffer + tamanio, "\0");
 
 	tamanio++; //el +1 es porque le voy a meter un \0 al buffer
@@ -193,7 +193,27 @@ int almacenarEnMemoria(un_socket socketMemoria, int pid, int pagina, int offset,
 
 	log_debug(logger, "Almacenados %i bytes del PID %i en Pagina %i con Offset %i", tamanio, pid, pagina, offset);
 	return EXIT_SUCCESS_CUSTOM;
+}
 
+void* solicitarBytesAMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanio) {
+	t_solicitudBytes* solicitud = malloc(sizeof(t_solicitudBytes));
+	solicitud->pid = pid;
+	solicitud->pagina = pagina;
+	solicitud->offset = offset;
+	solicitud->tamanio = tamanio;
 
+	enviar(socketMemoria, SOLICITAR_BYTES, sizeof(t_solicitudBytes), solicitud);
 
+	free(solicitud);
+
+	t_paquete* paquete = recibir(socketMemoria);
+
+	if(paquete->codigo_operacion == SOLICITAR_BYTES_FALLO) {
+		log_error(logger, "No se pudo cumplir la solicitud de bytes");
+		log_error(logger, "PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	log_debug(logger, "Solicitud de bytes completada con exito. PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
+	return paquete->data;
 }
