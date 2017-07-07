@@ -171,9 +171,10 @@ int cantidadPaginasCodigo(char* codigo) {
 }
 
 int almacenarEnMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanio, void* buffer) {
+	tamanio++; //el +1 es porque le voy a meter un \0 al buffer
+
 	strcpy(buffer + tamanio, "\0");
 
-	tamanio++; //el +1 es porque le voy a meter un \0 al buffer
 	void* bufferSerializado = malloc(sizeof(int) * 4 + tamanio);
 
 	memcpy(bufferSerializado, &pid, sizeof(int));

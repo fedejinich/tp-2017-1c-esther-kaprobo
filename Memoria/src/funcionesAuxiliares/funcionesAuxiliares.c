@@ -48,11 +48,11 @@ int numeroDeFrameBy(int numeroDeEntradaTablaDePaginas) {
 
 char* getCodigoDeOperacion(int codigoInt) {
 	char* codigoString = malloc(50);
+
 	if(codigoInt == -1) {
 		codigoString = "ERROR";
 		return codigoString;
-	}
-	else if(codigoInt == INICIALIZAR_PROCESO) {
+	} else if(codigoInt == INICIALIZAR_PROCESO) {
 		codigoString = "INICIALIZAR PROCESO";
 		return codigoString;
 	} else if(codigoInt == ASIGNAR_PAGINAS) {
@@ -62,10 +62,17 @@ char* getCodigoDeOperacion(int codigoInt) {
 		codigoString = "ALMACENAR_BYTES";
 		return codigoString;
 	} else if(codigoInt == SOLICITAR_BYTES) {
-		codigoString = SOLICITAR_BYTES;
+		codigoString = "SOLICITAR_BYTES";
+		return codigoString;
+	} else if(codigoInt == FINALIZAR_PROCESO) {
+		codigoString = "FINALIZAR_PROCESO";
+		return codigoString;
+	} else if(codigoInt == LIBERAR_PAGINA) {
+		codigoString = "LIBERAR_PAGINA";
 		return codigoString;
 	}
 
+	return EXIT_FAILURE_CUSTOM;
 }
 
 t_list* getCodigosParciales(char* codigo, int size) {

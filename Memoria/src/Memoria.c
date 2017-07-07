@@ -43,6 +43,19 @@ int main(int argc, char **argv) {
 	inicializarTablaDePaginas();
 	inicializarFramePointer();
 	inicializarCache();
+
+	char* codigo = malloc(4);
+	codigo = "asd";
+
+	escribirTablaDePaginas(11,1,1);
+	almacenarBytesEnPagina(1,1,0,4,codigo);
+
+	void* buffer = solicitarBytesDePagina(1,1,0,4);//(1,0,4);
+
+
+	printf("BUFFFER %s\n", (char*)buffer);
+
+
 	iniciarHilos();
 
 	/*escribirTablaDePaginas(8, 1, 0);
@@ -124,12 +137,12 @@ void cargarConfiguracion(){
 void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas`
 
 	log_info(logger,"Reservando bloque de memoria contigua...");
-	int tablaDePaginasSize = (frames * sizeof(t_entradaTablaDePaginas));
-	tamanioMemoria = (frames * frame_size) + (tablaDePaginasSize); //VER SI MI TABLA DE PAGINAS OCUPA LUGAR DENTRO DE MI MEMORIA
+	//int tablaDePaginasSize = (frames * sizeof(t_entradaTablaDePaginas));
+	tamanioMemoria = (frames * frame_size);// + (tablaDePaginasSize); //VER SI MI TABLA DE PAGINAS OCUPA LUGAR DENTRO DE MI MEMORIA
 	//SI LLEGA A OCUPAR LUGAR, TENGO QUE RESERVAR LOS N PRIMEROS LUGARES DE MI TABLA DE PAGIAS INVERTIDA
 	memoria = malloc(tamanioMemoria);
 
-	memset(memoria, '\0', tamanioMemoria);
+	//memset(memoria, '\0', tamanioMemoria);
 
 	if (memoria == NULL) {
 		log_error(logger,"No se pudo otorgar la memoria solicitada.");

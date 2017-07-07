@@ -9,15 +9,20 @@
 #include "frames.h"
 
 void escribirFrame(int frame, int offset, int tamanio, void * contenido) {
+	log_info(logger, "Escribiendo frame %i con offset %i y tamanio %i", frame, offset, tamanio);
+
 	memcpy(&framePointer[frame] + offset, &contenido, tamanio);
 }
 
-void* leerFrame(int frame, int offset, int tamanio) {
-	void* contenido = malloc(tamanio);
+void leerFrame(int frame, int offset, int tamanio, void* buffer) {
+	log_info(logger, "Leyendo frame %i con offset %i y tamanio %i", frame, offset, tamanio);
 
-	memcpy(&contenido, &framePointer[frame] + offset, tamanio);
+	log_warning(logger, "AAAAAAAA %s", framePointer[11]);
 
-	return contenido;
+	void* bufferAux = malloc(tamanio);
+	memcpy(&bufferAux, &framePointer[frame] + offset, tamanio);
+	memcpy(&buffer, bufferAux, tamanio);
+	//return buffer;
 }
 
 int cantidadDeFramesOcupados() {
@@ -58,23 +63,14 @@ int getFirstFrame() {
 
 
 bool superaLimiteFrame(int offset, int tamanio) {
-	log_warning(logger, "(tamanio %i <= frameSize %i) && (offset %i < frameSize %i) && ((offset %i + tamanio %i) <= frameSize %i)",
-			tamanio, frame_size, offset, frame_size, offset, tamanio, frame_size);
+	bool supera = (tamanio >= frame_size) || (offset > frame_size) || ((offset + tamanio) >= frame_size);
 
-	bool exito = (tamanio <= frame_size) && (offset < frame_size) && ((offset + tamanio) <= frame_size);
-
-	if(exito == true)
-		log_warning(logger, "Exito =  true");
-	else
-		log_warning(logger, "Exito =  false");
-
-	if(exito == false) {
+	if(supera == true) {
 		log_error(logger, "Supera limite de frame. Offset %i, Tamanio %i", offset, tamanio);
 		return false;
 	}
 
-	log_debug(logger, "Saliendo de superaLLimite");
-	return !exito;
+	return supera;
 }
 
 

@@ -18,7 +18,7 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 	log_info(logger, "Solicitando bytes de PID: %i, pagina: %i, offset: %i y tamanio: %i", pid, pagina, offset, tamanio);
 
 	if(estaEnCache(pid, pagina)) {
-		leerDeCache(pid, pagina);
+		buffer = leerDeCache(pid, pagina);
 	} else {
 		retardo();
 
