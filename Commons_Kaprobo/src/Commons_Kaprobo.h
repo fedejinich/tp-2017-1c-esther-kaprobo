@@ -133,7 +133,7 @@ un_socket socket_escucha(char* IP, char* Port);
  *
  */
 
-void enviar(un_socket socket_envio, int codigo_operacion, int tamanio,
+void enviar(un_socket socket_envio, int codigo_operacion, int tamanioBuffer,
 		void * data);
 
 /**	@NAME: recibir
@@ -229,7 +229,10 @@ typedef enum {
 	FIN_QUANTUM = 21,
 	SENIAL_SIGUSR1 = 22,
 	SOLICITAR_HEAP_OK = 23,
-	SOLICITAR_HEAP_FALLO = 24
+	SOLICITAR_HEAP_FALLO = 24,
+	LIBERAR_HEAP =25,
+	LIBERAR_HEAP_OK = 26,
+	LIBERAR_HEAP_FALLO = 27
 
 
 } codigosKernelCPU;
@@ -259,10 +262,15 @@ typedef enum{
 	ARCHIVO_EXISTE = 208,
 	ARCHIVO_ABIERTO = 209,
 	ARCHIVO_NO_SE_PUDO_ABRIR = 210,
-	ARCHIVO_VALIDADO = 211
+	ARCHIVO_VALIDADO = 211,
+	CERRAR_ARCHIVO_FS = 212
 } codigosKernelFileSystem;
 
 int cantidadPaginasCodigo(char* codigo);
+
+int almacenarEnMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanioBuffer, void* buffer);
+void* solicitarBytesAMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanio);
+
 
 
 #endif /* COMMONS_KAPROBO_H_ */

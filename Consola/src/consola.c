@@ -189,20 +189,23 @@ void hiloNuevoPrograma(){
 
 	char* scriptParaEnviar = malloc(strlen(script));
 	memcpy(scriptParaEnviar, script, strlen(script));
+	log_debug(logger, "Se pudo armar el Script correctamente");
 
 	//Abro conexion con Kernel, realizo Handshake
 	log_info(logger,"Inicio de conexion con Kernel");
 
 	// funcion deSockets
-	kernel = conectar_a(ip_kernel,puerto_kernel);
+	//kernel = conectar_a(ip_kernel,puerto_kernel);
 
-	if (kernel==0){
-		log_error(logger,"CONSOLA: No se pudo conectar con el Kernel");
+	kernel = conectar_a(ip_kernel, puerto_kernel);
+
+	if (kernel < 0){
+		log_warning(logger,"CONSOLA: No se pudo conectar con el Kernel");
 		exit (EXIT_FAILURE);
 	}
 	log_info(logger,"CONSOLA: Kernel recibio nuestro pedido de conexion, iniciando HANDSHAKE");
 
-	bool resultado = realizar_handshake(kernel, 11);
+	bool resultado = realizar_handshake(kernel, HandshakeConsolaKernel);
 	if (resultado){
 		log_info(logger,"Handshake exitoso! Conexion establecida");
 	}
@@ -219,7 +222,7 @@ void hiloNuevoPrograma(){
 	//bloqueo mutex, para que solo exista la conexion de un hilo enviando los datos
 	pthread_mutex_lock(&mutexConexion);
 
-	enviar(kernel, ENVIAR_SCRIPT, strlen(script),scriptParaEnviar);
+	enviar(kernel, ENVIAR_SCRIPT, strlen(script)+1,scriptParaEnviar);
 
 	log_info(logger,"Se envio el script a ejecutar");
 	newPid = recibir(kernel);

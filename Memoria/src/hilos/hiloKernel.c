@@ -30,8 +30,12 @@ void* hiloServidorKernel(void* arg) {
     t_paquete * paqueteRecibido;
     int pid, paginasRequeridas, pagina, tamanio, offset, tamanioCodigo, paginasCodigo;
     char* codigo;
+    void* datas;
 
     t_asignarPaginasKernel* data;
+    void* buffer; char* string;
+
+
 
     while (1) {
     	paqueteRecibido = recibir(socketClienteKernel);
@@ -47,22 +51,24 @@ void* hiloServidorKernel(void* arg) {
             	tamanioCodigo = ((t_inicializar_proceso*) paqueteRecibido->data)->sizeCodigo;
             	inicializarProceso(pid, paginasRequeridas);
 
-                //codigo y stack o stack y heap
                 break;
             case ASIGNAR_PAGINAS:
             	paginasRequeridas = ((t_asignarPaginasKernel*)(paqueteRecibido->data))->paginasAsignar;
                 pid = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->pid;
                 asignarPaginasAProceso(pid, paginasRequeridas);
+
                 break;
             case FINALIZAR_PROCESO:
                 pid = (int)paqueteRecibido->data;
             	finalizarProceso(pid);
-                break;
+
+            	break;
             case SOLICITAR_BYTES:
             	pid = ((t_solicitudBytes*)(paqueteRecibido->data))->pid;
             	pagina = ((t_solicitudBytes*)(paqueteRecibido->data))->pagina;
             	offset = ((t_solicitudBytes*)(paqueteRecibido->data))->offset;
             	tamanio = ((t_solicitudBytes*)(paqueteRecibido->data))->tamanio;
+
             	void* bufferAux = solicitarBytesDePagina(pid, pagina, offset, tamanio);
 				if(bufferAux == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
@@ -71,22 +77,30 @@ void* hiloServidorKernel(void* arg) {
 				}
 				enviar(socketClienteKernel, SOLICITAR_BYTES_OK, tamanio, bufferAux);
 				log_debug(logger, "PID: %i leyo %i bytes de la pagina %i con offset %i y tamanio %i", pid, pagina, offset, tamanio);
-            	break;
+
+				break;
             case ALMACENAR_BYTES:
-            	pid = ((t_almacenarBytes*)(paqueteRecibido->data))->pid;
-            	pagina = ((t_almacenarBytes*)(paqueteRecibido->data))->pagina;
-            	offset = ((t_almacenarBytes*)(paqueteRecibido->data))->offset;
-            	tamanio = ((t_almacenarBytes*)(paqueteRecibido->data))->tamanio;
-            	void* buffer = ((t_almacenarBytes*)(paqueteRecibido->data))->buffer;
+            	memcpy(&pid, paqueteRecibido->data, sizeof(int));
+            	memcpy(&pagina, paqueteRecibido->data + sizeof(int), sizeof(int));
+            	memcpy(&offset, paqueteRecibido->data + sizeof(int) * 2, sizeof(int));
+            	memcpy(&tamanio, paqueteRecibido->data + sizeof(int) * 3, sizeof(int));
+
+            	buffer = malloc(tamanio);
+            	memcpy(buffer, paqueteRecibido->data + sizeof(int) * 4, tamanio);
+
             	int exito = almacenarBytesEnPagina(pid, pagina, offset, tamanio, buffer);
+
             	if(exito == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
 					enviar(socketClienteKernel, ALMACENAR_BYTES_FALLO, sizeof(int), &fallo);
 					log_error(logger, "No se pudieron almacenar bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
 				}
+
 				int* ok = EXIT_SUCCESS_CUSTOM;
 				enviar(socketClienteKernel, ALMACENAR_BYTES_OK, sizeof(int), &ok);
 				log_debug(logger, "Almacenados bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
+				free(buffer);
+
             	break;
             default:
 				log_error(logger, "Exit por hilo Kernel");
@@ -96,9 +110,5 @@ void* hiloServidorKernel(void* arg) {
         }
     }
 
-    /*socketClienteTemp = malloc(sizeof(int));
-    *socketClienteTemp = socketCliente;
-    pthread_t conexionKernel;
-    pthread_create(&conexionKernel, NULL, hiloConexionKernel, (void*)socketCliente);
-    */
+
 }

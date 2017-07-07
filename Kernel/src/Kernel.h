@@ -35,7 +35,7 @@
 
 
 typedef struct __attribute__((packed))t_entradaTablaGlobalArchivos{
-	int path;
+	char* path;
 	int open;
 }t_entradaTablaGlobalArchivos;
 
@@ -58,7 +58,7 @@ typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
 int cantidadDeProgramas  = 0;
 
 //Numero pid a asignar a cada programa, no confundir
-int pidcounter = 0;
+int pidcounter = 1;
 
 //Logger
 t_log* logger;
@@ -134,8 +134,8 @@ t_queue * cola_CPU_libres;
 t_queue ** cola_semaforos;
 
 //CAPA FILESYSTEM
-t_queue* tablaGlobalDeArchivos;
-t_queue* tablaDeArchivosPorProceso;
+t_list* tablaGlobalDeArchivos;
+t_list* tablaDeArchivosPorProceso;
 
 /*
  *
@@ -161,10 +161,7 @@ typedef struct{
 	int disponible;
 }t_adminHeap;
 
-typedef struct __attribute__ ((packed))t_heapMetadata{
-	int size;
-	int uso;
-}t_heapMetadata;
+
 
 typedef struct __attribute__ ((packed))t_datosHeap{
 	int pagina;
@@ -263,6 +260,9 @@ bool validarPermisoDeApertura(int pid, char* path, char* permisos);
 bool existeArchivo(char* path);
 int chequearTablaGlobal(char* path);
 int buscarEntradaEnTablaGlobal(char* path);
+t_tablaDeArchivosDeUnProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd);
+t_entradaTablaGlobalArchivos* obtenerEntradaTablaGlobalDeArchivos(t_tablaDeArchivosDeUnProceso* entradaTablaDelProceso);
+void borrarArchivoDeTabla(int pid, int fd);
 
 void escribirArchivo(int* socketActivo, t_paquete* paquete);
 void leerArchivo(int* socketActivo, t_paquete* paquete);

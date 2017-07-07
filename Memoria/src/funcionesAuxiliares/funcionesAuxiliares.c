@@ -58,6 +58,12 @@ char* getCodigoDeOperacion(int codigoInt) {
 	} else if(codigoInt == ASIGNAR_PAGINAS) {
 		codigoString = "ASIGNAR_PAGINAS";
 		return codigoString;
+	} else if(codigoInt == ALMACENAR_BYTES) {
+		codigoString = "ALMACENAR_BYTES";
+		return codigoString;
+	} else if(codigoInt == SOLICITAR_BYTES) {
+		codigoString = SOLICITAR_BYTES;
+		return codigoString;
 	}
 
 }

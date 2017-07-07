@@ -9,13 +9,15 @@
 #include "frames.h"
 
 void escribirFrame(int frame, int offset, int tamanio, void * contenido) {
+	memcpy(&framePointer[frame] + offset, &contenido, tamanio);
+}
 
-	//Es el desplazamiento dentro del bloque de memoria principal para luego conseguir el frame en el cual voy a escribir
-	//int desplazamiento = frame * frame_size;
-	//sleep(retardo_memoria); //retardo de memoria
+void* leerFrame(int frame, int offset, int tamanio) {
+	void* contenido = malloc(tamanio);
 
-	memcpy(&framePointer[frame] + offset, contenido, tamanio);
+	memcpy(&contenido, &framePointer[frame] + offset, tamanio);
 
+	return contenido;
 }
 
 int cantidadDeFramesOcupados() {
@@ -53,23 +55,26 @@ int getFirstFrame() {
 	return index;
 }
 
-void* leerFrame(int frame, int offset, int tamanio) {
-	//aca funcion de hash
-	void* contenido = malloc(tamanio);
 
-	memcpy(contenido, &framePointer[frame] + offset, tamanio);
-
-	return contenido;
-}
 
 bool superaLimiteFrame(int offset, int tamanio) {
-	bool exito = tamanio <= frame_size && offset <= frame_size && (offset + tamanio) <= frame_size;
-	if(!exito) {
+	log_warning(logger, "(tamanio %i <= frameSize %i) && (offset %i < frameSize %i) && ((offset %i + tamanio %i) <= frameSize %i)",
+			tamanio, frame_size, offset, frame_size, offset, tamanio, frame_size);
+
+	bool exito = (tamanio <= frame_size) && (offset < frame_size) && ((offset + tamanio) <= frame_size);
+
+	if(exito == true)
+		log_warning(logger, "Exito =  true");
+	else
+		log_warning(logger, "Exito =  false");
+
+	if(exito == false) {
 		log_error(logger, "Supera limite de frame. Offset %i, Tamanio %i", offset, tamanio);
 		return false;
 	}
 
-	return exito;
+	log_debug(logger, "Saliendo de superaLLimite");
+	return !exito;
 }
 
 

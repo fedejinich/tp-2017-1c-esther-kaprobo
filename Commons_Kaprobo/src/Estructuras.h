@@ -85,6 +85,24 @@ typedef struct __attribute__((packed))t_proceso{
 	int sizePaginasHeap;
 }t_proceso;
 
+
+typedef struct __attribute__ ((packed))t_heapMetadata{
+	int size;
+	int uso;
+}t_heapMetadata;
+
+
+typedef struct __attribute__((packed))t_pedidoHeap{
+	int pid;
+	int tamanio;
+}t_pedidoHeap;
+
+typedef struct __attribute__((packed))t_liberarHeap{
+	int pid;
+	int nroPagina;
+	int offset;
+}t_liberarHeap;
+
 void destruirPCB(t_pcb* pcb);
 t_pcb* desserializarPCB(char* serializado);
 char *serializarPCB(t_pcb *pcb);

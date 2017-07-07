@@ -53,7 +53,7 @@ void inicializar(){
 	mostrarConfiguracion();
 
 	//Sockets
-	//fileSystem = conectarConFileSystem();
+	fileSystem = conectarConFileSystem();
 	memoria = conectarConLaMemoria();
 	prepararSocketsServidores();
 
@@ -67,6 +67,8 @@ void inicializar(){
 	cola_CPU_libres = queue_create();
 
 	listaAdminHeap = list_create();
+	tablaGlobalDeArchivos = list_create();
+	tablaDeArchivosPorProceso = list_create();;
 }
 
 void cargarConfiguracion() {
@@ -294,7 +296,7 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 		datos_kernel.TAMANIO_PAG = TAMPAG;
 		datos_kernel.STACK_SIZE = stack_size;
 
-		enviar(socket, DATOS_KERNEL, sizeof(t_datos_kernel), &datos_kernel);
+		enviar(clienteCPUtmp, DATOS_KERNEL, sizeof(t_datos_kernel), &datos_kernel);
 
 		//Ponemos la CPU libre en la cola y hacemos Signal del semaforo CPU
 		queue_push(cola_CPU_libres, (void*)clienteCPUtmp);
@@ -423,11 +425,11 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	queue_push(cola_new, proceso);
 	sem_post(&sem_new); // capaz que no es necesario, para que saque siempre 1, y no haga lio
 	pthread_mutex_unlock(&mutex_new);
-
+	pthread_mutex_lock(&mutexGradoMultiprogramacion);
 	if(cantidadDeProgramas >= grado_multiprog){
-
-		int* basura = 1;
-		enviar(socket, ERROR_MULTIPROGRAMACION, sizeof(int), &basura);
+		pthread_mutex_unlock(&mutexGradoMultiprogramacion);
+		int basura = 999;
+		enviar((un_socket)socket, ERROR_MULTIPROGRAMACION, sizeof(int), (void*)basura);
 
 		pthread_mutex_lock(&mutex_new);
 		t_proceso* proceso = queue_pop(cola_new);
@@ -443,14 +445,13 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 		return -1;
 	}
+	pthread_mutex_unlock(&mutexGradoMultiprogramacion);
 
-	//Envio todos los datos a Memoria y espero respuesta
-	char* codigo = (char*) paquete->data;
+	char* codigo = paquete->data;
 	exito = inicializarProcesoYAlmacenarEnMemoria(codigo, paquete->tamanio, proceso);
 
 	if(exito == EXIT_SUCCESS_CUSTOM){
-		//Hay espacio asignado
-		//Y se almaceno el codigo en un pid existente em pagina existente
+
 		cantidadDeProgramas++; //sumo un pid mas en ejecucion
 
 		//SACO DE NEW Y MANDO A READY
@@ -459,22 +460,22 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 		procesoin = queue_pop(cola_new);
 		pthread_mutex_unlock(&mutex_new);
 
-		log_info(logger, "KERNEL: saco proceso %d de NEW mando a READY", procesoin->pcb->pid);
+		log_debug(logger, "KERNEL: saco proceso %d de NEW mando a READY", procesoin->pcb->pid);
 
 		pthread_mutex_lock(&mutex_ready);
 		queue_push(cola_ready,procesoin);
 		pthread_mutex_unlock(&mutex_ready);
 
 		sem_post(&sem_ready);
-		printf("pase todos semaforos bien \n");
+
 	}
 	else {
 		//NO SIEMPRE VA A SER POR FALTA DE MEMORIA
 		//PUEDE FALLAR PORQUE SE QUIERE ALMACENAR CODIGO DE UN PID INEXISTENTE EN TABLA DE PAGINAS
 
 		log_error(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
-		//ENVIO A CONSOLA ERROR POR MEMORIA
-		enviar(socket, EnvioErrorAConsola, sizeof(int), NULL);
+
+		enviar((un_socket)socket, EnvioErrorAConsola, sizeof(int), NULL);
 
 		//Se pasa de NEW directo a la cola EXIT con ExitCode -1
 		sem_wait(&sem_new);
@@ -491,8 +492,8 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 
 void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
-	t_proceso* procesoPideSem;
-	t_paquete* paqueteNuevo;
+	t_proceso* procesoPideSem = malloc(sizeof(t_proceso));
+	t_paquete* paqueteNuevo = malloc(sizeof(t_paquete));
 	t_pcb* pcb_temporal;
 	pthread_mutex_lock(&mutex_exec);
 	procesoPideSem = obtenerProcesoSocketCPU(cola_exec, socketActivo);
@@ -507,7 +508,7 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 		mandar =1;
 		log_info(logger, "KERNEL: Recibi proceso %d mando a bloquear por semaforo %s", procesoPideSem->pcb->pid, paqueteRecibido->data);
 
-		enviar(socketActivo, PEDIDO_SEMAFORO_FALLO, sizeof(int), &mandar);//1 bloquea proceso
+		enviar((un_socket)socketActivo, PEDIDO_SEMAFORO_FALLO, sizeof(int), &mandar);//1 bloquea proceso
 		paqueteNuevo = recibir(socketActivo);
 		pcb_temporal = desserializarPCB(paqueteNuevo->data);
 		liberar_paquete(paqueteNuevo);
@@ -533,7 +534,7 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 	else{
 		escribeSemaforo(paqueteNuevo->data,*buscarSemaforo(paqueteRecibido)-1);
 		mandar = 0;
-		enviar(socketActivo, PEDIDO_SEMAFORO_OK, sizeof(int), &mandar);
+		enviar((un_socket)socketActivo, PEDIDO_SEMAFORO_OK, sizeof(int), &mandar);
 		pthread_mutex_lock(&mutex_exec);
 		queue_push(cola_exec, procesoPideSem);
 		pthread_mutex_unlock(&mutex_exec);
@@ -547,13 +548,14 @@ void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 }
 
 void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido){
+	// ver ME llega en el paquete el FD, la info y el tamanio, hay que definir como hacerlo bien
 	t_proceso* proceso;
 	pthread_mutex_lock(&mutex_exec);
-	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
+	proceso = obtenerProcesoSocketCPU(cola_exec, (un_socket)socketActivo);
 	queue_push(cola_exec, proceso);
 	pthread_mutex_unlock(&mutex_exec);
 	if(proceso->abortado==false)
-		enviar(proceso->socketConsola, IMPRIMIR_CONSOLA, paqueteRecibido->tamanio, paqueteRecibido->data);
+		enviar((un_socket)(proceso->socketConsola), IMPRIMIR_CONSOLA, paqueteRecibido->tamanio, paqueteRecibido->data);
 	return;
 }
 
@@ -585,12 +587,12 @@ void abrirArchivo(int* socketActivo, t_paquete* paquete){
 		}
 		else{
 			finalizarProcesoPorPID(pid, ErrorSinDefinicion);
-			enviar(fileSystem, ARCHIVO_NO_SE_PUDO_ABRIR, sizeof(resultado), resultado);
+			enviar(socketActivo, ARCHIVO_NO_SE_PUDO_ABRIR, sizeof(resultado), resultado);
 			return;
 		}
 
 		//se avisa a cpu si se pudo o no abrir el archivo
-		enviar(fileSystem, resultado, sizeof(resultado), resultado);
+		//enviar(fileSystem, resultado, sizeof(resultado), resultado);
 	}
 }
 
@@ -642,7 +644,7 @@ int chequearTablaGlobal(char* path){
 int buscarEntradaEnTablaGlobal(char* path){
 	int a;
 	t_entradaTablaGlobalArchivos* entrada;
-	while(entrada = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos->elements, a)){
+	while(entrada = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, a)){
 		if (entrada->path == path){
 			entrada->open++;
 			return a;
@@ -651,7 +653,6 @@ int buscarEntradaEnTablaGlobal(char* path){
 	}
 	return -1;
 }
-
 
 void accederArchivo(int* socketActivo, t_paquete* paquete, char operacion){
 	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
@@ -690,9 +691,50 @@ void accederArchivo(int* socketActivo, t_paquete* paquete, char operacion){
 }
 
 void cerrarArchivo(int* socketActivo, t_paquete* paquete){
-	//el paquete contiene el FD
-	//solicitar cierre de archivo al fs, enviando FD
-	//si no quedan instancias abiertas del archivo, eliminarlo de la tabla global de archivos
+	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
+	int pid = datos->pid;
+	int fd = datos->fd;
+
+	t_tablaDeArchivosDeUnProceso* entradaTablaProceso = obtenerEntradaTablaArchivosDelProceso(pid, fd);
+	t_entradaTablaGlobalArchivos* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(entradaTablaProceso);
+
+	if(entradaTablaGlobal->open > 1){
+		//Borrar la entrada de la tabla del proceso
+		borrarArchivoDeTabla(pid, fd);
+
+		//Actualizo el open
+		entradaTablaGlobal->open--;
+	}
+	else{
+		//Borrar la entrada de la tabla del proceso
+		borrarArchivoDeTabla(pid, fd);
+		log_warning(logger, "Archivo %i eliminado de la tabla del proceso %i", fd, pid);
+
+		//Borrar la entrada de la tabla global
+		list_remove(tablaGlobalDeArchivos, entradaTablaProceso->globalFD);
+		log_warning(logger, "Archivo %i eliminado de la tabla de archivos globales", entradaTablaProceso->globalFD);
+
+		//Avisar a FS que cierre el archivo
+		enviar(fileSystem, CERRAR_ARCHIVO_FS, sizeof(entradaTablaGlobal->path), entradaTablaGlobal->path);
+	}
+}
+
+t_tablaDeArchivosDeUnProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd){
+	t_tablaDeArchivosDeUnProceso* tablaDeUnProceso = malloc(sizeof(t_tablaDeArchivosDeUnProceso));
+	tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
+	t_tablaDeArchivosDeUnProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso, fd);
+
+	return entradaTablaDelProceso;
+}
+
+t_entradaTablaGlobalArchivos* obtenerEntradaTablaGlobalDeArchivos(t_tablaDeArchivosDeUnProceso* entradaTablaDelProceso){
+	return list_get(tablaGlobalDeArchivos, entradaTablaDelProceso->globalFD);
+}
+
+void borrarArchivoDeTabla(int pid, int fd){
+	t_tablaDeArchivosDeUnProceso* tablaDeUnProceso = malloc(sizeof(t_tablaDeArchivosDeUnProceso));
+	tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
+	list_remove(tablaDeUnProceso, fd);
 }
 
 
@@ -705,7 +747,7 @@ void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido){
 	pthread_mutex_unlock(&mutex_exec);
 	pthread_mutex_lock(&mutex_config);
 	valor = valorVariable(paqueteRecibido->data);
-	enviar(socketActivo,SOLICITAR_VARIABLE_OK, sizeof(int), &valor);
+	enviar((un_socket)socketActivo,SOLICITAR_VARIABLE_OK, sizeof(int), &valor);
 	pthread_mutex_unlock(&mutex_config);
 	return;
 }
@@ -782,11 +824,11 @@ void escribeSemaforo(char* semaforo, int valor){
 t_proceso* crearPrograma(int socketC , t_paquete* paquete){
 	int size = paquete->tamanio;
 	char* codigo = paquete->data;
+	//printf("codigo: \n %s \n", codigo);
 	t_proceso* procesoNuevo;
 	t_pcb * pcb;
-	int cuantasPaginas, estado, i;
-	int* indiceCodigo;
-	int sizeIndiceCodigo;
+	int   i;
+
 	t_metadata_program* metadata;
 
 	pcb = nalloc(sizeof(t_pcb));
@@ -799,6 +841,7 @@ t_proceso* crearPrograma(int socketC , t_paquete* paquete){
 	pidcounter ++;
 
 	metadata = metadata_desde_literal(codigo);
+	printf("intrucciones: %d \n", metadata->instrucciones_size);
 
 	procesoNuevo->pcb->paginasDeCodigo = ceil((double)size / (double)TAMPAG);
 	procesoNuevo->pcb->sizeIndiceDeCodigo = metadata->instrucciones_size;
@@ -874,7 +917,7 @@ int conectarConLaMemoria(){
 	log_info(logger, "MEMORIA: Inicio de conexion");
 	un_socket socketMemoria = conectar_a(ip_memoria, puerto_memoria);
 
-	if (socketMemoria == 0){
+	if (socketMemoria < 0){
 		log_error(logger, "MEMORIA: No se pudo conectar");
 		pthread_mutex_unlock(&mutex_config);
 		exit (EXIT_FAILURE);
@@ -908,9 +951,9 @@ int conectarConLaMemoria(){
 
 int conectarConFileSystem(){
 	log_info(logger, "FILESYSTEM: Inicio de conexion");
-	un_socket socketFileSystem = conectar_a(ip_fs, puerto_fs);
+	un_socket socketFileSystem = conectar_a(ip_fs, (char*)puerto_fs);
 
-	if (socketFileSystem == 0){
+	if (socketFileSystem < 0){
 		log_error(logger, "No se pudo conectar con FileSystem");
 		exit (EXIT_FAILURE);
 	}
@@ -1000,30 +1043,32 @@ void * nalloc(int tamanio){
 	return retorno;
 }
 
-int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* proceso){
-	t_inicializar_proceso* paqueteProceso;
+int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int tamanioCodigo, t_proceso* proceso){
+	log_info(logger, "Inicializando proceso. PID %i", proceso->pcb->pid);
+	t_inicializar_proceso* paqueteProceso = malloc(sizeof(t_inicializar_proceso));
 
-	int paginas = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria;
-	log_info(logger, "KERNEL: cantidad de paginas de pid %d: %d", proceso->pcb->pid, paginas);
+	int paginasTotales = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria;
+	log_info(logger, "Cantidad de paginas totales de PID %i: %i", proceso->pcb->pid, paginasTotales);
+	log_info(logger, "Cantidad de paginas de codigo de PID %i: %i", proceso->pcb->pid, proceso->pcb->paginasDeCodigo);
+	log_info(logger, "Cantidad de paginas de stack de PID %i: %i", proceso->pcb->pid, proceso->pcb->paginasDeMemoria);
 
-	paqueteProceso->codigo=codigo;
-	paqueteProceso->paginasTotales=paginas;
-	paqueteProceso->paginasCodigo=proceso->pcb->paginasDeCodigo;
-	paqueteProceso->paginasStack= proceso->pcb->paginasDeMemoria;
-	paqueteProceso->sizeCodigo = size;
+	paqueteProceso->codigo = codigo;
+	paqueteProceso->paginasTotales = paginasTotales;
+	paqueteProceso->paginasCodigo = proceso->pcb->paginasDeCodigo;
+	paqueteProceso->paginasStack = proceso->pcb->paginasDeMemoria;
+	paqueteProceso->sizeCodigo = tamanioCodigo;
 	paqueteProceso->pid = proceso->pcb->pid;
 
-	enviar(memoria, INICIALIZAR_PROCESO, (size+3*sizeof(int)),paqueteProceso); //al pedo el tamanio
+	enviar(memoria, INICIALIZAR_PROCESO, sizeof(t_inicializar_proceso), paqueteProceso);
 
-	t_paquete * paquete;
-	paquete = recibir(memoria);
+	t_paquete * paquete = recibir(memoria);
 
 	if(paquete->codigo_operacion == INICIALIZAR_PROCESO_FALLO) {
 		log_error(logger, "No se pudo inicializar proceso");
 		return EXIT_FAILURE_CUSTOM;
 	}
 
-	log_debug(logger, "Proceso inicializado. PID %i");
+	log_debug(logger, "Proceso inicializado. PID %i", proceso->pcb->pid);
 
 	liberar_paquete(paquete);
 
@@ -1038,36 +1083,23 @@ int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int size, t_proceso* pro
 }
 
 int almacenarCodigoEnMemoria(int pid, int paginasCodigo, char* codigo) {
-	log_info(logger, "Almacenando codigo en memoria. PID %i Paginas codigo %i, Codigo %s", pid, paginasCodigo, codigo);
+	log_info(logger, "Almacenando codigo en memoria. PID %i, Paginas codigo %i, Tamanio codigo", pid, paginasCodigo, codigo, strlen(codigo));
 
-	t_list* codigosParciales = getCodigosParciales(codigo, tamanioPagina);
+	t_list* codigosParciales = getCodigosParciales(codigo, TAMPAG);
 
 	int i;
 	for(i = 1; i <= paginasCodigo; i++) {
 		char* codigoParcial = list_get(codigosParciales, i-1);
 		int tamanioCodigoParcial = strlen(codigoParcial);
-		t_almacenarBytes* almacenarBytes = malloc(sizeof(t_almacenarBytes));
-		almacenarBytes->pid = pid;
-		almacenarBytes->pagina = i;
-		almacenarBytes->offset = 0;
-		almacenarBytes->tamanio = tamanioCodigoParcial;
-		almacenarBytes->buffer = codigoParcial;
+		int pagina = i;
+		int offset = 0;
 
-		enviar(memoria, ALMACENAR_BYTES, sizeof(t_almacenarBytes), almacenarBytes);
-
-		t_paquete* respuesta = recibir(memoria);
-		if(respuesta->codigo_operacion == ALMACENAR_BYTES_FALLO) {
-			log_error(logger, "No se pudo almacenar codigo en memoria. PID %i Pagina %i Codigo %s",
-					almacenarBytes->pid, almacenarBytes->pagina, (char*) almacenarBytes->buffer);
-			return EXIT_FAILURE_CUSTOM;
-		}
-
-		free(almacenarBytes);
+		almacenarEnMemoria(memoria, logger, pid, pagina, offset, tamanioCodigoParcial, codigoParcial);
 	}
 
 	list_destroy(codigosParciales);
 
-	log_debug(logger, "Codigo almacenado en memoria");
+	log_debug(logger, "Codigo de PID %i almacenado en memoria", pid);
 	return EXIT_SUCCESS_CUSTOM;
 }
 
@@ -1078,6 +1110,7 @@ t_list* getCodigosParciales(char* codigo, int size) {
 	for(i = 0; i < tamanioCodigo; i = i + size) {
 		char* codigoParcial = string_substring(codigo, i, size);
 		list_add(codigosParciales,codigoParcial);
+
 	}
 
 	return codigosParciales;
@@ -1095,9 +1128,9 @@ void planificadorCortoPlazo(){
 		}
 		if(estadoPlanificacion){
 			yaMeFijeReady = false;
-			//sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
+			sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
 			pthread_mutex_lock(&mutex_config);
-			//socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
+			socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
 
 			pthread_mutex_lock(&mutex_ready);
 			proceso = queue_pop(cola_ready);
@@ -1200,7 +1233,7 @@ void hiloConKer(){
 		case 3:
 			//Obtiene la tabla global de archivos
 			pthread_mutex_lock(&mutexEjecuta);
-
+			mostrarTablaGlobalDeArchivos();
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
 		case 4:
@@ -1298,6 +1331,25 @@ void mostrarInformacionDeProceso(int pid){
 	//TODO mostrar info
 }
 
+void mostrarTablaGlobalDeArchivos(){
+	printf("Tabla Global de Archivos\n");
+	if(list_size(tablaGlobalDeArchivos) > 0){
+		int i = 0;
+		t_entradaTablaGlobalArchivos* entradaDeLaTablaGlobal;
+		printf("Index | Open | Path\n");
+		entradaDeLaTablaGlobal = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, i);
+		printf("path %s\n", entradaDeLaTablaGlobal->path);
+		while(entradaDeLaTablaGlobal = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, i)){
+			printf("     %i |   %i   | %s\n", i, entradaDeLaTablaGlobal->open, entradaDeLaTablaGlobal->path);
+			i++;
+		}
+	}
+	else{
+		printf("No hay archivos en la tabla global\n");
+	}
+	printf("\n");
+}
+
 void cambiarGradoMultiprogramacion(int gradoNuevo){
 	pthread_mutex_lock(&mutexGradoMultiprogramacion);
 	grado_multiprog = gradoNuevo;
@@ -1363,7 +1415,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketCPU);
 	queue_push(cola_exec, proceso);
-	pthread_mutex_unlock(&cola_exec);
+	pthread_mutex_unlock(&mutex_exec);
 
 	int pid;
 	int tamanio;
@@ -1395,7 +1447,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	if(resultado<0){
 		// VER NO SE PUDO RESERVAR BLOQUE
 	}
-	t_direccion* direccion;
+	t_direccion* direccion = malloc(sizeof(t_direccion));
 	direccion->pagina = puntero->pagina;
 	direccion->offset = puntero->offset;
 	direccion->size = tamanio;
@@ -1550,7 +1602,7 @@ int reservarPaginaHeap(int pid,int pagina){
 
 	memcpy(buffer, &aux, sizeof(t_heapMetadata));
 
-	t_pedidoDePaginasKernel* pedido;
+	t_pedidoDePaginasKernel* pedido = malloc(sizeof(t_pedidoDePaginasKernel));
 	pedido->pid = pid;
 	pedido->paginasAPedir = 1;
 

@@ -1,16 +1,80 @@
 /*
  * operaciones.c
  *
- *  Created on: 7/6/2017
+ *  Created on: 5/7/2017
  *      Author: utnso
  */
 
 
-#include "operacionesMemoria-Kernel.h"
+#include "operaciones.h"
 
-/******\
-|KERNEL|
-\******/
+void retardo() {
+	log_info(logger, "sleep(%i)", retardo_memoria);
+}
+
+void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
+	void* buffer = -911;
+
+	log_info(logger, "Solicitando bytes de PID: %i, pagina: %i, offset: %i y tamanio: %i", pid, pagina, offset, tamanio);
+
+	if(estaEnCache(pid, pagina)) {
+		leerDeCache(pid, pagina);
+	} else {
+		retardo();
+
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginasHash(pid, pagina);
+
+		if(entrada == EXIT_FAILURE_CUSTOM) {
+			log_error(logger, "Error en solicitar bytes de una pagina");
+			return EXIT_FAILURE_CUSTOM;
+		}
+
+		log_info(logger, "Los bytes del PID: %i, pagina: %i se encuentran en el frame %i", pid, pagina, entrada->frame);
+		void* buffer = leerFrame(entrada->frame, offset, tamanio);
+
+		if(buffer == EXIT_FAILURE_CUSTOM) {
+			log_error(logger, "No se pudo cumplir la solicutd de bytes. PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
+			return EXIT_FAILURE_CUSTOM;
+		}
+
+		escribirCache(pid, pagina, buffer);
+	}
+
+	if(buffer == -911) {
+		log_error(logger, "No se pudo cumplir la solicutd de bytes. PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	return buffer;
+}
+
+int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer) {
+	retardo();
+
+	tamanio--; //por el \0
+
+	log_info(logger, "Almacenando %i bytes de PID %i en pagina %i con offset %i ...", tamanio, pid, pagina, offset);
+
+	int frame = getFrameByPIDPagina(pid, pagina);
+
+	if(frame == EXIT_FAILURE_CUSTOM) {
+		log_error(logger, "No se pudieron almacenar %i bytes de PID %i en pagina %i con offset %i", tamanio, pid, pagina, offset);
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	log_info(logger, "Frame en el que se va a almacenar %i", frame);
+
+	if(!superaLimiteFrame(offset, tamanio)) {
+		escribirFrame(frame, offset, tamanio, buffer);
+
+		log_debug(logger, "Almacenados %i bytes de PID %i en pagina %i con offset %i", tamanio, pid, pagina, offset);
+		return EXIT_SUCCESS_CUSTOM;
+	}
+
+	log_error(logger, "El offset %i con tamanio %i supera el limite de escritura en frame %i", offset, tamanio, frame);
+	log_error(logger, "No se pudieron almacenar %i bytes en frame %i de PID %i en pagina %i con offset %i", tamanio, frame,pid, pagina, offset);
+	return EXIT_FAILURE_CUSTOM;
+}
 
 int inicializarProceso(int pid, int paginasRequeridas) {
 	retardo();
@@ -172,32 +236,3 @@ int liberarPaginaProceso(int pid, int pagina) {
 
 	return EXIT_FAILURE_CUSTOM;
 }
-
-int almacenarCodigo(int pid, int paginasCodigo, char* codigo) {
-	int paginasCodigoVerificador = cantidadPaginasCodigo(codigo);
-
-	if(paginasCodigoVerificador != paginasCodigo) {
-		log_error(logger, "Error en almacenarCodigo(%i, %i, %s)", pid, paginasCodigo, codigo);
-		log_error(logger, "La cantidad de paginas que desea almacenar es incorrecta");
-		return EXIT_FAILURE_CUSTOM;
-	}
-
-	int primeraPagina = getFramePrimeraPagina(pid);
-
-	t_list* codigosParciales = getCodigosParciales(codigo, frame_size);
-
-	int i;
-	for(i = 0; i < paginasCodigo; i++) {
-		char* codigoParcial = list_get(codigosParciales, i);
-		int tamanioCodigoParcial = strlen(codigoParcial);
-		log_warning(logger, "escribirFrame(%i + %i, 0, %i, %i", primeraPagina, i, tamanioCodigoParcial, strlen(codigoParcial));
-		escribirFrame(primeraPagina + i, 0, tamanioCodigoParcial, codigoParcial);
-	}
-
-	log_info(logger, "Codigo almacenado en memoria");
-	return EXIT_SUCCESS_CUSTOM;
-}
-
-
-
-
