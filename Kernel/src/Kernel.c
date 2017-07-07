@@ -53,7 +53,7 @@ void inicializar(){
 	mostrarConfiguracion();
 
 	//Sockets
-	//fileSystem = conectarConFileSystem();
+	fileSystem = conectarConFileSystem();
 	memoria = conectarConLaMemoria();
 	prepararSocketsServidores();
 
@@ -67,6 +67,8 @@ void inicializar(){
 	cola_CPU_libres = queue_create();
 
 	listaAdminHeap = list_create();
+	tablaGlobalDeArchivos = list_create();
+	tablaDeArchivosPorProceso = list_create();;
 }
 
 void cargarConfiguracion() {
@@ -294,7 +296,7 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 		datos_kernel.TAMANIO_PAG = TAMPAG;
 		datos_kernel.STACK_SIZE = stack_size;
 
-		enviar(socket, DATOS_KERNEL, sizeof(t_datos_kernel), &datos_kernel);
+		enviar(clienteCPUtmp, DATOS_KERNEL, sizeof(t_datos_kernel), &datos_kernel);
 
 		//Ponemos la CPU libre en la cola y hacemos Signal del semaforo CPU
 		queue_push(cola_CPU_libres, (void*)clienteCPUtmp);
@@ -423,9 +425,9 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	queue_push(cola_new, proceso);
 	sem_post(&sem_new); // capaz que no es necesario, para que saque siempre 1, y no haga lio
 	pthread_mutex_unlock(&mutex_new);
-
+	pthread_mutex_lock(&mutexGradoMultiprogramacion);
 	if(cantidadDeProgramas >= grado_multiprog){
-
+		pthread_mutex_unlock(&mutexGradoMultiprogramacion);
 		int basura = 999;
 		enviar((un_socket)socket, ERROR_MULTIPROGRAMACION, sizeof(int), (void*)basura);
 
@@ -443,6 +445,7 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 		return -1;
 	}
+	pthread_mutex_unlock(&mutexGradoMultiprogramacion);
 
 	//Envio todos los datos a Memoria y espero respuesta
 	char* codigo = paquete->data;
@@ -547,6 +550,7 @@ void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 }
 
 void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido){
+	// ver ME llega en el paquete el FD, la info y el tamanio, hay que definir como hacerlo bien
 	t_proceso* proceso;
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, (un_socket)socketActivo);
@@ -566,7 +570,7 @@ void abrirArchivo(int* socketActivo, t_paquete* paquete){
 
 	if(validarPermisoDeApertura(pid, path, permisos)){
 		//se manda al fs el path
-		enviar((un_socket)fileSystem, SOLICITUD_APERTURA_ARCHIVO, sizeof(path), path);
+		enviar(fileSystem, SOLICITUD_APERTURA_ARCHIVO, sizeof(path), path);
 
 		t_paquete* paqueteResultado = recibir(memoria);
 
@@ -585,12 +589,12 @@ void abrirArchivo(int* socketActivo, t_paquete* paquete){
 		}
 		else{
 			finalizarProcesoPorPID(pid, ErrorSinDefinicion);
-			enviar(fileSystem, ARCHIVO_NO_SE_PUDO_ABRIR, sizeof(resultado), resultado);
+			enviar(socketActivo, ARCHIVO_NO_SE_PUDO_ABRIR, sizeof(resultado), resultado);
 			return;
 		}
 
 		//se avisa a cpu si se pudo o no abrir el archivo
-		enviar(fileSystem, resultado, sizeof(resultado), resultado);
+		//enviar(fileSystem, resultado, sizeof(resultado), resultado);
 	}
 }
 
@@ -631,9 +635,8 @@ int chequearTablaGlobal(char* path){
 	}
 	else{
 		t_entradaTablaGlobalArchivos* entrada = malloc(sizeof(t_entradaTablaGlobalArchivos));
-		entrada->path = path;//VER
+		entrada->path = path;
 		entrada->open = 1;
-
 		list_add(tablaGlobalDeArchivos, entrada);
 		fd = buscarEntradaEnTablaGlobal(path);
 	}
@@ -643,8 +646,8 @@ int chequearTablaGlobal(char* path){
 int buscarEntradaEnTablaGlobal(char* path){
 	int a;
 	t_entradaTablaGlobalArchivos* entrada;
-	while(entrada = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos->elements, a)){
-		if (entrada->path == path){//VER
+	while(entrada = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, a)){
+		if (entrada->path == path){
 			entrada->open++;
 			return a;
 		}
@@ -652,7 +655,6 @@ int buscarEntradaEnTablaGlobal(char* path){
 	}
 	return -1;
 }
-
 
 void accederArchivo(int* socketActivo, t_paquete* paquete, char operacion){
 	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
@@ -679,7 +681,7 @@ void accederArchivo(int* socketActivo, t_paquete* paquete, char operacion){
 	if(strchr(permisos, 'r') != NULL){
 		enviar(fileSystem, codigoOperacion, sizeof(datos), datos);
 		char* buffer = recibir(fileSystem);
-		enviar((un_socket)socketActivo, OBTENER_DATOS, datos->tamanio, buffer);
+		enviar(socketActivo, OBTENER_DATOS, datos->tamanio, buffer);
 	}
 	else{
 		finalizarProceso(pid, exitCode);
@@ -691,9 +693,50 @@ void accederArchivo(int* socketActivo, t_paquete* paquete, char operacion){
 }
 
 void cerrarArchivo(int* socketActivo, t_paquete* paquete){
-	//el paquete contiene el FD
-	//solicitar cierre de archivo al fs, enviando FD
-	//si no quedan instancias abiertas del archivo, eliminarlo de la tabla global de archivos
+	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
+	int pid = datos->pid;
+	int fd = datos->fd;
+
+	t_tablaDeArchivosDeUnProceso* entradaTablaProceso = obtenerEntradaTablaArchivosDelProceso(pid, fd);
+	t_entradaTablaGlobalArchivos* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(entradaTablaProceso);
+
+	if(entradaTablaGlobal->open > 1){
+		//Borrar la entrada de la tabla del proceso
+		borrarArchivoDeTabla(pid, fd);
+
+		//Actualizo el open
+		entradaTablaGlobal->open--;
+	}
+	else{
+		//Borrar la entrada de la tabla del proceso
+		borrarArchivoDeTabla(pid, fd);
+		log_warning(logger, "Archivo %i eliminado de la tabla del proceso %i", fd, pid);
+
+		//Borrar la entrada de la tabla global
+		list_remove(tablaGlobalDeArchivos, entradaTablaProceso->globalFD);
+		log_warning(logger, "Archivo %i eliminado de la tabla de archivos globales", entradaTablaProceso->globalFD);
+
+		//Avisar a FS que cierre el archivo
+		enviar(fileSystem, CERRAR_ARCHIVO_FS, sizeof(entradaTablaGlobal->path), entradaTablaGlobal->path);
+	}
+}
+
+t_tablaDeArchivosDeUnProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd){
+	t_tablaDeArchivosDeUnProceso* tablaDeUnProceso = malloc(sizeof(t_tablaDeArchivosDeUnProceso));
+	tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
+	t_tablaDeArchivosDeUnProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso, fd);
+
+	return entradaTablaDelProceso;
+}
+
+t_entradaTablaGlobalArchivos* obtenerEntradaTablaGlobalDeArchivos(t_tablaDeArchivosDeUnProceso* entradaTablaDelProceso){
+	return list_get(tablaGlobalDeArchivos, entradaTablaDelProceso->globalFD);
+}
+
+void borrarArchivoDeTabla(int pid, int fd){
+	t_tablaDeArchivosDeUnProceso* tablaDeUnProceso = malloc(sizeof(t_tablaDeArchivosDeUnProceso));
+	tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
+	list_remove(tablaDeUnProceso, fd);
 }
 
 
@@ -876,7 +919,7 @@ int conectarConLaMemoria(){
 	log_info(logger, "MEMORIA: Inicio de conexion");
 	un_socket socketMemoria = conectar_a(ip_memoria, puerto_memoria);
 
-	if (socketMemoria == 0){
+	if (socketMemoria < 0){
 		log_error(logger, "MEMORIA: No se pudo conectar");
 		pthread_mutex_unlock(&mutex_config);
 		exit (EXIT_FAILURE);
@@ -910,9 +953,9 @@ int conectarConLaMemoria(){
 
 int conectarConFileSystem(){
 	log_info(logger, "FILESYSTEM: Inicio de conexion");
-	un_socket socketFileSystem = conectar_a(ip_fs, puerto_fs);
+	un_socket socketFileSystem = conectar_a(ip_fs, (char*)puerto_fs);
 
-	if (socketFileSystem == 0){
+	if (socketFileSystem < 0){
 		log_error(logger, "No se pudo conectar con FileSystem");
 		exit (EXIT_FAILURE);
 	}
@@ -1195,7 +1238,7 @@ void hiloConKer(){
 		case 3:
 			//Obtiene la tabla global de archivos
 			pthread_mutex_lock(&mutexEjecuta);
-
+			mostrarTablaGlobalDeArchivos();
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
 		case 4:
@@ -1291,6 +1334,25 @@ void mostrarInformacionDeProceso(int pid){
 	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
 	t_proceso* proceso = obtenerProcesoPorPID(colaDelProceso, pid);
 	//TODO mostrar info
+}
+
+void mostrarTablaGlobalDeArchivos(){
+	printf("Tabla Global de Archivos\n");
+	if(list_size(tablaGlobalDeArchivos) > 0){
+		int i = 0;
+		t_entradaTablaGlobalArchivos* entradaDeLaTablaGlobal;
+		printf("Index | Open | Path\n");
+		entradaDeLaTablaGlobal = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, i);
+		printf("path %s\n", entradaDeLaTablaGlobal->path);
+		while(entradaDeLaTablaGlobal = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, i)){
+			printf("     %i |   %i   | %s\n", i, entradaDeLaTablaGlobal->open, entradaDeLaTablaGlobal->path);
+			i++;
+		}
+	}
+	else{
+		printf("No hay archivos en la tabla global\n");
+	}
+	printf("\n");
 }
 
 void cambiarGradoMultiprogramacion(int gradoNuevo){

@@ -9,28 +9,15 @@
 #include "frames.h"
 
 void escribirFrame(int frame, int offset, int tamanio, void * contenido) {
-
-	//Es el desplazamiento dentro del bloque de memoria principal para luego conseguir el frame en el cual voy a escribir
-	//int desplazamiento = frame * frame_size;
-	//sleep(retardo_memoria); //retardo de memoria
-
-	printf("por memcpy\n");
-	printf("ASDDDDD = %s\n", (char*)contenido);
-
-/*	char* cot = malloc(3);
-	memcpy(cot, &contenido, tamanio);
-	printf("cont %s", cot);*/
-
 	memcpy(&framePointer[frame] + offset, &contenido, tamanio);
+}
 
-	printf("por leer\n");
-	void* lectura = leerFrame(1,0,3);
-	printf("lei\n");
-	printf("contenido %s\n", lectura);
+void* leerFrame(int frame, int offset, int tamanio) {
+	void* contenido = malloc(tamanio);
 
-	if(string_equals_ignore_case(lectura,"asd"))
-		printf("bien\n");
+	memcpy(&contenido, &framePointer[frame] + offset, tamanio);
 
+	return contenido;
 }
 
 int cantidadDeFramesOcupados() {
@@ -68,14 +55,7 @@ int getFirstFrame() {
 	return index;
 }
 
-void* leerFrame(int frame, int offset, int tamanio) {
-	//aca funcion de hash
-	void* contenido = malloc(tamanio);
 
-	memcpy(&contenido, &framePointer[frame] + offset, tamanio);
-
-	return contenido;
-}
 
 bool superaLimiteFrame(int offset, int tamanio) {
 	log_warning(logger, "(tamanio %i <= frameSize %i) && (offset %i < frameSize %i) && ((offset %i + tamanio %i) <= frameSize %i)",

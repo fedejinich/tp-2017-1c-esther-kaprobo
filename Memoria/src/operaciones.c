@@ -48,6 +48,7 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 }
 
 int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer) {
+	//PEDIDO D ESCRITURA POR PARTE DE CPU
 	retardo();
 
 	tamanio--; //por el \0
@@ -61,22 +62,17 @@ int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* b
 		return EXIT_FAILURE_CUSTOM;
 	}
 
-	log_warning(logger, "Frame en el que se van a almacenar %i", frame);
+	log_info(logger, "Frame en el que se van a almacenar %i", frame);
 
-	bool noSuperaLimite = !superaLimiteFrame(offset, tamanio);
-
-	if(noSuperaLimite) {
-		log_debug(logger, "no supera limite");
-		printf("VOU ADEOPWK\n");
+	if(!superaLimiteFrame(offset, tamanio)) {
 		escribirFrame(frame, offset, tamanio, buffer);
-		log_debug(logger, "Almacenados %i bytes de PID %i en pagina %i con offset %i", tamanio, pid, pagina, offset);
 
+		log_debug(logger, "Almacenados %i bytes de PID %i en pagina %i con offset %i", tamanio, pid, pagina, offset);
 		return EXIT_SUCCESS_CUSTOM;
-	} else {
-		log_error(logger, "supera limite");
 	}
 
-	log_error(logger, "No se pudieron almacenar %i bytes de PID %i en pagina %i con offset %i", tamanio, pid, pagina, offset);
+	log_error(logger, "El offset %i con tamanio %i supera el limite de escritura en frame %i", offset, tamanio, frame);
+	log_error(logger, "No se pudieron almacenar %i bytes en frame %i de PID %i en pagina %i con offset %i", tamanio, frame,pid, pagina, offset);
 	return EXIT_FAILURE_CUSTOM;
 }
 
@@ -239,29 +235,4 @@ int liberarPaginaProceso(int pid, int pagina) {
 	log_error(logger, "No se libero la pagina nro %i del proceso. PID %i", pagina, pid);
 
 	return EXIT_FAILURE_CUSTOM;
-}
-
-int almacenarCodigo(int pid, int paginasCodigo, char* codigo) {
-	int paginasCodigoVerificador = cantidadPaginasCodigo(codigo);
-
-	if(paginasCodigoVerificador != paginasCodigo) {
-		log_error(logger, "Error en almacenarCodigo(%i, %i, %s)", pid, paginasCodigo, codigo);
-		log_error(logger, "La cantidad de paginas que desea almacenar es incorrecta");
-		return EXIT_FAILURE_CUSTOM;
-	}
-
-	int primeraPagina = getFramePrimeraPagina(pid);
-
-	t_list* codigosParciales = getCodigosParciales(codigo, frame_size);
-
-	int i;
-	for(i = 0; i < paginasCodigo; i++) {
-		char* codigoParcial = list_get(codigosParciales, i);
-		int tamanioCodigoParcial = strlen(codigoParcial);
-		log_warning(logger, "escribirFrame(%i + %i, 0, %i, %i", primeraPagina, i, tamanioCodigoParcial, strlen(codigoParcial));
-		escribirFrame(primeraPagina + i, 0, tamanioCodigoParcial, codigoParcial);
-	}
-
-	log_info(logger, "Codigo almacenado en memoria");
-	return EXIT_SUCCESS_CUSTOM;
 }

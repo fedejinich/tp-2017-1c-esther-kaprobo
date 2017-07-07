@@ -185,6 +185,7 @@ void sig_handler2(int signo) {
 	programaAbortado=1;
 
 	log_info(logger,"Se detecto señal sig int CRT C.\n");
+	exit(0);//VER SACAR DESPUES
 	return;
 }
 
@@ -196,7 +197,7 @@ int conectarConElKernel(){
 	// funcion deSockets
 	kernel = conectar_a(ip_kernel,puerto_kernel);
 
-	if (kernel==0){
+	if (kernel<0){
 		printf("CPU: No se pudo conectar con el Kernel\n");
 		log_info(logger, "Conexion fallida con Kernel. \n");
 		exit (EXIT_FAILURE);
@@ -224,7 +225,7 @@ int conectarConMemoria(){
 	// funcion deSockets
 	memoria = conectar_a(ip_memoria,puerto_memoria);
 
-	if (memoria==0){
+	if (memoria<0){
 		printf("CPU: No se pudo conectar con la Memoria\n");
 		log_info(logger, "Conexion fallida con Memoria. \n");
 		exit (EXIT_FAILURE);
