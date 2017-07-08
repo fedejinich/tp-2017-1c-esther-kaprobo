@@ -7,7 +7,7 @@
 
 
 #include "leerEscribirMemoria.h"
-
+/*
 void almacenarBytesEnMemoria(t_direccion* direccion, void* buffer) {
 	t_almacenarBytes* almacenarBytes = malloc(sizeof(t_almacenarBytes));
 
@@ -30,3 +30,4 @@ void* solicitarBytesAMemoria(t_direccion* direccion) {
 
 	enviar(memoria, SOLICITAR_BYTES, solicitarBytes->tamanio, solicitarBytes);
 }
+*/

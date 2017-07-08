@@ -1,7 +1,6 @@
 #include "primitivas.h"
 
-t_puntero definirVariable(t_nombre_variable identificador_variable) {
-	/*
+/*
 	 * DEFINIR VARIABLE
 	 *
 	 * Reserva en el Contexto de Ejecución Actual el espacio necesario para una variable llamada identificador_variable y la registra tanto en el Stack como en el Diccionario de Variables. Retornando la posición del valor de esta nueva variable del stack
@@ -14,6 +13,9 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	 * @param	identificador_variable	Nombre de variable a definir
 	 * @return	Puntero a la variable recien asignada
 	 */
+
+t_puntero definirVariable(t_nombre_variable identificador_variable) {
+
 
 	//RESERVA EL ESPACIO EN MEMORIA? O EN TEORIA YA HAY ESPACIO RESERVADO EN MEMORIA PARA LA VARIABLE A DEFINIR?
 	//QUE ONDA LA PARTE DEL DICCIONARIO?
@@ -72,7 +74,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			programaAbortado = true;
 			return EXIT_FAILURE_CUSTOM;
 		} else {
-			almacenarBytesEnMemoria(direccionVariable, valor);
+			// VER FEDE almacenarBytesEnMemoria(direccionVariable, valor);
 			log_info(logger,"Direccion de retorno: %i", direccionRetorno);
 			return direccionRetorno;
 		}
@@ -121,7 +123,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 	log_info(logger, "Dereferenciando direccion de memoria %i", direccion_variable);
 
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
-	solicitarBytesAMemoria(direccion);
+	// VER FEDE solicitarBytesAMemoria(direccion);
 	t_paquete* paquete = recibir(memoria);
 
 	if(paquete->codigo_operacion == SOLICITAR_BYTES_FALLO) {
@@ -145,7 +147,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor){
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
 
 	log_info("Asignando valor %i en Pagina %i, Offset %i, Tamanio %i", direccion->pagina, direccion->offset, direccion->size);
-	almacenarBytesEnMemoria(direccion, valor); //VER SI TENGO QUE VERIFICAR QUE SE HAYA ALMACENADO OK
+	//VER FEDE almacenarBytesEnMemoria(direccion, valor); //VER SI TENGO QUE VERIFICAR QUE SE HAYA ALMACENADO OK
 
 	free(direccion);
 }
@@ -364,25 +366,37 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 }
 
 void liberarEnHeap(t_puntero puntero) {
-	t_heapMetadata* metadata = malloc(sizeof(t_heapMetadata));
-	t_direccion* direccion = malloc(sizeof(t_direccion));
+
+	t_liberarHeap* libera = malloc(sizeof(t_liberarHeap));
 	t_paquete* paquete;
 	int pagina = puntero / tamanio_pag;
 	int offset = puntero - (pagina*tamanio_pag);
 
-	direccion->pagina = pagina;
-	direccion->offset = offset;
-	direccion->size = sizeof(t_heapMetadata);
 
-	solicitarBytesAMemoria(direccion);
+	void * resul = solicitarBytesAMemoria(memoria, logger, pcb->pid, pagina, offset, sizeof(t_heapMetadata));
 
-	paquete = recibir(memoria);
+	char* instruccion = *(char*)resul;
 
-	if(paquete->codigo_operacion == SOLICITAR_BYTES_FALLO){
-		//VER FALLO
+	int punteroHeap = atoi(instruccion);
+	int paginaHeap = punteroHeap/tamanio_pag;
+	int offsetHeap = punteroHeap - (paginaHeap * tamanio_pag);
+
+	libera->pid = pcb->pid;
+	libera->nroPagina = paginaHeap;
+	libera->offset = offsetHeap;
+
+	enviar(kernel, LIBERAR_HEAP, sizeof(t_liberarHeap), libera);
+
+	paquete = recibir(kernel);
+	if(paquete->codigo_operacion == LIBERAR_HEAP_OK){
+		log_debug(logger, "Bloque Heap apuntando a %d liberado correctamente", punteroHeap);
 	}
-
+	else{
+		log_warning(logger, "No se ha podido liberar el bloque Heap con puntero %d", punteroHeap);
+	}
 }
+
+//Primitivas FS
 
 t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flags){
 	//Defino variables locales

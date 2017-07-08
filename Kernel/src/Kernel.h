@@ -243,15 +243,16 @@ void abortar(t_proceso* proceso);
 
 //HEAP
 void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido);
+void procesoLiberaHeap(un_socket socketCPU, t_paquete * paqueteRecibido);
 int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero);
 t_datosHeap* verificarEspacioLibreHeap( int pid, int tamanio);
 int reservarPaginaHeap(int pid,int pagina);
 void compactarPaginaHeap( int pagina, int pid);
 
 int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, int tamanio);
-void liberarBloqueHeap(int pid, int pagina, int offset);
-t_paquete* solicitarBytesHeapMemoria(int pid, int pagina, int offset, int size);
-t_paquete* almacenarBytesHeapMemoria(int pid, int pagina, int offset, int size, void* buffer);
+codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset);
+
+
 
 
 //CAPA Filesystem

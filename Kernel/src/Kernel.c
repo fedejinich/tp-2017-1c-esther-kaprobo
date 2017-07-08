@@ -399,6 +399,11 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			reservarHeap(socketActivo, paqueteRecibido);
 			break;
 
+		case LIBERAR_HEAP:
+			log_info(logger, "KERNEL: Proceso nos solicita liberar Heap");
+			procesoLiberaHeap(socketActivo, paqueteRecibido);
+			break;
+
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
 			finalizarProcesoCPU(paqueteRecibido, socketActivo);
 			break;
@@ -1457,18 +1462,31 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 }
 
-void liberarBloqueHeap(int pid, int pagina, int offset){
+
+void procesoLiberaHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
+	t_liberarHeap * libera = malloc(sizeof(t_liberarHeap));
+
+	libera = (t_liberarHeap*)(paqueteRecibido->data);
+	codigosKernelCPU codigo = liberarBloqueHeap(libera->pid, libera->nroPagina, libera->offset);
+	int algo =1;
+
+	enviar(socketCPU, codigo, sizeof(int), (void*)algo);
+
+}
+
+codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
 	log_info(logger, "Liberando Heap del pid &d", pid);
 
 	int i = 0;
-	t_paquete* paquete;
-	t_paquete* paquete2;
+
 	t_adminHeap* aux = malloc(sizeof(t_adminHeap));
 	t_heapMetadata bloque;
 
 	void* buffer = malloc(sizeof(t_heapMetadata));
-	paquete = solicitarBytesHeapMemoria(pid, pagina, offset, sizeof(t_heapMetadata));
-	buffer = paquete->data;
+
+
+	buffer = solicitarBytesAMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata));
+
 
 	memcpy(&bloque, buffer, sizeof(t_heapMetadata));
 
@@ -1476,12 +1494,12 @@ void liberarBloqueHeap(int pid, int pagina, int offset){
 
 	memcpy(buffer, &bloque, sizeof(t_heapMetadata));
 
-	paquete2 = almacenarBytesHeapMemoria(pid, pagina, offset, sizeof(t_heapMetadata), buffer);
+	int resul= almacenarEnMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata), buffer);
 
-	if(paquete2->codigo_operacion == ALMACENAR_BYTES_FALLO){
-		log_error(logger, "fallo la liberacion de Heap");
-		return;
+	if (resul == EXIT_FAILURE_CUSTOM){
+		return LIBERAR_HEAP_FALLO;
 	}
+
 
 	while(i<list_size(listaAdminHeap)){
 		aux = list_get(listaAdminHeap, i);
@@ -1492,9 +1510,10 @@ void liberarBloqueHeap(int pid, int pagina, int offset){
 		}
 		i++;
 	}
+
 //ver SEMAFOROS
-	liberar_paquete(paquete);
-	liberar_paquete(paquete2);
+
+	return LIBERAR_HEAP_OK;
 }
 
 
@@ -1525,9 +1544,8 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 		i++;
 	}
 
-	paquete = solicitarBytesHeapMemoria(pid, puntero->pagina, puntero->offset, sizeof(t_heapMetadata));
+	buffer = solicitarBytesAMemoria(memoria, logger, pid, puntero->pagina, puntero->offset, sizeof(t_heapMetadata));
 
-	buffer = paquete->data;
 
 	memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
 
@@ -1537,9 +1555,10 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 
 	memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
 
-	t_paquete * respuesta1 = almacenarBytesHeapMemoria(pid,puntero->pagina, puntero->offset, sizeof(t_heapMetadata), buffer);
+	int respuesta1 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina, puntero->offset, sizeof(t_heapMetadata), buffer);
 
-	if(respuesta1->codigo_operacion==ALMACENAR_BYTES_FALLO){
+
+	if(respuesta1==EXIT_FAILURE_CUSTOM){
 		log_error(logger, "NO PUDE ALMACENAR DATOS EN BLOQUE");
 		return -1;
 	}
@@ -1550,9 +1569,10 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 
 	memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
 
+	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina,puntero->offset+sizeof(t_heapMetadata)+size, sizeof(t_heapMetadata), buffer );
 
-	t_paquete * respuesta2 = almacenarBytesHeapMemoria(pid, puntero->pagina, puntero->offset+sizeof(t_heapMetadata)+size,sizeof(t_heapMetadata), buffer);
-	if(respuesta2->codigo_operacion==ALMACENAR_BYTES_FALLO){
+
+	if(respuesta2==EXIT_FAILURE_CUSTOM){
 	log_error(logger, "NO PUDE ALMACENAR DATOS EN BLOQUE");
 	return -1;
 	}
@@ -1613,9 +1633,11 @@ int reservarPaginaHeap(int pid,int pagina){
 
 	if(resultado== ASIGNAR_PAGINAS_FALLO) return -1;
 
-	t_paquete * respuesta2 = almacenarBytesHeapMemoria(pid,pagina,0, sizeof(t_heapMetadata), buffer);
+	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, pagina, 0, sizeof(t_heapMetadata), buffer);
 
-	if(respuesta2->codigo_operacion==ALMACENAR_BYTES_OK){
+
+
+	if(respuesta2==EXIT_SUCCESS_CUSTOM){
 		resultado = 1;
 	}else{
 		resultado = 0;
@@ -1643,23 +1665,20 @@ void compactarPaginaHeap( int pagina, int pid){
 	t_heapMetadata actual;
 	t_heapMetadata siguiente;
 	t_heapMetadata* buffer = malloc(sizeof(t_heapMetadata));
-	t_paquete * reciboAlgo;
-	t_paquete* reciboAlgo2 ;
+
 
 	actual.size= 0;
 
 	while(offset < TAMPAG && offset + sizeof(t_heapMetadata)+ actual.size> TAMPAG - sizeof(t_heapMetadata)){
 
-		reciboAlgo = solicitarBytesHeapMemoria(pid, pagina, offset, sizeof(t_heapMetadata));
 
-		buffer = (t_heapMetadata*)reciboAlgo->data;
+		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria,logger,pid, pagina, offset, sizeof(t_heapMetadata));
 
 		actual.uso = buffer->uso;
 		actual.size = buffer->size;
 
-		reciboAlgo2 = solicitarBytesHeapMemoria(pid, pagina, offset+sizeof(t_heapMetadata)+ actual.size,sizeof(t_heapMetadata));
 
-		buffer = (t_heapMetadata*)reciboAlgo2->data;
+		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina,offset+sizeof(t_heapMetadata)+ actual.size, sizeof(t_heapMetadata));
 
 		siguiente.uso = buffer->uso;
 		siguiente.size = buffer->size;
@@ -1668,9 +1687,9 @@ void compactarPaginaHeap( int pagina, int pid){
 			actual.size = actual.size + sizeof(t_heapMetadata)+ siguiente.size;
 			memcpy(buffer, &actual, sizeof(t_heapMetadata));
 
-			reciboAlgo = almacenarBytesHeapMemoria(pid, pagina, offset, sizeof(t_heapMetadata),(void*)buffer);
+			int resultado = almacenarEnMemoria(memoria, logger, pid, pagina,offset, sizeof(t_heapMetadata), (void*)buffer);
 
-
+//VER FALLO ?
 		}
 		else{
 			offset += sizeof(t_heapMetadata)+ actual.size;
@@ -1678,8 +1697,7 @@ void compactarPaginaHeap( int pagina, int pid){
 
 	}
 	free(buffer);
-	liberar_paquete(reciboAlgo);
-	liberar_paquete(reciboAlgo2);
+
 	log_info(logger,"Pagina %d del heap del pid %d compactada",pagina, pid);
 
 }
@@ -1690,11 +1708,11 @@ int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, i
 	int i=0;
 	t_heapMetadata auxBloque;
 	void* buffer = malloc(sizeof(t_heapMetadata));
-	t_paquete* paquete;
+
 
 	while(i<TAMPAG){
-		paquete = solicitarBytesHeapMemoria(pid, pagina, i, sizeof(t_heapMetadata));
-		buffer = paquete->data;
+
+		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, i, sizeof(t_heapMetadata));
 		memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
 
 		if(auxBloque.size >= tamanio + sizeof(t_heapMetadata) && auxBloque.uso == -1){
@@ -1711,35 +1729,4 @@ int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, i
 	return -1;
 }
 
-t_paquete* solicitarBytesHeapMemoria(int pid, int pagina, int offset, int size){
 
-	t_solicitudBytes* solicitud = malloc(sizeof(t_solicitudBytes));
-	t_paquete* paquete = malloc(sizeof(t_paquete));
-	solicitud->pid = pid;
-	solicitud->pagina = pagina;
-	solicitud->offset = offset;
-	solicitud->tamanio = size;
-	enviar(memoria, SOLICITAR_BYTES, sizeof(t_solicitudBytes), solicitud);
-	paquete = recibir(memoria);
-	return paquete;
-}
-
-
-t_paquete* almacenarBytesHeapMemoria(int pid, int pagina, int offset, int size, void* buffer){
-	t_almacenarBytes* almacenar = malloc(sizeof(t_almacenarBytes));
-	t_paquete* paquete = malloc(sizeof(t_paquete));
-
-	almacenar->pid =pid;
-	almacenar->pagina = pagina;
-	almacenar->offset = offset;
-	almacenar->tamanio = size;
-	almacenar->buffer = buffer;
-	enviar(memoria, ALMACENAR_BYTES, sizeof(t_almacenarBytes), almacenar);
-
-	paquete= recibir(memoria);
-	return paquete;
-
-
-
-
-}
