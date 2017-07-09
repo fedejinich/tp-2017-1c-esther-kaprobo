@@ -100,26 +100,30 @@ int main(int argc, char **argv) {
 		log_info(logger,"Program Counter: %d", pcb->programCounter);
 		log_info(logger, "PID: %d", pcb->pid);
 
-		int pid = pcb->pid;
+
 		var_max = (tamanio_pag*(stack_size+pcb->paginasDeCodigo))-1;
 
 		while((quantumAux!=0) && !programaBloqueado && !programaFinalizado && !programaAbortado){
 
-				t_solicitudBytes* pedido;
-				pedido = armoPedidoInstruccionAMemoria(pcb, tamanio_pag);
+				int pidAux = pcb->pid;
+				int paginaAux = (pcb->indiceDeCodigo[(pcb->programCounter)*2]/tamanio_pag)+1;
+				int offsetAux = pcb->indiceDeCodigo[((pcb->programCounter)*2)]%tamanio_pag;
+				int tamanioAux = pcb->indiceDeCodigo[((pcb->programCounter)*2)+1];
 
-				char* sentencia = leer(pedido->pid, pedido->pagina, pedido->offset, pedido->tamanio);
+
+				char* sentencia = malloc(tamanioAux);
+				sentencia = leer(pidAux, paginaAux, offsetAux, tamanioAux);
 
 				if(sentencia == NULL){
 					programaAbortado = 1;
 					log_info(logger, "Se Aborta el programa");
 				}
 				else{
-					log_info(logger, "Se recibio instruccion para pid $d de tamanio $d", pedido->pid, pedido->tamanio);
+					log_info(logger, "Se recibio instruccion para pid %d de tamanio %d", pidAux, tamanioAux);
 					char* barra_cero="\0";
-					memcpy(sentencia+(pedido->tamanio-1),barra_cero,1);
+					memcpy(sentencia+(tamanioAux-1),barra_cero,1);
 
-					log_info(logger, "Pid N°: $d, sentencia: %s", pedido->pid, depurarSentencia(sentencia));
+					log_info(logger, "Pid N°: $d, sentencia: %s", pidAux, depurarSentencia(sentencia));
 
 					analizadorLinea(depurarSentencia(sentencia),&primitivas, &primitivas_kernel);
 
@@ -138,7 +142,7 @@ int main(int argc, char **argv) {
 					serializado = serializarPCB(pcb);
 					if(!sigusr1_desactivado){
 						log_info(logger, "CPU, Bloqueado y sigusr1 activada");
-						int algo;
+						int algo=11;
 						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), algo);
 						//VER ESTO DEL LADO KERNEL
 					}
@@ -152,7 +156,7 @@ int main(int argc, char **argv) {
 					serializado = serializarPCB(pcb);
 					if(!sigusr1_desactivado){
 						log_info(logger, "CPU, Bloqueado y sigusr1 activada");
-						int algo;
+						int algo=11;
 						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), algo);
 						//VER ESTO DEL LADO KERNEL
 					}
@@ -167,7 +171,7 @@ int main(int argc, char **argv) {
 					serializado = serializarPCB(pcb);
 					if(!sigusr1_desactivado){
 						log_info(logger, "CPU, Bloqueado y sigusr1 activada");
-						int algo;
+						int algo=11;
 						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), algo);
 						//VER ESTO DEL LADO KERNEL
 					}
@@ -179,7 +183,7 @@ int main(int argc, char **argv) {
 
 		}
 		log_info(logger,"Se cierra CPU por senial SIGUSR1");
-		int basura;
+		int basura=11;
 		enviar(kernel,SENIAL_SIGUSR1,sizeof(int), basura);
 
 		close(kernel);
@@ -265,7 +269,7 @@ int conectarConElKernel(){
 	printf("Inicio de conexion con Kernel\n");
 	log_info(logger, "Conectando con Kernel. \n");
 	// funcion deSockets
-	kernel = conectar_a(ip_kernel,puerto_kernel);
+	kernel = conectar_a(ip_kernel,(char*)puerto_kernel);
 
 	if (kernel<0){
 		printf("CPU: No se pudo conectar con el Kernel\n");
@@ -293,7 +297,7 @@ int conectarConMemoria(){
 	printf("Inicio de conexion con Memoria\n");
 	log_info(logger, "Conectando con Memoria. \n");
 	// funcion deSockets
-	memoria = conectar_a(ip_memoria,puerto_memoria);
+	memoria = conectar_a(ip_memoria,(char*)puerto_memoria);
 
 	if (memoria<0){
 		printf("CPU: No se pudo conectar con la Memoria\n");
@@ -333,29 +337,19 @@ void asignarDatosDelKernel(t_paquete* datos_kernel){
 }
 
 
-t_solicitudBytes * armoPedidoInstruccionAMemoria(t_pcb* pcb, int tamanioPag){
-	t_solicitudBytes* aux;
-
-	aux->pid = pcb->pid;
-	aux->pagina = pcb->indiceDeCodigo[(pcb->programCounter)*2]/tamanioPag;
-	aux->offset = pcb->indiceDeCodigo[((pcb->programCounter)*2)]%tamanioPag;
-	aux->tamanio = pcb->indiceDeCodigo[((pcb->programCounter)*2)+1];
-	return aux;
-}
 
 char* leer(int pid, int pagina, int offset, int tamanio){
 
 	if((tamanio + offset)<=tamanio_pag){
-		enviarSolicitudAMemoria(pid, pagina, offset, tamanio);
 
-		t_paquete* instruccion;
-		instruccion = recibir(memoria);
+		void* instruccion = solicitarBytesAMemoria(memoria,logger,pid,pagina,offset,tamanio);
 
-		if(instruccion->codigo_operacion == SOLICITAR_BYTES_FALLO) return NULL;
+
+		if((int)instruccion == EXIT_FAILURE_CUSTOM) return NULL;
 
 		char* sentencia = malloc(tamanio);
-		memcpy(sentencia, instruccion->data, tamanio);
-		liberar_paquete(instruccion);
+		memcpy(sentencia, instruccion, tamanio);
+
 		return sentencia;
 	}
 	else {
@@ -374,12 +368,4 @@ char* leer(int pid, int pagina, int offset, int tamanio){
 
 }
 
-void enviarSolicitudAMemoria(int pid, int pagina, int offset, int tamanio){
-	t_solicitudBytes* pedido;
-	pedido->pid = pid;
-	pedido->pagina= pagina;
-	pedido->offset=offset;
-	pedido->tamanio=tamanio;
-	log_info(logger, "PID %d solicita direccion: %d pagina %d offset %d tamanio", pid, pagina, offset, tamanio);
-	enviar(memoria,SOLICITAR_BYTES, sizeof(t_solicitudBytes), pedido);
-}
+

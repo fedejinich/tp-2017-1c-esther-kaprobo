@@ -8,7 +8,7 @@
 #ifndef LEERESCRIBIRMEMORIA_H_
 #define LEERESCRIBIRMEMORIA_H_
 
-#include "CPU.h";
+#include "CPU.h"
 
 void almacenarBytesEnMemoria(t_direccion* direccion, void* buffer);
 
