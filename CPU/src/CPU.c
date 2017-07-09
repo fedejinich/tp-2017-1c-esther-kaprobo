@@ -116,6 +116,7 @@ int main(int argc, char **argv) {
 
 				char* sentencia = leer(pidAux, paginaAux, offsetAux, tamanioAux);
 
+
 				//char* sentencia2=malloc(tamanioAux);
 				 //sentencia2 = "variables a, f";
 				 //sentencia2[tamanioAux] = '\0';
@@ -129,13 +130,13 @@ int main(int argc, char **argv) {
 				else{
 					log_info(logger, "Se recibio instruccion para pid %d de tamanio %d", pidAux, tamanioAux);
 
-					/*char* barra_cero="\0";
-					printf("barra cero :%s \n", barra_cero);
+					char* barra_cero="\0";
 
-					memcpy(sentencia2+(tamanioAux-1),barra_cero,1);
+
+					memcpy(sentencia+(tamanioAux-1),barra_cero,1);
 					printf("memcpy\n");
-*/
-					//log_debug(logger, "Pid N°: $d, sentencia: %s", pidAux, depurarSentencia(sentencia2));
+
+					log_debug(logger, "Pid N°: $d, sentencia: %s", pidAux, depurarSentencia(sentencia));
 					printf("analizados\n");
 					analizadorLinea(sentencia,&primitivas, &primitivas_kernel);
 
@@ -242,7 +243,7 @@ char* depurarSentencia(char* sentencia){
 	printf("i\n");
 	int i= strlen(sentencia);
 	printf("Asignacion i\n");
-	while (string_ends_with(sentencia, "\0")) {
+	while (string_ends_with(sentencia, "\n")) {
 		printf("I: %d\n", i);
 		i--;
 		sentencia = string_substring_until(sentencia, i);
