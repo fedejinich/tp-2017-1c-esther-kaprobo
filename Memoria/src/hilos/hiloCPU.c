@@ -55,7 +55,7 @@ void* hiloConexionCPU(void* socket) {
 				offset = ((t_solicitudBytes*)(paqueteRecibido->data))->offset;
 				tamanio = ((t_solicitudBytes*)(paqueteRecibido->data))->tamanio;
 
-				void* buffer = solicitarBytesDePagina(pid, pagina, offset, tamanio);
+				buffer = solicitarBytesDePagina(pid, pagina, offset, tamanio);
 
 				if(buffer == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
@@ -63,10 +63,8 @@ void* hiloConexionCPU(void* socket) {
 					log_error(logger, "No se encontraron los bytes solicitados: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
 				}
 
-				void* bufferSerializado = malloc(tamanio);
-				memcpy(bufferSerializado, buffer, tamanio);
-
-				enviar(socketClienteKernel, SOLICITAR_BYTES_OK, tamanio, bufferSerializado);
+				log_warning(logger, "Voy a enviar %s", &buffer);
+				enviar(socketClienteKernel, SOLICITAR_BYTES_OK, tamanio, buffer);
 				log_debug(logger, "PID: %i leyo %i bytes de la pagina %i con offset %i y tamanio %i", pid, pagina, offset, tamanio);
 
 				break;

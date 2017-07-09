@@ -11,18 +11,24 @@
 void escribirFrame(int frame, int offset, int tamanio, void * contenido) {
 	log_info(logger, "Escribiendo frame %i con offset %i y tamanio %i", frame, offset, tamanio);
 
-	memcpy(&framePointer[frame] + offset, &contenido, tamanio);
+
+	log_warning(logger, "escribirFrame(%i,%i,%i,%s)", frame, offset, tamanio, contenido);
+	memcpy(memoria + getTablaDePaginasBytes() + (frame * frame_size) + offset, contenido, tamanio);
 }
 
-void leerFrame(int frame, int offset, int tamanio, void* buffer) {
+void* leerFrame(int frame, int offset, int tamanio) {
+	log_warning(logger, "leerFrame(%i,%i,%i)", frame, offset, tamanio);
 	log_info(logger, "Leyendo frame %i con offset %i y tamanio %i", frame, offset, tamanio);
 
-	log_warning(logger, "AAAAAAAA %s", framePointer[11]);
+	void* buffer = malloc(tamanio);
 
-	void* bufferAux = malloc(tamanio);
-	memcpy(&bufferAux, &framePointer[frame] + offset, tamanio);
-	memcpy(&buffer, bufferAux, tamanio);
-	//return buffer;
+	//t_frame* posicion = framePointer[frame];
+
+	memcpy(&buffer, memoria + getTablaDePaginasBytes() + (frame * frame_size) + offset, tamanio);
+
+	log_warning(logger, "Buffer %s", &buffer);
+
+	return buffer;
 }
 
 int cantidadDeFramesOcupados() {
@@ -44,7 +50,7 @@ void liberarFrame(int frame) {
 }
 
 void inicializarFramePointer() {
-	framePointer = &memoria[getFirstFrame()];
+	framePointer = memoria + getTablaDePaginasBytes();
 }
 
 int getFirstFrame() {

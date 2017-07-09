@@ -43,7 +43,7 @@ typedef struct {
 int framesLibres;
 int framesOcupados;
 
-t_frame* memoria;
+void* memoria;
 t_frame* framePointer;
 
 

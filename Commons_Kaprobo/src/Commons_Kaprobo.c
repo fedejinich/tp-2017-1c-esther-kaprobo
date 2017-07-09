@@ -171,9 +171,11 @@ int cantidadPaginasCodigo(char* codigo) {
 }
 
 int almacenarEnMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanio, void* buffer) {
+	/*printf("Tamanio antes de incrementar %i\n", tamanio);
 	tamanio++; //el +1 es porque le voy a meter un \0 al buffer
+	printf("Tamanio despues de incrementar %i\n", tamanio);
 
-	strcpy(buffer + tamanio, "\0");
+	strcpy(buffer + tamanio, "\0");*/
 
 	void* bufferSerializado = malloc(sizeof(int) * 4 + tamanio);
 
@@ -207,7 +209,9 @@ void* solicitarBytesAMemoria(un_socket socketMemoria, t_log* logger, int pid, in
 
 	free(solicitud);
 
+	log_warning(logger, "Antes");
 	t_paquete* paquete = recibir(socketMemoria);
+	log_warning(logger, "Despues");
 
 	if(paquete->codigo_operacion == SOLICITAR_BYTES_FALLO) {
 		log_error(logger, "No se pudo cumplir la solicitud de bytes");

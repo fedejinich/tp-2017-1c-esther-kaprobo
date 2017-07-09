@@ -465,7 +465,8 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	}
 	pthread_mutex_unlock(&mutexGradoMultiprogramacion);
 
-	char* codigo = paquete->data;
+	char* codigo = malloc(paquete->tamanio);
+	codigo = paquete->data;
 	exito = inicializarProcesoYAlmacenarEnMemoria(codigo, paquete->tamanio, proceso);
 
 	if(exito == EXIT_SUCCESS_CUSTOM){

@@ -365,3 +365,11 @@ int getFramePrimeraPagina(int pid) {
 
 	return primeraPagina;
 }
+
+
+int getTablaDePaginasBytes() {
+	int tablaDePaginasSize = frames * sizeof(t_entradaTablaDePaginas);
+	int total = ceil((double) tablaDePaginasSize/ (double) frame_size);
+
+	return total * frame_size;
+}
