@@ -13,7 +13,7 @@
 
 
 void escribirFrame(int frame, int offset, int tamanio, void * contenido);
-void* leerFrame(int frame,int offset, int tamanio);
+void leerFrame(int frame,int offset, int tamanio, void* buffer);
 void liberarFrame(int frame);
 int getFirstFrame();
 void inicializarFramePointer();

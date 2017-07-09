@@ -30,7 +30,12 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 		}
 
 		log_info(logger, "Los bytes del PID: %i, pagina: %i se encuentran en el frame %i", pid, pagina, entrada->frame);
-		buffer = leerFrame(entrada->frame, offset, tamanio);
+
+
+		buffer = malloc(tamanio);
+		leerFrame(entrada->frame, offset, tamanio, buffer);
+		log_warning(logger, "Buffer Memoria-Operaciones: %s", buffer);
+
 
 		if(buffer == EXIT_FAILURE_CUSTOM) {
 			log_error(logger, "No se pudo cumplir la solicutd de bytes. PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
@@ -41,6 +46,7 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 	}
 
 	log_warning(logger, "Sali de solicitarBytes");
+
 	return buffer;
 }
 

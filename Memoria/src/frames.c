@@ -16,19 +16,16 @@ void escribirFrame(int frame, int offset, int tamanio, void * contenido) {
 	memcpy(memoria + getTablaDePaginasBytes() + (frame * frame_size) + offset, contenido, tamanio);
 }
 
-void* leerFrame(int frame, int offset, int tamanio) {
+void leerFrame(int frame, int offset, int tamanio, void* buffer) {
 	log_warning(logger, "leerFrame(%i,%i,%i)", frame, offset, tamanio);
 	log_info(logger, "Leyendo frame %i con offset %i y tamanio %i", frame, offset, tamanio);
 
-	void* buffer = malloc(tamanio);
-
 	//t_frame* posicion = framePointer[frame];
 
-	memcpy(&buffer, memoria + getTablaDePaginasBytes() + (frame * frame_size) + offset, tamanio);
+	memcpy(buffer, memoria + getTablaDePaginasBytes() + (frame * frame_size) + offset, tamanio);
 
-	log_warning(logger, "Buffer %s", &buffer);
+	log_warning(logger, "Buffer Memoria - frames: %s", buffer);
 
-	return buffer;
 }
 
 int cantidadDeFramesOcupados() {
