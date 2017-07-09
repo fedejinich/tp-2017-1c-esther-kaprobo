@@ -21,6 +21,11 @@ typedef struct __attribute__((packed))t_direccion{
 	int size;
 } t_direccion;
 
+typedef struct __attribute__((packed))t_moverCursor{
+	t_descriptor_archivo fd;
+	t_valor_variable posicion;
+	int pid;
+}t_moverCursor;
 
 typedef struct __attribute__ ((packed))t_envioDeDatosKernelFSAbrir{
 	int pid;

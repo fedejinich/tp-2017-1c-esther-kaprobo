@@ -440,6 +440,18 @@ t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flag
 
 void borrarArchivo(t_descriptor_archivo descriptor_archivo){
 
+	enviar(kernel, BORRAR_ARCHIVO, sizeof(t_descriptor_archivo), &descriptor_archivo);
+
+	t_paquete* paquete = recibir(kernel);
+
+	if(paquete->codigo_operacion== BORRAR_ARCHIVO_OK){
+		log_debug(logger, "El PID %d ha borrado el archivo con FD %d", pcb->pid, &descriptor_archivo);
+	}
+	else{
+		log_error(logger, "ERROR AL BORRAR ARCHIVO");
+		//VER ABORTAR
+	}
+
 }
 
 void cerrarArchivo(t_descriptor_archivo descriptor_archivo){
@@ -460,9 +472,29 @@ void cerrarArchivo(t_descriptor_archivo descriptor_archivo){
 
 void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posicion){
 
+	t_moverCursor* mover = malloc(sizeof(t_moverCursor));
+
+	mover->fd = descriptor_archivo;
+	mover->pid=pcb->pid;
+	mover->posicion = posicion;
+
+	enviar(kernel, MOVER_CURSOR_ARCHIVO, sizeof(t_moverCursor), mover);
+
+	t_paquete* rta = recibir(kernel);
+
+	if(rta->codigo_operacion==MOVER_CURSOR_ARCHIVO_OK){
+		log_debug(logger, "El PID %d ha movido el cursor del FD %d en la posicion %d", pcb->pid, descriptor_archivo,posicion);
+	}
+	else{
+		log_error(logger,"Error al mover el cursor del FD %d", descriptor_archivo);
+		//VER ABORTAR
+	}
+
 }
 
 void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion, t_valor_variable tamanio){
+
+
 
 }
 

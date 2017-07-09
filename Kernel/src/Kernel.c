@@ -81,16 +81,16 @@ void cargarConfiguracion() {
 		int i;
 
 		for(i=0;i<strlen((char*)sem_inits)/sizeof(char*);i++){
-			printf("i: %d\n");
+
 			if(list_size(cola_semaforos[i]->elements)>0) retorno = true;
 		}
-		printf(4);
+
 		return retorno;
 	}
 
 	if(hayConfiguracion){
 		bool semaforo;
-		int i;
+
 
 		semaforo = haySemaforos();
 
@@ -1252,7 +1252,7 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 
 
 t_proceso* obtenerProcesoSocketCPU(t_queue *cola, int socketBuscado){
-	int a = 0, t;
+	int a = 0;
 	t_proceso*proceso;
 	while(proceso = (t_proceso*)list_get(cola->elements, a)){
 		if (proceso->socketCPU == socketBuscado) return (t_proceso*)list_remove(cola->elements, a);
@@ -1472,17 +1472,17 @@ void finalizarProcesoPorPID(int pid, int exitCode){
 
 t_queue* buscarProcesoEnLasColas(int pid){
 	t_proceso* proceso;
-	if(proceso = obtenerProcesoPorPID(cola_new, pid)){
+	if((proceso = obtenerProcesoPorPID(cola_new, pid))){
 		return cola_new;
 	}
-	if(proceso = obtenerProcesoPorPID(cola_ready, pid)){
+	if((proceso = obtenerProcesoPorPID(cola_ready, pid))){
 		return cola_ready;
 	}
-	if(proceso = obtenerProcesoPorPID(cola_exec, pid)){
+	if((proceso = obtenerProcesoPorPID(cola_exec, pid))){
 		//TODO AVISARLE A CPU QUE LO DEJE DE EJECUTAR
 		return cola_exec;
 	}
-	if(proceso = obtenerProcesoPorPID(cola_block, pid)){
+	if((proceso = obtenerProcesoPorPID(cola_block, pid))){
 		return cola_block;
 	}
 	return NULL;
