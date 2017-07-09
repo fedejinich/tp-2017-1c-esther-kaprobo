@@ -399,6 +399,19 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			reservarHeap(socketActivo, paqueteRecibido);
 			break;
 
+		case PROGRAMA_BLOQUEADO_SIGUSR1:
+			flagCPU=1;
+			break;
+
+		case PROGRAMA_FINALIZADO:
+			log_info(logger, "Finalizar Programa");
+			finalizarProgramaKernel(socketActivo, paqueteRecibido);
+			break;
+
+			//VER BLOQUEADO POR SEÑAL
+			//VER BLOQUEADO POR SEMAFORO
+			//VER ABORTADO
+
 		case LIBERAR_HEAP:
 			log_info(logger, "KERNEL: Proceso nos solicita liberar Heap");
 			procesoLiberaHeap(socketActivo, paqueteRecibido);
@@ -520,10 +533,10 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 		destruirPCB(procesoPideSem->pcb);
 		procesoPideSem->pcb = pcb_temporal;
 
-		/* VER
+
 		if(procesoPideSem->abortado == false){
 			bloqueoSemaforo(procesoPideSem, paqueteRecibido->data);
-			if(flag==0){
+			if(flagCPU==0){
 				queue_push(cola_CPU_libres, (void*)socketActivo);
 				sem_post(&sem_cpu);
 			}
@@ -534,7 +547,7 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 			log_info(logger,"KERNEL: Se recibio proceso %d por fin de quantum, abortado", procesoPideSem->pcb->pid);
 			abortar(procesoPideSem);
 		}
-		*/
+
 	}
 	else{
 		escribeSemaforo(paqueteNuevo->data,*buscarSemaforo(paqueteRecibido)-1);
@@ -549,6 +562,37 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 }
 
 void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
+
+	char* semaforo = paqueteRecibido->data;
+	t_proceso* proceso;
+	pthread_mutex_lock(&mutex_exec);
+	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
+	queue_push(cola_exec, proceso);
+	pthread_mutex_unlock(&mutex_exec);
+	pthread_mutex_lock(&mutex_config);
+	log_info(logger, "Proceso %d libera el semaforo %s",proceso->pcb->pid, paqueteRecibido->data);
+
+	int i;
+
+	for(i=0; i< strlen((char*)sem_ids)/sizeof(char*);i++){
+		if(strcmp((char*)sem_ids[i],semaforo)==0){
+			if(list_size(cola_semaforos[i]->elements)){
+				proceso = queue_pop(cola_semaforos[i]);
+				pthread_mutex_lock(&mutex_ready);
+				queue_push(cola_ready, proceso);
+				pthread_mutex_unlock(&mutex_ready);
+				sem_post(&sem_ready);
+			}
+			else{
+				valor_semaforos[i]++;
+			}
+		}
+	}
+	log_error(logger, "No encontre el semaforo");
+
+	pthread_mutex_unlock(&mutex_config);
+	return;
+
 
 }
 
@@ -1134,18 +1178,25 @@ void planificadorCortoPlazo(){
 		if(estadoPlanificacion){
 			yaMeFijeReady = false;
 			sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
-			pthread_mutex_lock(&mutex_config);
-			socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
 
-			pthread_mutex_lock(&mutex_ready);
-			proceso = queue_pop(cola_ready);
-			pthread_mutex_unlock(&mutex_ready);
 
-			log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
+			if(flag==0){
+				pthread_mutex_lock(&mutex_config);
+				socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
 
-			mandarAEjecutar(proceso, socketCPULibre);
+				pthread_mutex_lock(&mutex_ready);
+				proceso = queue_pop(cola_ready);
+				pthread_mutex_unlock(&mutex_ready);
 
-			pthread_mutex_unlock(&mutex_config);
+				log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
+
+				mandarAEjecutar(proceso, socketCPULibre);
+
+				pthread_mutex_unlock(&mutex_config);
+			}
+			else{
+				flag = 0;
+			}
 		}
 		else{
 			printf("PLANIF DETENIDA \n");
@@ -1359,6 +1410,51 @@ void cambiarGradoMultiprogramacion(int gradoNuevo){
 	pthread_mutex_lock(&mutexGradoMultiprogramacion);
 	grado_multiprog = gradoNuevo;
 	pthread_mutex_unlock(&mutexGradoMultiprogramacion);
+}
+
+
+void abortar(t_proceso* proceso){
+	enviar(proceso->socketConsola, ABORTADO_CPU, sizeof(int), &proceso->pcb->pid);
+	pthread_mutex_lock(&mutex_exit);
+	destruirCONTEXTO(proceso->pcb);
+	queue_push(cola_exit, proceso);
+	pthread_mutex_unlock(&mutex_exit);
+
+	enviar(memoria, FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
+
+}
+
+void finalizarProgramaKernel(int* socket, t_paquete* paquete){
+ 	t_proceso* proceso;
+
+ 	pthread_mutex_lock(&mutex_exec);
+ 	proceso= obtenerProcesoSocketCPU(cola_exec, socket);
+ 	pthread_mutex_unlock(&mutex_exec);
+
+ 	log_info("Se recibio proceso %d por fin de ejecucion", proceso->pcb->pid);
+
+ 	pthread_mutex_lock(&mutex_exit);
+ 	destruirCONTEXTO(proceso->pcb);
+ 	queue_push(cola_exit, proceso);
+ 	pthread_mutex_unlock(&mutex_exit);
+ 	queue_push(cola_CPU_libres, (void*)socket);
+ 	sem_post(&sem_cpu);
+ 	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
+ 	enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
+ }
+
+
+void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
+ 	int i;
+
+ 	for(i=0; i < strlen((char*)sem_ids)/sizeof(char*);i++){
+ 		if(strcmp((char*)sem_ids[i], semaforo) == 0){
+ 			queue_push(cola_semaforos[i], proceso);
+ 			return;
+ 		}
+ 	}
+ 	log_error(logger,"No encontre el semaforo");
+ 	exit(0);
 }
 
 void finalizarProcesoPorPID(int pid, int exitCode){

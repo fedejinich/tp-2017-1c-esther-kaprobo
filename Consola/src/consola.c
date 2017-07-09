@@ -16,7 +16,7 @@
 int main(int argc, char **argv) {
 	limpiarArchivos();
 	iniciarConsola();
-	crearArchivoLog();
+	crearArchivologgerConsola();
 	cargarConfiguracion();
 
 	//Interfaz con el Usuario
@@ -80,7 +80,7 @@ void iniciarConsola(){
 
 }
 
-void crearArchivoLog(){
+void crearArchivologgerConsola(){
 	logger = iniciarLog(ARCHIVOLOG,"Consola");
 	log_info(logger, "Iniciando Consola. \n");
 }
@@ -321,8 +321,14 @@ void hiloNuevoPrograma(){
 			mostrarMenu();
 			pthread_mutex_unlock(&mutexEjecuta);
 			break;
-
-
+		case ABORTADO_CPU:
+			pthread_mutex_lock(&mutexEjecuta);
+			printf("Proceso abortado por CPU\n");
+			programaFinalizado=0;
+			close(kernel);
+			mostrarMenu();
+			pthread_mutex_unlock(&mutexEjecuta);
+			break;
 		case -1:
 			pthread_mutex_lock(&mutexEjecuta);
 			printf("CONSOLA: Kernel se desconecto\n");

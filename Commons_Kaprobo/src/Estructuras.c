@@ -181,3 +181,34 @@ char *serializarPCB(t_pcb *pcb){
 
 	return retorno;
 }
+
+
+void destruirCONTEXTO(t_pcb * pcb){
+ 	t_contexto* contextoParaFinalizar;
+
+ 	while(pcb->sizeContextoActual !=0){
+ 		contextoParaFinalizar = list_get(pcb->contextoActual, pcb->sizeContextoActual -1);
+
+ 	while(contextoParaFinalizar->sizeVars !=0){
+ 			t_direccion * temporal = (((t_variable*)list_get(contextoParaFinalizar->vars, contextoParaFinalizar->sizeVars -1))->direccion);
+ 			free(temporal);
+ 			free(list_get(contextoParaFinalizar->vars, contextoParaFinalizar->sizeVars -1));
+ 			contextoParaFinalizar->sizeVars --;
+ 		}
+ 		while(contextoParaFinalizar->sizeArgs != 0){
+ 			free((t_direccion*)list_get(contextoParaFinalizar->args, contextoParaFinalizar->sizeArgs -1));
+ 			contextoParaFinalizar->sizeArgs --;
+ 		}
+ 		list_destroy(contextoParaFinalizar->vars);
+
+ 		list_destroy(contextoParaFinalizar->args);
+
+ 		free(list_get(pcb->contextoActual, pcb->sizeContextoActual -1));
+ 		pcb->sizeContextoActual --;
+ 	}
+ 	list_destroy(pcb->contextoActual);
+ 	free(pcb->indiceDeCodigo);
+ 	free(pcb->indiceEtiquetas);
+
+ }
+

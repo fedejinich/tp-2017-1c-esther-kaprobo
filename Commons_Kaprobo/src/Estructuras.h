@@ -106,6 +106,7 @@ typedef struct __attribute__((packed))t_liberarHeap{
 void destruirPCB(t_pcb* pcb);
 t_pcb* desserializarPCB(char* serializado);
 char *serializarPCB(t_pcb *pcb);
+void destruirCONTEXTO(t_pcb* pcb);
 
 
 

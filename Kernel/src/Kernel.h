@@ -54,6 +54,8 @@ typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
 
 //Globales
 
+volatile int flag = 0;
+int flagCPU=0;
 //PID dando vueltas
 int cantidadDeProgramas  = 0;
 
@@ -236,7 +238,7 @@ void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido);
 void escribirVariable(int* socketActivo, t_paquete* paqueteRecibido);
 int* valorVariable(char* variable);
 
-
+void bloqueoSemaforo(t_proceso* proceso, char* semaforo);
 
 void finalizarProgramaKernel(int* socket, t_paquete* paquete);
 void abortar(t_proceso* proceso);

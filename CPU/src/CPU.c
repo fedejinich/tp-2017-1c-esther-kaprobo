@@ -103,20 +103,90 @@ int main(int argc, char **argv) {
 		int pid = pcb->pid;
 		var_max = (tamanio_pag*(stack_size+pcb->paginasDeCodigo))-1;
 
+		while((quantumAux!=0) && !programaBloqueado && !programaFinalizado && !programaAbortado){
+
+				t_solicitudBytes* pedido;
+				pedido = armoPedidoInstruccionAMemoria(pcb, tamanio_pag);
+
+				char* sentencia = leer(pedido->pid, pedido->pagina, pedido->offset, pedido->tamanio);
+
+				if(sentencia == NULL){
+					programaAbortado = 1;
+					log_info(logger, "Se Aborta el programa");
+				}
+				else{
+					log_info(logger, "Se recibio instruccion para pid $d de tamanio $d", pedido->pid, pedido->tamanio);
+					char* barra_cero="\0";
+					memcpy(sentencia+(pedido->tamanio-1),barra_cero,1);
+
+					log_info(logger, "Pid N°: $d, sentencia: %s", pedido->pid, depurarSentencia(sentencia));
+
+					analizadorLinea(depurarSentencia(sentencia),&primitivas, &primitivas_kernel);
+
+					free(sentencia);
+
+					pcb->programCounter++;
+
+					if(algoritmo==1){
+						quantumAux--;
+						usleep(quantum_sleep*1000);
+					}
+				}
+				if(programaBloqueado){
+					log_info(logger, "El programa sale por bloqueo");
+					log_info(logger, "PC: %d", pcb->programCounter);
+					serializado = serializarPCB(pcb);
+					if(!sigusr1_desactivado){
+						log_info(logger, "CPU, Bloqueado y sigusr1 activada");
+						int algo;
+						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), algo);
+						//VER ESTO DEL LADO KERNEL
+					}
+					enviar(kernel, PROGRAMA_BLOQUEADO_SEMAFORO, ((t_pcb*)serializado)->sizeTotal, serializado);
+					free(serializado);
+					destruirPCB(pcb);
+				}
+
+				if(programaAbortado){
+					log_info(logger,"El pid %d se aborto", pcb->pid);
+					serializado = serializarPCB(pcb);
+					if(!sigusr1_desactivado){
+						log_info(logger, "CPU, Bloqueado y sigusr1 activada");
+						int algo;
+						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), algo);
+						//VER ESTO DEL LADO KERNEL
+					}
+					enviar(kernel, PROGRAMA_ABORTADO, ((t_pcb*)serializado)->sizeTotal, serializado);
+					free(serializado);
+					destruirPCB(pcb);
+				}
+
+				if((quantumAux==0) && !programaFinalizado && !programaBloqueado && !programaAbortado){
+					log_info(logger,"Se sale por fin de QUANTUM");
+
+					serializado = serializarPCB(pcb);
+					if(!sigusr1_desactivado){
+						log_info(logger, "CPU, Bloqueado y sigusr1 activada");
+						int algo;
+						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), algo);
+						//VER ESTO DEL LADO KERNEL
+					}
+					enviar(kernel,FIN_QUANTUM, ((t_pcb*)serializado)->sizeTotal, serializado);
+					free(serializado);
+					destruirPCB(pcb);
+				}
+			}
+
+		}
+		log_info(logger,"Se cierra CPU por senial SIGUSR1");
+		int basura;
+		enviar(kernel,SENIAL_SIGUSR1,sizeof(int), basura);
+
+		close(kernel);
+		close(memoria);
 
 
-
-
-
-
-
-
-
-
-	}
-
-
-	return 0;
+		exit(EXIT_SUCCESS);
 }
 
 void iniciarCPU(){
@@ -247,9 +317,69 @@ int conectarConMemoria(){
 }
 
 void asignarDatosDelKernel(t_paquete* datos_kernel){
-	quantum = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM;
-	tamanio_pag = ((t_datos_kernel*)(datos_kernel->data))->TAMANIO_PAG;
-	quantum_sleep = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM_SLEEP;
-	stack_size = ((t_datos_kernel*)(datos_kernel->data))->STACK_SIZE;
 
+	if(algoritmo==1){
+		quantum = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM;
+		quantum_sleep = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM_SLEEP;
+	}
+	else{
+		quantum = 20;
+		quantum_sleep = 10;
+	}
+
+	stack_size = ((t_datos_kernel*)(datos_kernel->data))->STACK_SIZE;
+	tamanio_pag = ((t_datos_kernel*)(datos_kernel->data))->TAMANIO_PAG;
+
+}
+
+
+t_solicitudBytes * armoPedidoInstruccionAMemoria(t_pcb* pcb, int tamanioPag){
+	t_solicitudBytes* aux;
+
+	aux->pid = pcb->pid;
+	aux->pagina = pcb->indiceDeCodigo[(pcb->programCounter)*2]/tamanioPag;
+	aux->offset = pcb->indiceDeCodigo[((pcb->programCounter)*2)]%tamanioPag;
+	aux->tamanio = pcb->indiceDeCodigo[((pcb->programCounter)*2)+1];
+	return aux;
+}
+
+char* leer(int pid, int pagina, int offset, int tamanio){
+
+	if((tamanio + offset)<=tamanio_pag){
+		enviarSolicitudAMemoria(pid, pagina, offset, tamanio);
+
+		t_paquete* instruccion;
+		instruccion = recibir(memoria);
+
+		if(instruccion->codigo_operacion == SOLICITAR_BYTES_FALLO) return NULL;
+
+		char* sentencia = malloc(tamanio);
+		memcpy(sentencia, instruccion->data, tamanio);
+		liberar_paquete(instruccion);
+		return sentencia;
+	}
+	else {
+		char* lectura1= leer(pid,pagina,offset,(tamanio_pag-offset));
+		if(lectura1 == NULL) return NULL;
+		char* lectura2 = leer(pid, pagina +1,0,tamanio-(tamanio_pag-offset));
+		if(lectura2==NULL) return NULL;
+
+		char* retorno = malloc((tamanio_pag-offset)+tamanio-(tamanio_pag-offset));
+		memcpy(retorno, lectura1, (tamanio_pag-offset));
+		memcpy(retorno + (tamanio_pag-offset), lectura2, tamanio-(tamanio_pag-offset));
+		free(lectura1);
+		free(lectura2);
+		return retorno;
+	}
+
+}
+
+void enviarSolicitudAMemoria(int pid, int pagina, int offset, int tamanio){
+	t_solicitudBytes* pedido;
+	pedido->pid = pid;
+	pedido->pagina= pagina;
+	pedido->offset=offset;
+	pedido->tamanio=tamanio;
+	log_info(logger, "PID %d solicita direccion: %d pagina %d offset %d tamanio", pid, pagina, offset, tamanio);
+	enviar(memoria,SOLICITAR_BYTES, sizeof(t_solicitudBytes), pedido);
 }
