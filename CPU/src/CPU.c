@@ -44,6 +44,8 @@ AnSISOP_kernel primitivas_kernel = {
 };
 
 int main(int argc, char **argv) {
+
+
 	iniciarCPU();
 	sigusr1_desactivado=1;
 
@@ -110,9 +112,15 @@ int main(int argc, char **argv) {
 				int offsetAux = pcb->indiceDeCodigo[((pcb->programCounter)*2)]%tamanio_pag;
 				int tamanioAux = pcb->indiceDeCodigo[((pcb->programCounter)*2)+1];
 
+				log_debug(logger, "CPU: Voy a leer del pid %d, la pagina %d, offset %d y size %d", pidAux, paginaAux, offsetAux, tamanioAux);
 
-				char* sentencia = malloc(tamanioAux);
-				sentencia = leer(pidAux, paginaAux, offsetAux, tamanioAux);
+				char* sentencia = leer(pidAux, paginaAux, offsetAux, tamanioAux);
+
+				//char* sentencia2=malloc(tamanioAux);
+				 //sentencia2 = "variables a, f";
+				 //sentencia2[tamanioAux] = '\0';
+				log_debug(logger, "Sentencia: %s", sentencia);
+
 
 				if(sentencia == NULL){
 					programaAbortado = 1;
@@ -120,12 +128,16 @@ int main(int argc, char **argv) {
 				}
 				else{
 					log_info(logger, "Se recibio instruccion para pid %d de tamanio %d", pidAux, tamanioAux);
-					char* barra_cero="\0";
-					memcpy(sentencia+(tamanioAux-1),barra_cero,1);
 
-					log_info(logger, "Pid N°: $d, sentencia: %s", pidAux, depurarSentencia(sentencia));
+					/*char* barra_cero="\0";
+					printf("barra cero :%s \n", barra_cero);
 
-					analizadorLinea(depurarSentencia(sentencia),&primitivas, &primitivas_kernel);
+					memcpy(sentencia2+(tamanioAux-1),barra_cero,1);
+					printf("memcpy\n");
+*/
+					//log_debug(logger, "Pid N°: $d, sentencia: %s", pidAux, depurarSentencia(sentencia2));
+					printf("analizados\n");
+					analizadorLinea(sentencia,&primitivas, &primitivas_kernel);
 
 					free(sentencia);
 
@@ -224,11 +236,19 @@ void ejecutarArchivo(FILE *archivo){
 }
 
 char* depurarSentencia(char* sentencia){
-	int i = strlen(sentencia);
-	while (string_ends_with(sentencia, "\n")) {
-	i--;
-	sentencia = string_substring_until(sentencia, i);
+	printf("depurar\n");
+	printf("strlen dentro depurar:%d \n", strlen(sentencia));
+
+	printf("i\n");
+	int i= strlen(sentencia);
+	printf("Asignacion i\n");
+	while (string_ends_with(sentencia, "\0")) {
+		printf("I: %d\n", i);
+		i--;
+		sentencia = string_substring_until(sentencia, i);
+		printf("sentencia %s\n",sentencia);
 	}
+	printf("sentenciareturn: %s\n", sentencia);
 	return sentencia;
 }
 
@@ -348,7 +368,7 @@ char* leer(int pid, int pagina, int offset, int tamanio){
 		if((int)instruccion == EXIT_FAILURE_CUSTOM) return NULL;
 
 		char* sentencia = malloc(tamanio);
-		memcpy(sentencia, instruccion, tamanio);
+		memcpy(sentencia, (char*)instruccion, tamanio);
 
 		return sentencia;
 	}
