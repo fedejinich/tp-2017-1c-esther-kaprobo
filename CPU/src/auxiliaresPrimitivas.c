@@ -189,38 +189,4 @@ t_direccion* convertirPunteroADireccion(int puntero) {
 	return direccion;
 }
 
-void destruirPCB(t_pcb *pcb) {
 
-	t_contexto *contexto_a_finalizar;
-	while(pcb->sizeContextoActual != 0) {
-		contexto_a_finalizar= list_get(pcb->contextoActual, pcb->sizeContextoActual-1);
-
-		while(contexto_a_finalizar->sizeVars != 0) {
-			t_variable* variable = (t_variable*) list_get(contexto_a_finalizar->vars, contexto_a_finalizar->sizeVars-1);
-			t_direccion* direccion = (variable->direccion);
-
-			free(direccion);
-			free(variable);
-
-			contexto_a_finalizar->sizeVars--;
-		}
-
-		while(contexto_a_finalizar->sizeArgs != 0) {
-			free((t_direccion*)list_get(contexto_a_finalizar->args, contexto_a_finalizar->sizeArgs-1));
-			contexto_a_finalizar->sizeArgs--;
-		}
-
-		list_destroy(contexto_a_finalizar->vars);
-		list_destroy(contexto_a_finalizar->args);
-
-		free(list_get(pcb->contextoActual, pcb->sizeContextoActual-1));
-
-		pcb->sizeContextoActual--;
-	}
-
-	list_destroy(pcb->contextoActual);
-	free(pcb->indiceDeCodigo);
-	free(pcb->indiceEtiquetas);
-	free(pcb);
-
-}
