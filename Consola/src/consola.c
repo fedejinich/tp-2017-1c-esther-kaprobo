@@ -258,6 +258,7 @@ void hiloNuevoPrograma(){
 			printf("\nFINALIZO EL PID %d \n",*(int*)paquete->data);
 			mostrarEstadisticas(estadisticasPrograma, pid);
 			programaFinalizado=0;
+			enviar(kernel, FINALIZAR_PROGRAMA_DESDE_CONSOLA, sizeof(int), pid);
 			close(kernel);
 			matriz[pid]=0;
 			mostrarMenu();
@@ -298,7 +299,7 @@ void hiloNuevoPrograma(){
 		case ABORTADO_KERNEL:
 			pthread_mutex_lock(&mutexEjecuta);
 
-			printf("Programa Abortado por Kernel");
+			printf("Pid %d Abortado por Kernel", pid);
 			/* Se muestran?
 			estadisticasPrograma.fechaYHoraFin = fechaYHora();
 			mostrarEstadisticas(estadisticasPrograma, pid);
@@ -323,7 +324,7 @@ void hiloNuevoPrograma(){
 			break;
 		case ABORTADO_CPU:
 			pthread_mutex_lock(&mutexEjecuta);
-			printf("Proceso abortado por CPU\n");
+			printf("Pid %d abortado por CPU\n", pid);
 			programaFinalizado=0;
 			close(kernel);
 			mostrarMenu();

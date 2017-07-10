@@ -368,16 +368,8 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			break;
 
 		case ESCRIBIR_ARCHIVO: //Proceso CPU nos pide escribir texto, a traves de print. Se envia tb a Consola
-			t_escribirArchivo* pedido = malloc(sizeof(t_escribirArchivo));
-			pedido = paqueteRecibido->data;
+			solicitudDeEscrituraArchivo(socketActivo, paqueteRecibido);
 
-			if(pedido->fd==1){
-				log_info(logger,"KERNEL: Proceso %d nos solicita imprimir texto por Consola", pedido->pid);
-				imprimirConsola(socketActivo, pedido);
-			}
-			else{
-				//VER ESCRIBIR ARCHIVO
-			}
 
 			break;
 
@@ -423,6 +415,11 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 		case LIBERAR_HEAP:
 			log_info(logger, "KERNEL: Proceso nos solicita liberar Heap");
 			procesoLiberaHeap(socketActivo, paqueteRecibido);
+			break;
+		case FINALIZAR_PROGRAMA_DESDE_CONSOLA:
+			log_info(logger, "Se finalizo PID desde Consola");
+			finalizarProgramaDesdeConsola(socketActivo, paqueteRecibido);
+			//VER AVISAR A CPU Y MEMORIA?
 			break;
 
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
@@ -624,7 +621,7 @@ void imprimirConsola(int* socketActivo, t_escribirArchivo* imprimir){
 	return;
 }
 
-void abrirArchivo(int* socketActivo, t_paquete* paquete){
+void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 	//en el paquete esta el path del archivo y los permisos de apertura
 	t_envioDeDatosKernelFSAbrir* datosProcesoArchivo = paquete->data;
 	int pid = datosProcesoArchivo->pid;
@@ -659,6 +656,23 @@ void abrirArchivo(int* socketActivo, t_paquete* paquete){
 		//se avisa a cpu si se pudo o no abrir el archivo
 		//enviar(fileSystem, resultado, sizeof(resultado), resultado);
 	}
+}
+
+
+void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecibido){
+	t_escribirArchivo* escritura = malloc(sizeof(t_escribirArchivo));
+	escritura = paqueteRecibido->data;
+
+	if(escritura->fd==1){
+		log_info(logger,"KERNEL: Proceso %d nos solicita imprimir texto por Consola", escritura->pid);
+		imprimirConsola(socketActivo, escritura);
+	}
+	else{
+		//VER ESCRIBIR ARCHIVO
+	}
+
+
+
 }
 
 bool validarPermisoDeApertura(int pid, char* path, char* permisos){
@@ -719,7 +733,7 @@ int buscarEntradaEnTablaGlobal(char* path){
 	return -1;
 }
 
-void accederArchivo(int* socketActivo, t_paquete* paquete, char operacion){
+void accederArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
 	int pid = datos->pid;
 	int fd = datos->fd;
@@ -1267,6 +1281,7 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 }
 
 
+
 t_proceso* obtenerProcesoSocketCPU(t_queue *cola, int socketBuscado){
 	int a = 0;
 	t_proceso*proceso;
@@ -1278,6 +1293,7 @@ t_proceso* obtenerProcesoSocketCPU(t_queue *cola, int socketBuscado){
 	exit(0);
 	return NULL;
 }
+
 
 void hiloConKer(){
 	while(1){
@@ -1459,6 +1475,23 @@ void finalizarProgramaKernel(int* socket, t_paquete* paquete){
  	enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
  }
 
+void finalizarProgramaDesdeConsola(t_paquete* paqueteRecibido, un_socket socketActivo){
+	t_proceso* proceso;
+	pthread_mutex_lock(&mutex_exec);
+	proceso= obtenerProcesoSocketCPU(cola_exec, socket);
+	pthread_mutex_unlock(&mutex_exec);
+
+	proceso->abortado = true;
+	proceso->pcb->exitCode = DesconexionDeConsola;
+	pthread_mutex_lock(&mutex_exit);
+	destruirCONTEXTO(proceso->pcb);
+	queue_push(cola_exit, proceso);
+	pthread_mutex_unlock(&mutex_exit);
+	queue_push(cola_CPU_libres, (void*)socket);
+	sem_post(&sem_cpu);
+	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
+}
+
 
 void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
  	int i;
@@ -1633,7 +1666,7 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 	log_info(logger,"Reservando bloque en pagina $d del pid $d");
 	t_heapMetadata* auxBloque= malloc(sizeof(t_heapMetadata));
 	t_adminHeap * aux = malloc(sizeof(t_adminHeap));
-	t_paquete* paquete;
+
 
 	int i=0;
 	int sizeLibreViejo;
@@ -1691,9 +1724,7 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 
 	log_info(logger, "Bloque de tamanio %d reservado en Heap del pid %d", size, pid);
 	free(buffer);
-	liberar_paquete(paquete);
-	liberar_paquete(respuesta1);
-	liberar_paquete(respuesta2);
+
 	return 1;
 }
 
