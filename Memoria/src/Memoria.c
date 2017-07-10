@@ -139,7 +139,7 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 	tamanioMemoria = (frames * frame_size);
 	memoria = malloc(tamanioMemoria);
 
-	memset(memoria, '\0', 1);
+	//memset(memoria, '\0', tamanioMemoria);
 
 	log_info(logger,"Memoria continua reservada correctamente");
 
