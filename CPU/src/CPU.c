@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
 		programaAbortado = 0;
 		programaFinalizado = 0;
 
-		int quantumAux = quantum;
+
 
 		log_info(logger, "Aguardando la llegada de PCB");
 
@@ -92,6 +92,9 @@ int main(int argc, char **argv) {
 		datos_kernel = recibir(kernel);
 		asignarDatosDelKernel(datos_kernel);
 		liberar_paquete(datos_kernel);
+		int quantumAux = quantum;
+
+		printf("quantum asignado aux: %d", quantumAux);
 
 		flag=0;
 
@@ -142,7 +145,7 @@ int main(int argc, char **argv) {
 					free(sentencia);
 
 					pcb->programCounter++;
-
+					printf("quantumAUX1 %d\n",quantumAux);
 					if(algoritmo==1){
 						quantumAux--;
 						usleep(quantum_sleep*1000);
@@ -176,7 +179,7 @@ int main(int argc, char **argv) {
 					free(serializado);
 					destruirPCB(pcb);
 				}
-
+				printf("quantum_aux: %d\n", quantumAux);
 				if((quantumAux==0) && !programaFinalizado && !programaBloqueado && !programaAbortado){
 					log_info(logger,"Se sale por fin de QUANTUM");
 
@@ -338,8 +341,10 @@ int conectarConMemoria(){
 void asignarDatosDelKernel(t_paquete* datos_kernel){
 
 	if(algoritmo==1){
+		log_debug(logger, "Algoritmo RR");
 		quantum = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM;
 		quantum_sleep = ((t_datos_kernel*)(datos_kernel->data))->QUANTUM_SLEEP;
+		log_debug(logger, "Quantum %d Quantum sleep %d", quantum, quantum_sleep);
 	}
 	else{
 		quantum = 20;
