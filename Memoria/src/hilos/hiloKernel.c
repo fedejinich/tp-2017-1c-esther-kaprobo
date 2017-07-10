@@ -49,14 +49,20 @@ void* hiloServidorKernel(void* arg) {
 				if(buffer == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
 					enviar(socketClienteKernel, SOLICITAR_BYTES_FALLO, sizeof(int), &fallo);
-					log_error(logger, "No se encontraron los bytes solicitados: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
+					log_error(logger, "El pedido de KERNEL para SOLICITAR BYTES tuvo un fallo");
+
+					free(buffer);
+
+					break;
 				}
 
 				void* bufferSerializado = malloc(tamanio);
 				memcpy(bufferSerializado, buffer, tamanio);
 
 				enviar(socketClienteKernel, SOLICITAR_BYTES_OK, tamanio, bufferSerializado);
-				log_debug(logger, "PID: %i leyo %i bytes de la pagina %i con offset %i y tamanio %i", pid, tamanio, pagina, offset, tamanio);
+				log_debug(logger, "El pedido de KERNEL para SOLICITAR BYTES fue completado correctamente");
+
+				free(buffer);
 
 				break;
 			case ALMACENAR_BYTES:
@@ -73,19 +79,16 @@ void* hiloServidorKernel(void* arg) {
 				if(exito == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
 					enviar(socketClienteKernel, ALMACENAR_BYTES_FALLO, sizeof(int), &fallo);
-					log_error(logger, "No se pudieron almacenar bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
+					log_error(logger, "El pedido de KERNEL para ALMACENAR BYTES tuvo un fallo");
 
 					free(buffer);
 
 					break;
 				}
 
-				log_warning(logger, "Exito %i", exito);
-
-
 				int* ok = EXIT_SUCCESS_CUSTOM;
 				enviar(socketClienteKernel, ALMACENAR_BYTES_OK, sizeof(int), &ok);
-				log_debug(logger, "Almacenados bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, offset, tamanio);
+				log_debug(logger, "El pedido de KERNEL para ALMACENAR BYTES fue completado correctamente");
 
 				free(buffer);
 
