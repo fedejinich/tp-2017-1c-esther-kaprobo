@@ -131,14 +131,13 @@ int main(int argc, char **argv) {
 					log_info(logger, "Se recibio instruccion para pid %d de tamanio %d", pidAux, tamanioAux);
 
 					char* barra_cero="\0";
-
-
 					memcpy(sentencia+(tamanioAux-1),barra_cero,1);
-					printf("memcpy\n");
+					log_debug(logger, "Tamanio sentencia: %d", strlen(sentencia));
 
-					log_debug(logger, "Pid N°: $d, sentencia: %s", pidAux, depurarSentencia(sentencia));
-					printf("analizados\n");
-					analizadorLinea(sentencia,&primitivas, &primitivas_kernel);
+
+					log_debug(logger, "Pid N°: %d, sentencia: %s", pidAux, depurarSentencia(sentencia));
+
+					analizadorLinea(depurarSentencia(sentencia),&primitivas, &primitivas_kernel);
 
 					free(sentencia);
 
@@ -237,19 +236,14 @@ void ejecutarArchivo(FILE *archivo){
 }
 
 char* depurarSentencia(char* sentencia){
-	printf("depurar\n");
-	printf("strlen dentro depurar:%d \n", strlen(sentencia));
 
-	printf("i\n");
 	int i= strlen(sentencia);
-	printf("Asignacion i\n");
+
 	while (string_ends_with(sentencia, "\n")) {
-		printf("I: %d\n", i);
 		i--;
 		sentencia = string_substring_until(sentencia, i);
-		printf("sentencia %s\n",sentencia);
 	}
-	printf("sentenciareturn: %s\n", sentencia);
+
 	return sentencia;
 }
 

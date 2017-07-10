@@ -493,8 +493,27 @@ void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posic
 }
 
 void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion, t_valor_variable tamanio){
+	log_debug(logger, "Primitiva escribir Archivo");
+	log_debug(logger, "FD: %d", descriptor_archivo);
 
+	t_escribirArchivo* escribir = malloc(sizeof(t_escribirArchivo));
 
+	escribir->pid = pcb->pid;
+	escribir->fd = descriptor_archivo;
+	escribir->size = tamanio;
+	escribir->info = (char*)informacion;
+
+	enviar(kernel, ESCRIBIR_ARCHIVO, sizeof(t_escribirArchivo), escribir);
+
+	t_paquete* paquete = recibir(kernel);
+
+	if(paquete->codigo_operacion== ESCRIBIR_ARCHIVO_OK){
+		log_debug(logger, "Se escribio correctamente el archivo");
+	}
+	else{
+		log_error(logger, "Hubo un error");
+		//ver abortar
+	}
 
 }
 

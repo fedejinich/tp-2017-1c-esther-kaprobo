@@ -175,8 +175,9 @@ int* iniciarSharedVars(char** variables_compartidas){
 }
 
 void mostrarConfiguracion(){
-	printf("Puerto Prog: %i \n", puerto_prog);
-	printf("Puerto CPU: %i \n", puerto_cpu);
+	log_debug(logger,"Puerto Prog: %i \n", puerto_prog );
+
+	log_debug(logger,"Puerto CPU: %i \n", puerto_cpu);
 	printf("IP Memoria: %s \n", ip_memoria);
 	printf("Puerto Memoria: %i \n", puerto_memoria);
 	printf("IP File System: %s \n", ip_fs);
@@ -367,9 +368,17 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			break;
 
 		case ESCRIBIR_ARCHIVO: //Proceso CPU nos pide escribir texto, a traves de print. Se envia tb a Consola
-			log_info(logger,"KERNEL: Proceso nos solicita imprimir texto");
-			imprimirConsola(socketActivo, paqueteRecibido);
-			//VER - Si el FD es 1 se imprime por consola CAMBIAR ESTO
+			t_escribirArchivo* pedido = malloc(sizeof(t_escribirArchivo));
+			pedido = paqueteRecibido->data;
+
+			if(pedido->fd==1){
+				log_info(logger,"KERNEL: Proceso %d nos solicita imprimir texto por Consola", pedido->pid);
+				imprimirConsola(socketActivo, pedido);
+			}
+			else{
+				//VER ESCRIBIR ARCHIVO
+			}
+
 			break;
 
 		case ABRIR_ARCHIVO: //Proceso CPU nos pide abrir un archivo para un proceso dado
@@ -395,7 +404,6 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 
 		case SOLICITAR_HEAP:
 			log_info(logger,"KERNEL: Proceso nos solicita espacio Dinamico");
-
 			reservarHeap(socketActivo, paqueteRecibido);
 			break;
 
@@ -418,7 +426,7 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			break;
 
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
-			finalizarProcesoCPU(paqueteRecibido, socketActivo);
+			finalizarProcesoCPU(paqueteRecibido, socketActivo);//QUE SERIA ESTO??
 			break;
 
 		default:
@@ -597,15 +605,22 @@ void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 
 }
 
-void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido){
-	// ver ME llega en el paquete el FD, la info y el tamanio, hay que definir como hacerlo bien
+void imprimirConsola(int* socketActivo, t_escribirArchivo* imprimir){
+
 	t_proceso* proceso;
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, (un_socket)socketActivo);
 	queue_push(cola_exec, proceso);
 	pthread_mutex_unlock(&mutex_exec);
-	if(proceso->abortado==false)
-		enviar((un_socket)(proceso->socketConsola), IMPRIMIR_CONSOLA, paqueteRecibido->tamanio, paqueteRecibido->data);
+	int basura=99;
+	if(proceso->abortado==false){
+		enviar((un_socket)(proceso->socketConsola), IMPRIMIR_CONSOLA, imprimir->size, imprimir->info);
+
+		enviar((un_socket)socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), basura);
+	}
+	else{
+		enviar((un_socket)socketActivo, ESCRIBIR_ARCHIVO_FALLO, sizeof(int), basura);
+	}
 	return;
 }
 
