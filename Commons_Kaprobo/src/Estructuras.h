@@ -27,6 +27,13 @@ typedef struct __attribute__((packed))t_moverCursor{
 	int pid;
 }t_moverCursor;
 
+typedef struct __attribute__((packed))t_escribirArchivo{
+	int pid;
+	t_descriptor_archivo fd;
+	int size;
+	char* info;
+}t_escribirArchivo;
+
 typedef struct __attribute__ ((packed))t_envioDeDatosKernelFSAbrir{
 	int pid;
 	char* path;

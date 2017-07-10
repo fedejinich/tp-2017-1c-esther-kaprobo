@@ -232,7 +232,7 @@ t_pcb* desserializarPCB(char* serializado);
 void destruirPCB(t_pcb* pcb);
 int* buscarSemaforo(char*semaforo);
 void escribeSemaforo(char* semaforo, int valor);
-void imprimirConsola(int* socketActivo, t_paquete* paqueteRecibido);
+void imprimirConsola(int* socketActivo, t_escribirArchivo* imprimir);
 
 void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido);
 void escribirVariable(int* socketActivo, t_paquete* paqueteRecibido);
@@ -242,6 +242,8 @@ void bloqueoSemaforo(t_proceso* proceso, char* semaforo);
 
 void finalizarProgramaKernel(int* socket, t_paquete* paquete);
 void abortar(t_proceso* proceso);
+void finalizarProgramaDesdeConsola(t_paquete* paqueteRecibido, un_socket socketActivo);
+void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecibido);
 
 //HEAP
 void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido);
@@ -258,7 +260,7 @@ codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset);
 
 
 //CAPA Filesystem
-void abrirArchivo(int* socketActivo, t_paquete* paquete);
+void abrirArchivo(un_socket socketActivo, t_paquete* paquete);
 bool validarPermisoDeApertura(int pid, char* path, char* permisos);
 bool existeArchivo(char* path);
 int chequearTablaGlobal(char* path);
