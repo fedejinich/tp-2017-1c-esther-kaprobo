@@ -50,8 +50,6 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 		escribirCache(pid, pagina, tamanio, bufferParaCache);
 	}
 
-	log_warning(logger, "Sali de solicitarBytes");
-
 	return buffer;
 }
 
@@ -132,6 +130,7 @@ int inicializarProceso(int pid, int paginasRequeridas) {
 
 int finalizarProceso(int pid) {
 	retardo();
+
 	log_warning(logger, "Finalizando proceso. PID %i ...", pid);
 
 	log_info(logger, "Finalizando proceso de cache. PID %i ...", pid);

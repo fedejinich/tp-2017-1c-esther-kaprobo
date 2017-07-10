@@ -173,16 +173,21 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor){
 	log_warning(logger, "asignar");
 	log_info(logger, "Asigno el valor: %i a la variable en la posicion: %i", valor, direccion_variable);
 
+	log_warning(logger, "DIRECCION_FISICA %i", direccion_variable);
+
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
 
 	//log_info("Asignando valor %i en Pagina %i, Offset %i, Tamanio %i", valor, direccion->pagina, direccion->offset, direccion->size);
 
 	//almacenarBytesEnMemoria(direccion, valor); //VER SI TENGO QUE VERIFICAR QUE SE HAYA ALMACENADO OK
 
-	void* buffer = malloc(direccion->size);
-	memcpy(buffer, &valor, direccion->size);
+	log_warning(logger, "VALOR %i", valor);
 
-	almacenarEnMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size, buffer);
+	log_warning(logger, "PAGINA %i", direccion->pagina);
+
+	int* buffer = valor;
+
+	almacenarEnMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size, &buffer);
 
 	free(direccion);
 }

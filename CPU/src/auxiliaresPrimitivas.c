@@ -176,7 +176,7 @@ t_direccion* convertirPunteroADireccion(int puntero) {
 		direccion->size = 4;
 	} else {
 		direccion->pagina = (puntero / tamanio_pag);
-		direccion->offset = puntero%tamanio_pag;
+		direccion->offset = puntero % tamanio_pag;
 		direccion->size = 4;
 	}
 	if(direccion->pagina == -1 || direccion->offset == -1 || direccion->size == -1) {

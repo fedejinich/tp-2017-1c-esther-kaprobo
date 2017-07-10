@@ -64,7 +64,7 @@ t_entradaTablaDePaginas* getEntradaTablaDePaginasHash(int pid, int pagina) {
 		return entrada;
 	}
 	else {
-		log_warning(logger, "Colision en funcion de hash, me voy para arriba");
+		//log_warning(logger, "Colision en funcion de hash, me voy para arriba");
 		int i;
 		for(i = posiblePosicion; i <= tablaDePaginasSize(); i++) {
 			t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
@@ -76,7 +76,7 @@ t_entradaTablaDePaginas* getEntradaTablaDePaginasHash(int pid, int pagina) {
 	}
 	int j;
 	for(j = posiblePosicion; j >= 0; j--) {
-		log_warning(logger, "Colision en funcion de hash, me voy para abajo");
+		//log_warning(logger, "Colision en funcion de hash, me voy para abajo");
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(j);
 		if(entrada->pid == pid && entrada->pagina == pagina) {
 			log_info(logger, "Se encontro la entrada a la tabla de paginas para el PID: %i , Pagina: %i", pid, pagina);
@@ -341,7 +341,7 @@ int getFrameByPIDPagina(int pid, int pagina) {
 			return entrada->frame;
 	}
 
-	log_warning(logger, "No existe PID %i Pagina %i en tabla de paginas", pid, pagina);
+	log_error(logger, "No existe PID %i Pagina %i en tabla de paginas", pid, pagina);
 	return EXIT_FAILURE_CUSTOM;
 }
 
