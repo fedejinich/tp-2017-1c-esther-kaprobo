@@ -60,8 +60,8 @@ void* hiloConexionCPU(void* socket) {
 				if(buffer == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
 					enviar(socket, SOLICITAR_BYTES_FALLO, sizeof(int), &fallo);
-					log_error(logger, "El pedido de CPU para SOLICITAR BYTES tuvo un fallo");
-
+					log_error(logger, "El pedido de CPU para SOLICITAR BYTES de PID %i en pagina %i con offset %i y tamanio %i tuvo un fallo",
+												pid, pagina, offset, tamanio);
 					free(buffer);
 
 					break;
@@ -71,7 +71,8 @@ void* hiloConexionCPU(void* socket) {
 
 				enviar(socket, SOLICITAR_BYTES_OK, tamanio, buffer);
 
-				log_debug(logger, "El pedido de CPU para SOLICITAR BYTES fue completado correctamente");
+				log_debug(logger, "El pedido de CPU para SOLICITAR BYTES de PID %i en pagina %i con offset %i y tamanio %i fue completado correctamente",
+						pid, pagina, offset, tamanio);
 
 				free(buffer);
 
@@ -90,7 +91,7 @@ void* hiloConexionCPU(void* socket) {
 				if(exito == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
 					enviar(socket, ALMACENAR_BYTES_FALLO, sizeof(int), &fallo);
-					log_error(logger, "El pedido de CPU para ALMACENAR BYTES tuvo un fallo");
+					log_error(logger, "El pedido de CPU para ALMACENAR BYTES de PID %i en pagina %i tuvo un fallo", pid, pagina);
 
 					free(buffer);
 
@@ -102,7 +103,7 @@ void* hiloConexionCPU(void* socket) {
 
 				int* ok = EXIT_SUCCESS_CUSTOM;
 				enviar(socket, ALMACENAR_BYTES_OK, sizeof(int), &ok);
-				log_debug(logger, "El pedido de CPU para ALMACENAR BYTES fue completado correctamente");
+				log_debug(logger, "El pedido de CPU para ALMACENAR BYTES de PID %i en pagina %i fue completado correctamente", pid, pagina);
 
 				free(buffer);
 
