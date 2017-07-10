@@ -59,7 +59,7 @@ void* hiloConexionCPU(void* socket) {
 
 				if(buffer == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
-					enviar(socketClienteKernel, SOLICITAR_BYTES_FALLO, sizeof(int), &fallo);
+					enviar(socket, SOLICITAR_BYTES_FALLO, sizeof(int), &fallo);
 					log_error(logger, "El pedido de CPU para SOLICITAR BYTES tuvo un fallo");
 
 					free(buffer);
