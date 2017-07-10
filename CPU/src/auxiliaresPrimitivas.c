@@ -170,22 +170,19 @@ t_direccion* convertirPunteroADireccion(int puntero) {
 	direccion->pagina = -1;
 	direccion->offset = -1;
 	direccion->size = -1;
-
-	if(tamanioPagina > puntero){
+	if(tamanio_pag > puntero){
 		direccion->pagina = 0;
 		direccion->offset = puntero;
 		direccion->size = 4;
 	} else {
-		direccion->pagina = (puntero / tamanioPagina);
-		direccion->offset = puntero%tamanioPagina;
+		direccion->pagina = (puntero / tamanio_pag);
+		direccion->offset = puntero%tamanio_pag;
 		direccion->size = 4;
 	}
-
 	if(direccion->pagina == -1 || direccion->offset == -1 || direccion->size == -1) {
 		log_error(logger, "Error en convertirPunteroADireccion(%i)", puntero);
 		return EXIT_FAILURE_CUSTOM;
 	}
-
 	return direccion;
 }
 

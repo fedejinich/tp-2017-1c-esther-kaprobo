@@ -140,8 +140,9 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 	log_warning(logger, "dereferenciar");
 	log_info(logger, "Dereferenciando direccion de memoria %i", direccion_variable);
 
+	//solicitarBytesAMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanio)
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
-	// VER FEDE solicitarBytesAMemoria(direccion);
+	solicitarBytesAMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size);
 	t_paquete* paquete = recibir(memoria);
 
 	if(paquete->codigo_operacion == SOLICITAR_BYTES_FALLO) {
@@ -174,8 +175,14 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor){
 
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
 
-	log_info("Asignando valor %i en Pagina %i, Offset %i, Tamanio %i", direccion->pagina, direccion->offset, direccion->size);
-	//VER FEDE almacenarBytesEnMemoria(direccion, valor); //VER SI TENGO QUE VERIFICAR QUE SE HAYA ALMACENADO OK
+	//log_info("Asignando valor %i en Pagina %i, Offset %i, Tamanio %i", valor, direccion->pagina, direccion->offset, direccion->size);
+
+	//almacenarBytesEnMemoria(direccion, valor); //VER SI TENGO QUE VERIFICAR QUE SE HAYA ALMACENADO OK
+
+	void* buffer = malloc(direccion->size);
+	memcpy(buffer, &valor, direccion->size);
+
+	almacenarEnMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size, buffer);
 
 	free(direccion);
 }
@@ -305,11 +312,12 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta){
 */
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 	log_warning(logger, "llamarConRetorno");
+	printf("1\n");
 	t_direccion* direccion_nueva = convertirPunteroADireccion(donde_retornar);
-
+	printf("2\n");
 	int posicionStack = pcb->sizeContextoActual;
 	log_info(logger, "Tamanio contexto actual %i", pcb->sizeContextoActual);
-
+	printf("3\n");
 	t_contexto* contexto_nuevo = malloc(sizeof(t_contexto));
 	contexto_nuevo->pos = posicionStack;
 	contexto_nuevo->args = list_create();
@@ -318,13 +326,15 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 	contexto_nuevo->sizeVars = 0;
 	contexto_nuevo->retPos = pcb->programCounter;
 	contexto_nuevo->retVar = direccion_nueva;
-
+	printf("4\n");
 	log_info(logger, "Creo nuevo contexto con posicion: %i que debe volver en la sentencia %i y retorno en la variable de posicion Pagina %i,  Offset %i",
 			contexto_nuevo->pos, contexto_nuevo->retPos, contexto_nuevo->retVar->pagina, contexto_nuevo->retVar->offset);
+	printf("5\n");
 	list_add(pcb->contextoActual, contexto_nuevo);
 	pcb->sizeContextoActual++;
-
+	printf("6\n");
 	irAlLabel(etiqueta);
+	printf("7\n");
 }
 
 /*
