@@ -24,7 +24,7 @@ t_direccion* armarDireccionPrimeraPagina() {
 }
 
 int primeraPagina() {
-	int pagina = pcb->paginasDeCodigo; //por que es asi?
+	int pagina = pcb->paginasDeCodigo +1 ; //por que es asi?
 
 	if(pagina < 0) {
 		log_error(logger, "Error en primeraPagina()");

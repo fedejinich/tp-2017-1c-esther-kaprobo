@@ -275,6 +275,11 @@ typedef enum{
 	BORRAR_ARCHIVO_FALLO = 214
 } codigosKernelFileSystem;
 
+
+typedef enum{
+	ABORTADO_STACKOVERFLOW = 1
+
+}abortosPrograma;
 int cantidadPaginasCodigo(char* codigo);
 
 int almacenarEnMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanioBuffer, void* buffer);

@@ -422,6 +422,12 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			//VER AVISAR A CPU Y MEMORIA?
 			break;
 
+		case ABORTADO_STACKOVERFLOW:
+			log_error(logger, "Se finaliza PID %d por STACKOVERFLOW", paqueteRecibido->data);
+			//VER FINALIZAR PROGRAMA
+
+			break;
+
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
 			finalizarProcesoCPU(paqueteRecibido, socketActivo);//QUE SERIA ESTO??
 			break;
@@ -1442,6 +1448,7 @@ void abortar(t_proceso* proceso){
 
 void finalizarProgramaKernel(int* socket, t_paquete* paquete){
  	t_proceso* proceso;
+ 	cantidadDeProgramas--;
 
  	pthread_mutex_lock(&mutex_exec);
  	proceso= obtenerProcesoSocketCPU(cola_exec, socket);

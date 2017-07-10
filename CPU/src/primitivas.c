@@ -31,7 +31,9 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		contexto= (t_contexto*)(list_get(pcb->contextoActual, pcb->sizeContextoActual-1));
 
 		if(pcb->sizeContextoActual == 1 &&  contexto->sizeVars == 0 ){
+			printf("1\n");
 			direccionVariable = armarDireccionPrimeraPagina();
+			printf("pagina %d,offset %d, size %d ", direccionVariable->pagina, direccionVariable->offset, direccionVariable->size);
 			variable->etiqueta = identificador_variable;
 			variable->direccion = direccionVariable;
 			list_add(contexto->vars, variable);
@@ -56,6 +58,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			list_add(contexto->vars, variable);
 			contexto->sizeVars++;
 		} else {
+			printf("ultima\n");
 			direccionVariable = armarProximaDireccion();
 			variable->etiqueta = identificador_variable;
 			variable->direccion = direccionVariable;
@@ -70,6 +73,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		if(direccionRetorno + 3 > var_max) {
 			log_error(logger, "STACK OVERFLOW");
 			log_error(logger,"No hay espacio para definir variable '%c'. Abortando programa", identificador_variable);
+			enviar(kernel, ABORTADO_STACKOVERFLOW, sizeof(int), pcb->pid);
 			programaAbortado = true;
 			return EXIT_FAILURE_CUSTOM;
 		} else {
