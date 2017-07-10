@@ -198,7 +198,27 @@ void irAlLabel(t_nombre_etiqueta etiqueta){
 }
 
 void llamarSinRetorno(t_nombre_etiqueta etiqueta){
-	printf("llamarSinRetorno\n");
+	log_info(logger, "ANSISOP_llamarSinRetorno");
+
+	int posicionStack = pcb->sizeContextoActual;
+	log_info(logger, "Tamanio contexto actual %i", pcb->sizeContextoActual);
+
+	t_contexto* contexto_nuevo = malloc(sizeof(t_contexto));
+	contexto_nuevo->pos = posicionStack;
+	contexto_nuevo->args = list_create();
+	contexto_nuevo->vars = list_create();
+	contexto_nuevo->sizeArgs = 0;
+	contexto_nuevo->sizeVars = 0;
+	contexto_nuevo->retPos = pcb->programCounter;
+	contexto_nuevo->retVar = NULL;
+
+	/*log_info(logger, "Creo nuevo contexto con posicion: %i que debe volver en la sentencia %i y retorno en la variable de posicion Pagina %i,  Offset %i",
+			contexto_nuevo->pos, contexto_nuevo->retPos, contexto_nuevo->retVar->pagina, contexto_nuevo->retVar->offset);*/
+	list_add(pcb->contextoActual, contexto_nuevo);
+	pcb->sizeContextoActual++;
+
+	irAlLabel(etiqueta);
+
 }
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
@@ -214,7 +234,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 	contexto_nuevo->vars = list_create();
 	contexto_nuevo->sizeArgs = 0;
 	contexto_nuevo->sizeVars = 0;
-	contexto_nuevo->retPos = pcb->programCounter; //VER QUE ONDA ACA
+	contexto_nuevo->retPos = pcb->programCounter;
 	contexto_nuevo->retVar = direccion_nueva;
 
 	log_info(logger, "Creo nuevo contexto con posicion: %i que debe volver en la sentencia %i y retorno en la variable de posicion Pagina %i,  Offset %i",
