@@ -1176,9 +1176,14 @@ int almacenarCodigoEnMemoria(int pid, int paginasCodigo, char* codigo) {
 	for(i = 1; i <= paginasCodigo; i++) {
 		char* codigoParcial = list_get(codigosParciales, i-1);
 		int tamanioCodigoParcial = strlen(codigoParcial);
+		tamanioCodigoParcial++; // por el \0
+
 		int pagina = i;
 		int offset = 0;
 
+		realloc(codigoParcial, tamanioCodigoParcial);
+		strcpy(codigoParcial + tamanioCodigoParcial - 1, "\0");
+		log_warning(logger, "Codigo parcial %s", codigoParcial);
 		almacenarEnMemoria(memoria, logger, pid, pagina, offset, tamanioCodigoParcial, codigoParcial);
 	}
 

@@ -68,8 +68,8 @@ int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* b
 
 	if(!superaLimiteFrame(offset, tamanio)) {
 		escribirFrame(frame, offset, tamanio, buffer);
-
 		log_debug(logger, "Almacenados %i bytes de PID %i en pagina %i con offset %i", tamanio, pid, pagina, offset);
+
 		return EXIT_SUCCESS_CUSTOM;
 	}
 
