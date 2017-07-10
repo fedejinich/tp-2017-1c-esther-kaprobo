@@ -416,13 +416,16 @@ void finalizar(){
 	pcb->sizeContextoActual--;
 	log_info(logger,"El programa finalizo\n");
 
+	printf("1\n");
 	programaFinalizado = true;
 
-	int* ok = (int*) 1;
+	printf("2\n");
+	void* ok = malloc(sizeof(int));
 	enviar(kernel, PROGRAMA_FINALIZADO, sizeof(int), ok);
 	//enviar(kernel, PROGRAMA_FINALIZADO, sizeof(int), (int*) programaFinalizado);
-
+	printf("3\n");
 	destruirPCB(pcb);
+	printf("4\n");
 }
 
 

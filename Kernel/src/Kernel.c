@@ -1257,27 +1257,11 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 	enviar(socket, DATOS_KERNEL, sizeof(t_datos_kernel), &datos_kernel);
 
 	enviar(socket, PCB_SERIALIZADO, pcbSerializado->sizeTotal, (char*)pcbSerializado);
-
-	/*SIMULACION DE EJECUCION PARA PRUEBAS SECCION 1*/
-
-	printf("Estaria EJECUTANDO\n");
-	sleep(10);
-	printf("Termine de ejecutar\n");
-
-	/*FIN SIMULACION DE EJECUCION PARA PRUEBAS SECCION 1*/
-
-
+/*
 	pthread_mutex_lock(&mutex_exec);
 	queue_pop(cola_exec);
 	pthread_mutex_unlock(&mutex_exec);
-
-	/*SIMULACION DE EJECUCION PARA PRUEBAS SECCION 2*/
-
-	//Pruebo envio codigo 102 programa finalizado
-	enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
-	finalizarProceso(proceso, 0);
-
-	/*FIN SIMULACION DE EJECUCION PARA PRUEBAS SECCION 2*/
+	*/
 }
 
 
@@ -1471,7 +1455,11 @@ void finalizarProgramaKernel(int* socket, t_paquete* paquete){
  	pthread_mutex_unlock(&mutex_exit);
  	queue_push(cola_CPU_libres, (void*)socket);
  	sem_post(&sem_cpu);
+
+ 	log_warning(logger, "PID QUE VOY A FINALIZAR %i", proceso->pcb->pid);
+
  	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
+
  	enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
  }
 

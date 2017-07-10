@@ -91,7 +91,8 @@ void* hiloServidorKernel(void* arg) {
 
                 break;
             case FINALIZAR_PROCESO:
-                pid = (int)paqueteRecibido->data;
+                pid = *(int*) paqueteRecibido->data;
+                printf("ESTE ES EL PID A FINALIZAR %i\n", pid);
             	finalizarProceso(pid);
 
             	break;

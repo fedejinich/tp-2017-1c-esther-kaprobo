@@ -17,7 +17,7 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 
 	void* buffer;
 
-	if(estaEnCache(pid, pagina)) {
+	if(/*estaEnCache(pid, pagina)*/false) {
 		buffer = leerDeCache(pid, pagina);
 	} else {
 		retardo();
@@ -42,7 +42,7 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 			return EXIT_FAILURE_CUSTOM;
 		}
 
-		escribirCache(pid, pagina, buffer);
+		//escribirCache(pid, pagina, buffer);
 	}
 
 	log_warning(logger, "Sali de solicitarBytes");

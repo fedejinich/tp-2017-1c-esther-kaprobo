@@ -90,10 +90,10 @@ void* hiloConexionCPU(void* socket) {
 				int* ok = EXIT_SUCCESS_CUSTOM;
 				enviar(socketClienteKernel, ALMACENAR_BYTES_OK, sizeof(int), &ok);
 				log_debug(logger, "Almacenados bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, offset, tamanio);
+
 				free(buffer);
 
 				break;
-
 			default:
 				log_error(logger,"Exit por hilo CPU");
 				log_error(logger, "Tiro un exit(EXIT_FAILURE_CUSTOM) y mato Memoria desde hilo-CPU");
