@@ -49,10 +49,7 @@ int numeroDeFrameBy(int numeroDeEntradaTablaDePaginas) {
 char* getCodigoDeOperacion(int codigoInt) {
 	char* codigoString = malloc(50);
 
-	if(codigoInt == -1) {
-		codigoString = "ERROR";
-		return codigoString;
-	} else if(codigoInt == INICIALIZAR_PROCESO) {
+	if(codigoInt == INICIALIZAR_PROCESO) {
 		codigoString = "INICIALIZAR PROCESO";
 		return codigoString;
 	} else if(codigoInt == ASIGNAR_PAGINAS) {
@@ -72,6 +69,7 @@ char* getCodigoDeOperacion(int codigoInt) {
 		return codigoString;
 	}
 
+	codigoString = "ERROR";
 	return EXIT_FAILURE_CUSTOM;
 }
 
