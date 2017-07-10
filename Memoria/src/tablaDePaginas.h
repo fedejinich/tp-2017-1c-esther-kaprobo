@@ -34,6 +34,7 @@ int getFrameByPIDPagina(int pid, int pagina);
 bool existePIDPagina(int pid, int pagina);
 int getFramePrimeraPagina(int pid);
 int getTablaDePaginasBytes();
+void* getPaginaByPID(int pid, int pagina);
 
 
 #endif /* TABLADEPAGINAS_H_ */

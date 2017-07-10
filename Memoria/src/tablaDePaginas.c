@@ -373,3 +373,15 @@ int getTablaDePaginasBytes() {
 
 	return total * frame_size;
 }
+
+void* getPaginaByPID(int pid, int pagina) {
+	void* buffer = malloc(frame_size);
+
+	int frame = getFrameByPIDPagina(pid, pagina);
+	log_info(logger, "Frame for cache %i", frame);
+
+	leerFrame(frame, 0, frame_size, buffer);
+	log_info(logger, "Buffer de getPaginaByPID %s", buffer);
+
+	return buffer;
+}
