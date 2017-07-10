@@ -112,8 +112,11 @@ void finalizarPrograma(){
 	scanf("%i",&n);
 	soc = matriz[n];
 	//Tendria que informarle a Kernel por algun motivo que lo finalizo?
-	if(soc > 0)
+	if(soc > 0){
+		enviar(soc, FINALIZAR_PROGRAMA_DESDE_CONSOLA, sizeof(int), n);
 		close(soc);
+	}
+
 	else
 		printf("El pid %d ya no se encuentra conectado al Kernel\n", n);
 	if(pthread_cancel(matrizHilos[n]) == 0){
@@ -258,7 +261,7 @@ void hiloNuevoPrograma(){
 			printf("\nFINALIZO EL PID %d \n",*(int*)paquete->data);
 			mostrarEstadisticas(estadisticasPrograma, pid);
 			programaFinalizado=0;
-			enviar(kernel, FINALIZAR_PROGRAMA_DESDE_CONSOLA, sizeof(int), pid);
+
 			close(kernel);
 			matriz[pid]=0;
 			mostrarMenu();
