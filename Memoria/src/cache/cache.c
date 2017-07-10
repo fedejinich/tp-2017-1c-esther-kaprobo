@@ -21,10 +21,13 @@ int inicializarCache() {
 	return EXIT_SUCCESS_CUSTOM;
 }
 
-int escribirCache(int pid, int pagina, void* contenido) {
+int escribirCache(int pid, int pagina, int tamanio, void* contenido) {
 	log_info(logger, "Escribiendo cache PID %i Pagina %i", pid, pagina);
+
 	t_entradaCache* entrada = malloc(sizeof(t_entradaCache));
+
 	int exito = incrementarCantidadDeLecturas();
+
 	if(exito == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "Error al escribir cache");
 		return EXIT_FAILURE_CUSTOM;
@@ -52,7 +55,7 @@ int escribirCache(int pid, int pagina, void* contenido) {
 	return EXIT_SUCCESS_CUSTOM;
 }
 
-void* leerDeCache(int pid, int pagina) {
+void* leerDeCache(int pid, int pagina, int offset, int tamanio) {
 	log_info(logger, "Solicitando bytes de cache. PID %i, Pagina %i ...", pid, pagina);
 
 	incrementarCantidadDeLecturas();
@@ -66,7 +69,13 @@ void* leerDeCache(int pid, int pagina) {
 	entrada->cantidadDeLecturasSinUsar = 0;
 	log_debug(logger, "Solicitud de bytes de cache exitosa. PID %i Pagina %i", pid, pagina);
 
-	return entrada->contenido;
+	void* buffer = malloc(tamanio + 1); //por el \0
+	memcpy(buffer, entrada->contenido + offset, tamanio);
+	strcpy(buffer + tamanio, "\0");
+
+	log_error(logger, "BUFFER QUE IMPRIMI DE CACHE %s", buffer);
+
+	return buffer;
 }
 
 int liberarProcesoDeCache(int pid) {

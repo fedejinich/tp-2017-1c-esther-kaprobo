@@ -49,14 +49,22 @@ void* hiloServidorKernel(void* arg) {
 				if(buffer == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
 					enviar(socketClienteKernel, SOLICITAR_BYTES_FALLO, sizeof(int), &fallo);
-					log_error(logger, "No se encontraron los bytes solicitados: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
+					log_error(logger, "El pedido de KERNEL para SOLICITAR BYTES de PID %i en pagina %i con offset %i y tamanio %i tuvo un fallo",
+							pid, pagina, offset, tamanio);
+
+					free(buffer);
+
+					break;
 				}
 
 				void* bufferSerializado = malloc(tamanio);
 				memcpy(bufferSerializado, buffer, tamanio);
 
 				enviar(socketClienteKernel, SOLICITAR_BYTES_OK, tamanio, bufferSerializado);
-				log_debug(logger, "PID: %i leyo %i bytes de la pagina %i con offset %i y tamanio %i", pid, pagina, offset, tamanio);
+				log_debug(logger, "El pedido de KERNEL para SOLICITAR BYTES de PID %i en pagina %i con offset %i y tamanio %i fue completado correctamente",
+						pid, pagina, offset, tamanio);
+
+				free(buffer);
 
 				break;
 			case ALMACENAR_BYTES:
@@ -73,12 +81,17 @@ void* hiloServidorKernel(void* arg) {
 				if(exito == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
 					enviar(socketClienteKernel, ALMACENAR_BYTES_FALLO, sizeof(int), &fallo);
-					log_error(logger, "No se pudieron almacenar bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
+					log_error(logger, "El pedido de KERNEL para ALMACENAR BYTES de PID %i en pagina %i tuvo un fallo", pid, pagina);
+
+					free(buffer);
+
+					break;
 				}
 
 				int* ok = EXIT_SUCCESS_CUSTOM;
 				enviar(socketClienteKernel, ALMACENAR_BYTES_OK, sizeof(int), &ok);
-				log_debug(logger, "Almacenados bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, offset, tamanio);
+				log_debug(logger, "El pedido de KERNEL para ALMACENAR BYTES de PID %i en pagina %i fue completado correctamente", pid, pagina);
+
 				free(buffer);
 
 				break;
@@ -89,17 +102,22 @@ void* hiloServidorKernel(void* arg) {
             	tamanioCodigo = ((t_inicializar_proceso*) paqueteRecibido->data)->sizeCodigo;
             	inicializarProceso(pid, paginasRequeridas);
 
+				log_debug(logger, "El pedido de KERNEL para INICIALIZAR PROCESO de PID %i fue completado correctamente", pid);
+
                 break;
             case FINALIZAR_PROCESO:
                 pid = *(int*) paqueteRecibido->data;
-                printf("ESTE ES EL PID A FINALIZAR %i\n", pid);
             	finalizarProceso(pid);
+
+            	log_debug(logger, "El pedido de KERNEL para FINALIZAR PROCESO de PID %i fue completado correctamente", pid);
 
             	break;
             case ASIGNAR_PAGINAS:
 				paginasRequeridas = ((t_asignarPaginasKernel*)(paqueteRecibido->data))->paginasAsignar;
 				pid = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->pid;
 				asignarPaginasAProceso(pid, paginasRequeridas);
+
+				log_debug(logger, "El pedido de KERNEL para ASIGNAR PAGINAS de PID %i fue completado correctamente", pid);
 
 				break;
             default:

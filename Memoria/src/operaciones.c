@@ -17,8 +17,8 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 
 	void* buffer;
 
-	if(/*estaEnCache(pid, pagina)*/false) {
-		buffer = leerDeCache(pid, pagina);
+	if(estaEnCache(pid, pagina)) {
+		buffer = leerDeCache(pid, pagina, offset, tamanio);
 	} else {
 		retardo();
 
@@ -34,6 +34,11 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 
 		buffer = malloc(tamanio);
 		leerFrame(entrada->frame, offset, tamanio, buffer);
+
+		void* bufferParaCache = getPaginaByPID(pid, pagina);
+
+		log_warning(logger, "Buffer Cache %s", bufferParaCache);
+
 		log_warning(logger, "Buffer Memoria-Operaciones: %s", buffer);
 
 
@@ -42,10 +47,8 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 			return EXIT_FAILURE_CUSTOM;
 		}
 
-		//escribirCache(pid, pagina, buffer);
+		escribirCache(pid, pagina, tamanio, bufferParaCache);
 	}
-
-	log_warning(logger, "Sali de solicitarBytes");
 
 	return buffer;
 }
@@ -127,6 +130,7 @@ int inicializarProceso(int pid, int paginasRequeridas) {
 
 int finalizarProceso(int pid) {
 	retardo();
+
 	log_warning(logger, "Finalizando proceso. PID %i ...", pid);
 
 	log_info(logger, "Finalizando proceso de cache. PID %i ...", pid);

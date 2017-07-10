@@ -1461,18 +1461,11 @@ void finalizarProgramaKernel(int* socket, t_paquete* paquete){
 
  	log_info("Se recibio proceso %d por fin de ejecucion", proceso->pcb->pid);
 
- 	pthread_mutex_lock(&mutex_exit);
- 	destruirCONTEXTO(proceso->pcb);
- 	queue_push(cola_exit, proceso);
- 	pthread_mutex_unlock(&mutex_exit);
- 	queue_push(cola_CPU_libres, (void*)socket);
- 	sem_post(&sem_cpu);
+ 	finalizarProceso(proceso, 0);
 
- 	log_warning(logger, "PID QUE VOY A FINALIZAR %i", proceso->pcb->pid);
+ 	//enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
 
- 	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
-
- 	enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
+ 	//enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
  }
 
 void finalizarProgramaDesdeConsola(t_paquete* paqueteRecibido, un_socket socketActivo){

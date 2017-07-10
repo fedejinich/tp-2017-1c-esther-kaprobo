@@ -57,17 +57,24 @@ void* hiloConexionCPU(void* socket) {
 
 				buffer = solicitarBytesDePagina(pid, pagina, offset, tamanio);
 
-				/*if(buffer == EXIT_FAILURE_CUSTOM) {
+				if(buffer == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
-					enviar(socketClienteKernel, SOLICITAR_BYTES_FALLO, sizeof(int), &fallo);
-					log_error(logger, "No se encontraron los bytes solicitados: PID %i Pagina %i Offset %i ...", tamanio, pid, pagina, offset);
-				}*/
+					enviar(socket, SOLICITAR_BYTES_FALLO, sizeof(int), &fallo);
+					log_error(logger, "El pedido de CPU para SOLICITAR BYTES de PID %i en pagina %i con offset %i y tamanio %i tuvo un fallo",
+												pid, pagina, offset, tamanio);
+					free(buffer);
+
+					break;
+				}
 
 				log_warning(logger, "Buffer Memoria - HiloCPU: %s", buffer);
 
 				enviar(socket, SOLICITAR_BYTES_OK, tamanio, buffer);
 
-				log_debug(logger, "PID: %i leyo bytes de la pagina %i con offset %i y tamanio %i", pid, pagina, offset, tamanio);
+				log_debug(logger, "El pedido de CPU para SOLICITAR BYTES de PID %i en pagina %i con offset %i y tamanio %i fue completado correctamente",
+						pid, pagina, offset, tamanio);
+
+				free(buffer);
 
 				break;
 			case ALMACENAR_BYTES:
@@ -83,13 +90,20 @@ void* hiloConexionCPU(void* socket) {
 
 				if(exito == EXIT_FAILURE_CUSTOM) {
 					int* fallo = EXIT_FAILURE_CUSTOM;
-					enviar(socketClienteKernel, ALMACENAR_BYTES_FALLO, sizeof(int), &fallo);
-					log_error(logger, "No se pudieron almacenar bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, tamanio);
+					enviar(socket, ALMACENAR_BYTES_FALLO, sizeof(int), &fallo);
+					log_error(logger, "El pedido de CPU para ALMACENAR BYTES de PID %i en pagina %i tuvo un fallo", pid, pagina);
+
+					free(buffer);
+
+					break;
 				}
 
+				log_warning(logger, "Exito %i", exito);
+
+
 				int* ok = EXIT_SUCCESS_CUSTOM;
-				enviar(socketClienteKernel, ALMACENAR_BYTES_OK, sizeof(int), &ok);
-				log_debug(logger, "Almacenados bytes: PID %i Pagina %i Offset %i Tamanio %i", pid, pagina, offset, tamanio);
+				enviar(socket, ALMACENAR_BYTES_OK, sizeof(int), &ok);
+				log_debug(logger, "El pedido de CPU para ALMACENAR BYTES de PID %i en pagina %i fue completado correctamente", pid, pagina);
 
 				free(buffer);
 
