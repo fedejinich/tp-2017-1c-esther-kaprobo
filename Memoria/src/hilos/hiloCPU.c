@@ -94,6 +94,9 @@ void* hiloConexionCPU(void* socket) {
 				free(buffer);
 
 				break;
+			case -1:
+				log_warning(logger, "Se desconecto una CPU");
+				break;
 			default:
 				log_error(logger,"Exit por hilo CPU");
 				log_error(logger, "Tiro un exit(EXIT_FAILURE_CUSTOM) y mato Memoria desde hilo-CPU");
