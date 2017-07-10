@@ -67,7 +67,7 @@ void* hiloConexionCPU(void* socket) {
 
 				enviar(socket, SOLICITAR_BYTES_OK, tamanio, buffer);
 
-				log_debug(logger, "PID: %i leyo %i bytes de la pagina %i con offset %i y tamanio %i", pid, pagina, offset, tamanio);
+				log_debug(logger, "PID: %i leyo bytes de la pagina %i con offset %i y tamanio %i", pid, pagina, offset, tamanio);
 
 				break;
 			case ALMACENAR_BYTES:

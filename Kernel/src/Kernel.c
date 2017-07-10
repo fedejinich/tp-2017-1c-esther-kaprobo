@@ -259,7 +259,7 @@ void verSiHayNuevosClientes(){
 	}
 	if(FD_ISSET (socketConsola, &fds_activos)){
 		log_info(logger, "Nuevo pedido de conexion Consola");
-		int res = nuevoClienteConsola(socketConsola, socketCliente, &numeroClientes);
+		nuevoClienteConsola(socketConsola, socketCliente, &numeroClientes);
 		//Ver que pasa si no puede conectar
 	}
 }
@@ -613,10 +613,10 @@ void imprimirConsola(int* socketActivo, t_escribirArchivo* imprimir){
 	if(proceso->abortado==false){
 		enviar((un_socket)(proceso->socketConsola), IMPRIMIR_CONSOLA, imprimir->size, imprimir->info);
 
-		enviar((un_socket)socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), basura);
+		enviar((un_socket)socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), (void*)basura);
 	}
 	else{
-		enviar((un_socket)socketActivo, ESCRIBIR_ARCHIVO_FALLO, sizeof(int), basura);
+		enviar((un_socket)socketActivo, ESCRIBIR_ARCHIVO_FALLO, sizeof(int), (void*)basura);
 	}
 	return;
 }
@@ -1548,7 +1548,7 @@ t_proceso* obtenerProcesoPorPID(t_queue *cola, int pid){
 }
 
 int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instrucciones_serializados){
-	int i,j;
+	int i;
 	int **indice = malloc(sizeof(int*)*instrucciones);
 	for (i=0; i<instrucciones; i++){
 		indice[i]= malloc(sizeof(int)*2);
@@ -1663,7 +1663,7 @@ codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
 
 
 int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
-	log_info(logger,"Reservando bloque en pagina $d del pid $d");
+	log_info(logger,"Reservando bloque en pagina &d del pid %d",puntero->pagina,pid );
 	t_heapMetadata* auxBloque= malloc(sizeof(t_heapMetadata));
 	t_adminHeap * aux = malloc(sizeof(t_adminHeap));
 
@@ -1688,7 +1688,7 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 		}
 		i++;
 	}
-
+	printf("antes buffer\n");
 	buffer = solicitarBytesAMemoria(memoria, logger, pid, puntero->pagina, puntero->offset, sizeof(t_heapMetadata));
 
 
@@ -1757,7 +1757,7 @@ t_datosHeap* verificarEspacioLibreHeap( int pid, int tamanio){
 int reservarPaginaHeap(int pid,int pagina){
 	log_info(logger, "Reservando pagina %d para el pid %d", pagina, pid);
 	int resultado;
-	t_heapMetadata* aux;
+	t_heapMetadata* aux = malloc(sizeof(t_heapMetadata));
 	void * buffer = malloc(sizeof(t_heapMetadata));
 
 	aux->uso = -1;
