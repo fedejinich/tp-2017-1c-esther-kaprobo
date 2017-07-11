@@ -90,6 +90,7 @@ void desconectarConsola(){
 	for( i= 0; i< MAXPID; i++){
 		soc = matriz[i];
 		if (soc > 0){
+			enviar(soc, FINALIZAR_PROGRAMA_DESDE_CONSOLA, sizeof(int), i);
 			close(soc);
 			printf("Se cierra pid: %d \n", i);
 			matriz[i] = 0;

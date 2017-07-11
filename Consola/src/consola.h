@@ -8,6 +8,7 @@
 #include "hiloPrograma.h"
 #include "interfaceUsuario.h"
 #include "auxiliaresConsola.h"
+#include "signal.h"
 
 
 #define ARCHIVOLOG "Consola.log"

@@ -9,6 +9,15 @@
 #include "auxiliaresConsola.h"
 
 
+void desconexionConsola(int signo) {
+
+	log_warning(logger,"Se detecto señal sig int CRT C.");
+	desconectarConsola();
+	exit(0);
+	return;
+}
+
+
 void limpiarArchivos(){
 	remove(ARCHIVOLOG);
 }

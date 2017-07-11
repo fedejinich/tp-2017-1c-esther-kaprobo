@@ -12,6 +12,7 @@
 
 
 int main(int argc, char **argv) {
+	signal(SIGINT, desconexionConsola);
 	limpiarArchivos();
 	iniciarConsola();
 	crearArchivologgerConsola();
