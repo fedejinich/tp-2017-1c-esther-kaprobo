@@ -28,6 +28,9 @@ int main(int argc, char **argv) {
 
 }
 
+
+
+
 void borrarArchivos(){
 	remove("kernel.log");
 }
@@ -405,7 +408,7 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 
 		case PROGRAMA_FINALIZADO:
 			log_info(logger, "Finalizar Programa");
-			finalizarProgramaKernel(socketActivo, paqueteRecibido);
+			finalizarProgramaKernel(socketActivo, paqueteRecibido, finalizadoCorrectamente);
 			break;
 
 			//VER BLOQUEADO POR SEÑAL
@@ -418,8 +421,15 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			break;
 		case FINALIZAR_PROGRAMA_DESDE_CONSOLA:
 			log_info(logger, "Se finalizo PID desde Consola");
-			finalizarProgramaDesdeConsola(socketActivo, paqueteRecibido);
+			finalizarProgramaKernel(socketActivo, paqueteRecibido, DesconexionDeConsola);
 			//VER AVISAR A CPU Y MEMORIA?
+			break;
+
+		case ABORTADO_STACKOVERFLOW:
+			log_error(logger, "Se finaliza PID %d por STACKOVERFLOW", paqueteRecibido->data);
+			finalizarProgramaKernel(socketActivo, paqueteRecibido, FaltaDeMemoria);
+			//VER FINALIZAR PROGRAMA
+
 			break;
 
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
@@ -432,7 +442,7 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 }
 
 
-int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
+int nuevoProgramaAnsisop(un_socket socket, t_paquete* paquete){
 	int exito;
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	t_proceso* procesoin = malloc(sizeof(t_proceso));
@@ -450,21 +460,17 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	pthread_mutex_unlock(&mutex_new);
 	pthread_mutex_lock(&mutexGradoMultiprogramacion);
 	if(cantidadDeProgramas >= grado_multiprog){
+
+		log_error(logger, "GRADO DE MULTIPROGRAMACION ALCANZADO");
 		pthread_mutex_unlock(&mutexGradoMultiprogramacion);
-		int basura = 999;
-		enviar((un_socket)socket, ERROR_MULTIPROGRAMACION, sizeof(int), (void*)basura);
+
+		enviar(proceso->socketConsola, ERROR_MULTIPROGRAMACION, sizeof(int), &proceso->pcb->pid);
 
 		pthread_mutex_lock(&mutex_new);
 		t_proceso* proceso = queue_pop(cola_new);
 		sem_wait(&sem_new);
 		pthread_mutex_unlock(&mutex_new);
-
-		proceso->pcb->exitCode = -1;
-
-		pthread_mutex_lock(&mutex_exit);
-		queue_push(cola_exit, proceso);
-		sem_post(&sem_exit);
-		pthread_mutex_unlock(&mutex_exit);
+		finalizarProceso(proceso, ErrorSinDefinicion);
 
 		return -1;
 	}
@@ -494,12 +500,11 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 	}
 	else {
-		//NO SIEMPRE VA A SER POR FALTA DE MEMORIA
-		//PUEDE FALLAR PORQUE SE QUIERE ALMACENAR CODIGO DE UN PID INEXISTENTE EN TABLA DE PAGINAS
+
 
 		log_error(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
 
-		enviar((un_socket)socket, EnvioErrorAConsola, sizeof(int), NULL);
+		enviar((un_socket)socket, SIN_ESPACIO_MEMORIA, sizeof(int), NULL);
 
 		//Se pasa de NEW directo a la cola EXIT con ExitCode -1
 		sem_wait(&sem_new);
@@ -685,7 +690,7 @@ bool validarPermisoDeApertura(int pid, char* path, char* permisos){
 			permisoParaSeguir = true;
 		}
 		else{
-			finalizarProceso(pid, ArchivoInexistente);
+			finalizarProcesoPorPID(pid, ArchivoInexistente);
 		}
 	}
 	return permisoParaSeguir;
@@ -757,11 +762,14 @@ void accederArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 	}
 	if(strchr(permisos, 'r') != NULL){
 		enviar(fileSystem, codigoOperacion, sizeof(datos), datos);
-		char* buffer = recibir(fileSystem);
+		t_paquete* paquete = recibir(fileSystem);
+
+		char* buffer = malloc(paquete->tamanio);
+		buffer = (char*)(paquete->data);
 		enviar(socketActivo, OBTENER_DATOS, datos->tamanio, buffer);
 	}
 	else{
-		finalizarProceso(pid, exitCode);
+		finalizarProcesoPorPID(pid, exitCode);
 	}
 	//hay que traducir ese FD a un path
 	//realizar peticion de lectura al fs con valores de path, offset y tamaño de lo que se desea leer
@@ -900,7 +908,7 @@ void escribeSemaforo(char* semaforo, int valor){
 	exit(0);
 }
 
-t_proceso* crearPrograma(int socketC , t_paquete* paquete){
+t_proceso* crearPrograma(un_socket socketC , t_paquete* paquete){
 	int size = paquete->tamanio;
 	char* codigo = paquete->data;
 	//printf("codigo: \n %s \n", codigo);
@@ -965,29 +973,10 @@ void finalizarProcesoCPU(t_paquete* paquete, un_socket socketCPU){
 	//Desarmar paquete para ver codigo de finalizacion
 	int pid = 0; //CAMBIAR POR PID DEL PAQUETE
 	int codigoDeFinalizacion = 0; //CAMBIAR POR CODIGO DEL PAQUETE
-	finalizarProceso(pid, codigoDeFinalizacion);
+	finalizarProcesoPorPID(pid, codigoDeFinalizacion);
 }
 
-void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode){
-	procesoAFinalizar->pcb->exitCode = exitCode;
 
-	cantidadDeProgramas --;
-
-	//AGREGAR PROCESO A COLA EXIT
-	pthread_mutex_lock(&mutex_exit);
-	queue_push(cola_exit, procesoAFinalizar);
-	sem_post(&sem_exit);
-	pthread_mutex_unlock(&mutex_exit);
-
-
-	/*
-	 *
-	 *                 HACER QUE LOS CODIGOS DE FINALIZACION QUE RECONOCE CONSOLA SEAN LOS MISMOS, AL PEDO OTROS
-	 *
-	 * */
-	int* basura = 0;
-	enviar(procesoAFinalizar->socketConsola, procesoAFinalizar->pcb->exitCode, sizeof(int), &basura);
-}
 
 
 int conectarConLaMemoria(){
@@ -1445,37 +1434,39 @@ void abortar(t_proceso* proceso){
 
 }
 
-void finalizarProgramaKernel(int* socket, t_paquete* paquete){
+void finalizarProgramaKernel(un_socket socket, t_paquete* paquete, ExitCodes exitCode){
  	t_proceso* proceso;
 
  	pthread_mutex_lock(&mutex_exec);
  	proceso= obtenerProcesoSocketCPU(cola_exec, socket);
  	pthread_mutex_unlock(&mutex_exec);
 
- 	log_info("Se recibio proceso %d por fin de ejecucion", proceso->pcb->pid);
 
- 	finalizarProceso(proceso, 0);
+ 	finalizarProceso(proceso, exitCode);
 
- 	//enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
 
- 	//enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
  }
 
-void finalizarProgramaDesdeConsola(t_paquete* paqueteRecibido, un_socket socketActivo){
-	t_proceso* proceso;
-	pthread_mutex_lock(&mutex_exec);
-	proceso= obtenerProcesoSocketCPU(cola_exec, socket);
-	pthread_mutex_unlock(&mutex_exec);
+void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
+	if(exitCode == DesconexionDeConsola)
+		proceso->abortado = true;
+	proceso->pcb->exitCode = exitCode;
 
-	proceso->abortado = true;
-	proceso->pcb->exitCode = DesconexionDeConsola;
+	log_info("Se finalizara proceso %d por Exit Code %d", proceso->pcb->pid, exitCode);
+
+
 	pthread_mutex_lock(&mutex_exit);
 	destruirCONTEXTO(proceso->pcb);
 	queue_push(cola_exit, proceso);
 	pthread_mutex_unlock(&mutex_exit);
-	queue_push(cola_CPU_libres, (void*)socket);
+
+	queue_push(cola_CPU_libres, (void*)proceso->socketCPU);
 	sem_post(&sem_cpu);
 	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
+	if(exitCode != DesconexionDeConsola)
+		enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
+	cantidadDeProgramas--;
+
 }
 
 
@@ -1560,7 +1551,8 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 
 	if(tamanio > TAMPAG - sizeof(t_heapMetadata)*2){
-			// VER EL PROCESO TIENE QUE ABORTAR POR HEAP
+			finalizarProceso(proceso, NoSePuedenAsignarMasPaginas);
+			return;
 		}
 	puntero = verificarEspacioLibreHeap(pid, tamanio);
 	if(puntero->pagina == -1){

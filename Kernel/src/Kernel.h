@@ -220,7 +220,7 @@ t_list* getCodigosParciales(char* codigo, int size);
 
 int pedirPaginasParaProceso(int pid);
 t_proceso* crearPrograma(int socketC , t_paquete* paquete);
-int nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
+int nuevoProgramaAnsisop(un_socket socket, t_paquete* paquete);
 int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instrucciones_serializados);
 
 //Ejecucion programas
@@ -240,10 +240,13 @@ int* valorVariable(char* variable);
 
 void bloqueoSemaforo(t_proceso* proceso, char* semaforo);
 
-void finalizarProgramaKernel(int* socket, t_paquete* paquete);
+void finalizarProgramaKernel(un_socket socket, t_paquete* paquete, ExitCodes exitCode);
 void abortar(t_proceso* proceso);
-void finalizarProgramaDesdeConsola(t_paquete* paqueteRecibido, un_socket socketActivo);
+
 void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecibido);
+
+void finalizarProceso(t_proceso* proceso, ExitCodes exitCode);
+
 
 //HEAP
 void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido);
