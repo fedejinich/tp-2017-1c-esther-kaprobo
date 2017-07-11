@@ -469,12 +469,7 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 		sem_wait(&sem_new);
 		pthread_mutex_unlock(&mutex_new);
 
-		proceso->pcb->exitCode = -1;
-
-		pthread_mutex_lock(&mutex_exit);
-		queue_push(cola_exit, proceso);
-		sem_post(&sem_exit);
-		pthread_mutex_unlock(&mutex_exit);
+		finalizarProceso(proceso, ErrorSinDefinicion);
 
 		return -1;
 	}
@@ -504,12 +499,11 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 
 	}
 	else {
-		//NO SIEMPRE VA A SER POR FALTA DE MEMORIA
-		//PUEDE FALLAR PORQUE SE QUIERE ALMACENAR CODIGO DE UN PID INEXISTENTE EN TABLA DE PAGINAS
+
 
 		log_error(logger, "KERNEL: SIN ESPACIO EN MEMORIA, se cancela proceso");
 
-		enviar((un_socket)socket, EnvioErrorAConsola, sizeof(int), NULL);
+		enviar((un_socket)socket, SIN_ESPACIO_MEMORIA, sizeof(int), NULL);
 
 		//Se pasa de NEW directo a la cola EXIT con ExitCode -1
 		sem_wait(&sem_new);
@@ -767,7 +761,10 @@ void accederArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 	}
 	if(strchr(permisos, 'r') != NULL){
 		enviar(fileSystem, codigoOperacion, sizeof(datos), datos);
-		char* buffer = recibir(fileSystem);
+		t_paquete* paquete = recibir(fileSystem);
+
+		char* buffer = malloc(paquete->tamanio);
+		buffer = (char*)(paquete->data);
 		enviar(socketActivo, OBTENER_DATOS, datos->tamanio, buffer);
 	}
 	else{
@@ -1552,7 +1549,8 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 
 	if(tamanio > TAMPAG - sizeof(t_heapMetadata)*2){
-			// VER EL PROCESO TIENE QUE ABORTAR POR HEAP
+			finalizarProceso(proceso, NoSePuedenAsignarMasPaginas);
+			return;
 		}
 	puntero = verificarEspacioLibreHeap(pid, tamanio);
 	if(puntero->pagina == -1){
