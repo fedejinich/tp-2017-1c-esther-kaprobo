@@ -279,7 +279,7 @@ void irAlLabel(t_nombre_etiqueta etiqueta){
 * @return	void
 */
 void llamarSinRetorno(t_nombre_etiqueta etiqueta){
-	log_info(logger, "ANSISOP_llamarSinRetorno");
+	log_info(logger, "llamarSinRetorno");
 
 	int posicionStack = pcb->sizeContextoActual;
 
