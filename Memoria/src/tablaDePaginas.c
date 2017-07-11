@@ -30,6 +30,12 @@ void inicializarTablaDePaginas() {
 		free(entradaTablaDePaginas);
 	}
 
+	log_info(logger, "Reservando espacio para tabla de paginas");
+	int sizeTablaDePaginas = ceil((double)(sizeof(t_entradaTablaDePaginas) * frames) / (double)frame_size);
+	int i;
+	for(i = 0; i <= sizeTablaDePaginas; i++)
+		escribirTablaDePaginas(i, -33, 0);
+
 	log_info(logger,"Tabla de paginas inicializada.");
 }
 

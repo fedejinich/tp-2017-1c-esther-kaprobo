@@ -13,7 +13,7 @@ void escribirFrame(int frame, int offset, int tamanio, void * contenido) {
 
 
 	log_warning(logger, "escribirFrame(%i,%i,%i,%s)", frame, offset, tamanio, contenido);
-	memcpy(memoria + getTablaDePaginasBytes() + (frame * frame_size) + offset, contenido, tamanio);
+	memcpy(memoria + (frame * frame_size) + offset, contenido, tamanio);
 }
 
 void leerFrame(int frame, int offset, int tamanio, void* buffer) {
@@ -22,7 +22,7 @@ void leerFrame(int frame, int offset, int tamanio, void* buffer) {
 
 	//t_frame* posicion = framePointer[frame];
 
-	memcpy(buffer, memoria + getTablaDePaginasBytes() + (frame * frame_size) + offset, tamanio);
+	memcpy(buffer, memoria + (frame * frame_size) + offset, tamanio);
 
 	log_warning(logger, "Buffer Memoria - frames: %s", buffer);
 
