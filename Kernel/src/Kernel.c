@@ -28,6 +28,9 @@ int main(int argc, char **argv) {
 
 }
 
+
+
+
 void borrarArchivos(){
 	remove("kernel.log");
 }
@@ -405,7 +408,7 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 
 		case PROGRAMA_FINALIZADO:
 			log_info(logger, "Finalizar Programa");
-			finalizarProgramaKernel(socketActivo, paqueteRecibido);
+			finalizarProgramaKernel(socketActivo, paqueteRecibido, finalizadoCorrectamente);
 			break;
 
 			//VER BLOQUEADO POR SEÑAL
@@ -418,12 +421,13 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			break;
 		case FINALIZAR_PROGRAMA_DESDE_CONSOLA:
 			log_info(logger, "Se finalizo PID desde Consola");
-			finalizarProgramaDesdeConsola(socketActivo, paqueteRecibido);
+			finalizarProgramaKernel(socketActivo, paqueteRecibido, DesconexionDeConsola);
 			//VER AVISAR A CPU Y MEMORIA?
 			break;
 
 		case ABORTADO_STACKOVERFLOW:
 			log_error(logger, "Se finaliza PID %d por STACKOVERFLOW", paqueteRecibido->data);
+			finalizarProgramaKernel(socketActivo, paqueteRecibido, FaltaDeMemoria);
 			//VER FINALIZAR PROGRAMA
 
 			break;
@@ -691,7 +695,7 @@ bool validarPermisoDeApertura(int pid, char* path, char* permisos){
 			permisoParaSeguir = true;
 		}
 		else{
-			finalizarProceso(pid, ArchivoInexistente);
+			finalizarProcesoPorPID(pid, ArchivoInexistente);
 		}
 	}
 	return permisoParaSeguir;
@@ -767,7 +771,7 @@ void accederArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 		enviar(socketActivo, OBTENER_DATOS, datos->tamanio, buffer);
 	}
 	else{
-		finalizarProceso(pid, exitCode);
+		finalizarProcesoPorPID(pid, exitCode);
 	}
 	//hay que traducir ese FD a un path
 	//realizar peticion de lectura al fs con valores de path, offset y tamaño de lo que se desea leer
@@ -971,29 +975,10 @@ void finalizarProcesoCPU(t_paquete* paquete, un_socket socketCPU){
 	//Desarmar paquete para ver codigo de finalizacion
 	int pid = 0; //CAMBIAR POR PID DEL PAQUETE
 	int codigoDeFinalizacion = 0; //CAMBIAR POR CODIGO DEL PAQUETE
-	finalizarProceso(pid, codigoDeFinalizacion);
+	finalizarProcesoPorPID(pid, codigoDeFinalizacion);
 }
 
-void finalizarProceso(t_proceso* procesoAFinalizar, int exitCode){
-	procesoAFinalizar->pcb->exitCode = exitCode;
 
-	cantidadDeProgramas --;
-
-	//AGREGAR PROCESO A COLA EXIT
-	pthread_mutex_lock(&mutex_exit);
-	queue_push(cola_exit, procesoAFinalizar);
-	sem_post(&sem_exit);
-	pthread_mutex_unlock(&mutex_exit);
-
-
-	/*
-	 *
-	 *                 HACER QUE LOS CODIGOS DE FINALIZACION QUE RECONOCE CONSOLA SEAN LOS MISMOS, AL PEDO OTROS
-	 *
-	 * */
-	int* basura = 0;
-	enviar(procesoAFinalizar->socketConsola, procesoAFinalizar->pcb->exitCode, sizeof(int), &basura);
-}
 
 
 int conectarConLaMemoria(){
@@ -1451,38 +1436,38 @@ void abortar(t_proceso* proceso){
 
 }
 
-void finalizarProgramaKernel(int* socket, t_paquete* paquete){
+void finalizarProgramaKernel(un_socket socket, t_paquete* paquete, ExitCodes exitCode){
  	t_proceso* proceso;
- 	cantidadDeProgramas--;
 
  	pthread_mutex_lock(&mutex_exec);
  	proceso= obtenerProcesoSocketCPU(cola_exec, socket);
  	pthread_mutex_unlock(&mutex_exec);
 
- 	log_info("Se recibio proceso %d por fin de ejecucion", proceso->pcb->pid);
 
- 	finalizarProceso(proceso, 0);
+ 	finalizarProceso(proceso, exitCode);
 
- 	//enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
 
- 	//enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
  }
 
-void finalizarProgramaDesdeConsola(t_paquete* paqueteRecibido, un_socket socketActivo){
-	t_proceso* proceso;
-	pthread_mutex_lock(&mutex_exec);
-	proceso= obtenerProcesoSocketCPU(cola_exec, socket);
-	pthread_mutex_unlock(&mutex_exec);
+void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
+	if(exitCode == DesconexionDeConsola)
+		proceso->abortado = true;
+	proceso->pcb->exitCode = exitCode;
 
-	proceso->abortado = true;
-	proceso->pcb->exitCode = DesconexionDeConsola;
+	log_info("Se finalizara proceso %d por Exit Code %d", proceso->pcb->pid, exitCode);
+
+
 	pthread_mutex_lock(&mutex_exit);
 	destruirCONTEXTO(proceso->pcb);
 	queue_push(cola_exit, proceso);
 	pthread_mutex_unlock(&mutex_exit);
-	queue_push(cola_CPU_libres, (void*)socket);
+
+	queue_push(cola_CPU_libres, (void*)proceso->socketCPU);
 	sem_post(&sem_cpu);
 	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
+	if(exitCode != DesconexionDeConsola)
+		enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
+
 }
 
 

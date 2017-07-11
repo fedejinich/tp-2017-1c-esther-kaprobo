@@ -69,6 +69,7 @@ typedef enum {
 } Kernel;
 
 typedef enum {
+	finalizadoCorrectamente = 0,
 	FaltaDeMemoria = -1,
 	ArchivoInexistente = -2,
 	IntentoDeLecturaSinPermisos = -3,
