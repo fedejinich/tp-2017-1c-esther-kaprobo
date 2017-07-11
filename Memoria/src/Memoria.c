@@ -14,26 +14,7 @@
 
 
 int main(int argc, char **argv) {
-
-
 	logger = iniciarLog("memoria.log","Memoria");
-/*
-	char* string = malloc(strlen("hola"));
-	string = "hola";
-
-	log_info(logger, "String %s", string);
-
-	void* bufferTest = almacenarEnMemoria(1, 13, 1, 0, 4, string, logger);
-
-	int tamanio;
-	memcpy(&tamanio, bufferTest + sizeof(int) * 3, sizeof(int));
-
-	log_debug(logger, "Tamanio %i", tamanio);
-
-	char* stringTest = malloc(tamanio);
-	memcpy(stringTest, bufferTest + sizeof(int) * 4, tamanio);
-
-	log_debug(logger, "%s", stringTest);*/
 
 	printf("%s", "\n====== INICIO MEMORIA ======\n\n");
 
@@ -42,64 +23,7 @@ int main(int argc, char **argv) {
 	inicializarTablaDePaginas();
 	inicializarFramePointer();
 	inicializarCache();
-
-	/*int tamanioCodigo = strlen("begin	variables a, f alocar a 100	abrir f LE /archivo.bin	wait mutexArch leer f a 10 prints n *a signal mutexArch wait b!pasadas=!pasadas + 1 prints n !pasadas signal b cerrar f	liberar a end");
-	char* codigo = malloc(tamanioCodigo);
-	codigo = "begin	variables a, f alocar a 100	abrir f LE /archivo.bin	wait mutexArch leer f a 10 prints n *a signal mutexArch wait b!pasadas=!pasadas + 1 prints n !pasadas signal b cerrar f	liberar a end";
-
-	escribirTablaDePaginas(11,1,1);
-	almacenarBytesEnPagina(1,1,0,tamanioCodigo,codigo);
-
-	void* buffer = solicitarBytesDePagina(1,1,22,14);//(1,0,4);*/
-
-
-
-
 	iniciarHilos();
-
-	/*escribirTablaDePaginas(8, 1, 0);
-	escribirTablaDePaginas(9, 1, 1);
-	escribirTablaDePaginas(10, 1, 2);
-	escribirTablaDePaginas(11, 1, 3);
-
-	char* codigo = malloc(320);
-	codigo = "p11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111f";
-
-	almacenarCodigo(1, 2, codigo);
-	char* test = leerFrame(8,0,256);
-
-	log_info(logger, "Codigo almacenado %s", test);
-	char* test2 = leerFrame(9,0,256);
-	log_info(logger, "codigo pag 2 %s",test2);*/
-
-
-	/*liberarProcesoDeCache(2);
-	escribirCache(1,0,1);
-	escribirCache(1,1,1);
-	escribirCache(1,2,1);
-	escribirCache(2,0,1);
-	escribirCache(2,1,1);
-	escribirCache(2,2,1);
-	escribirCache(3,0,1);
-	escribirCache(3,1,1);
-	escribirCache(3,2,1);
-	escribirCache(3,3,1);
-	escribirCache(4,0,1);
-	escribirCache(4,0,1);
-	escribirCache(5,0,1);
-	escribirCache(5,0,1);
-	escribirCache(5,0,1);
-	escribirCache(7,0,1);
-	escribirCache(7,0,1);
-	liberarProcesoDeCache(2);
-	liberarProcesoDeCache(1);
-	liberarProcesoDeCache(5);
-	liberarProcesoDeCache(2);
-
-	dumpCache();
-
-	int* num = leerDeCache(3,2);
-	log_warning(logger, "Contendio de lectura %i", num);*/
 
 	return EXIT_SUCCESS_CUSTOM;
 }
@@ -134,15 +58,14 @@ void cargarConfiguracion(){
 }
 
 void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear mi tabla de paginas
-
 	log_info(logger,"Reservando bloque de memoria contigua...");
+
 	tamanioMemoria = (frames * frame_size);
 	memoria = malloc(tamanioMemoria);
 
 	memset(memoria, '\0', tamanioMemoria);
 
 	log_info(logger,"Memoria continua reservada correctamente");
-
 }
 
 
@@ -185,3 +108,59 @@ void testFuncionHashObtengoPosicionCandidataOk() {
 	free(overflow);
 }
 
+void testLeerEscribirMemoriaConChars() {
+	int tamanioCodigo = strlen("begin	variables a, f alocar a 100	abrir f LE /archivo.bin	wait mutexArch leer f a 10 prints n *a signal mutexArch wait b!pasadas=!pasadas + 1 prints n !pasadas signal b cerrar f	liberar a end");
+	char* codigo = malloc(tamanioCodigo);
+	codigo = "begin	variables a, f alocar a 100	abrir f LE /archivo.bin	wait mutexArch leer f a 10 prints n *a signal mutexArch wait b!pasadas=!pasadas + 1 prints n !pasadas signal b cerrar f	liberar a end";
+	escribirTablaDePaginas(11,1,1);
+
+	almacenarBytesEnPagina(1,1,0,tamanioCodigo,codigo);
+	void* buffer = solicitarBytesDePagina(1,1,22,14);
+}
+
+void testCache() {
+	liberarProcesoDeCache(2);
+	escribirCache(1,0,1);
+	escribirCache(1,1,1);
+	escribirCache(1,2,1);
+	escribirCache(2,0,1);
+	escribirCache(2,1,1);
+	escribirCache(2,2,1);
+	escribirCache(3,0,1);
+	escribirCache(3,1,1);
+	escribirCache(3,2,1);
+	escribirCache(3,3,1);
+	escribirCache(4,0,1);
+	escribirCache(4,0,1);
+	escribirCache(5,0,1);
+	escribirCache(5,0,1);
+	escribirCache(5,0,1);
+	escribirCache(7,0,1);
+	escribirCache(7,0,1);
+	liberarProcesoDeCache(2);
+	liberarProcesoDeCache(1);
+	liberarProcesoDeCache(5);
+	liberarProcesoDeCache(2);
+
+	dumpCache();
+
+	int* num = leerDeCache(3,2);
+	log_warning(logger, "Contendio de lectura %i", num);
+}
+
+void testLeerEscribirMemoriaCacheConChars2() {
+	escribirTablaDePaginas(8, 1, 0);
+	escribirTablaDePaginas(9, 1, 1);
+	escribirTablaDePaginas(10, 1, 2);
+	escribirTablaDePaginas(11, 1, 3);
+
+	char* codigo = malloc(320);
+	codigo = "p11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111f";
+
+	almacenarCodigo(1, 2, codigo);
+	char* test = leerFrame(8,0,256);
+
+	log_info(logger, "Codigo almacenado %s", test);
+	char* test2 = leerFrame(9,0,256);
+	log_info(logger, "codigo pag 2 %s",test2);
+}
