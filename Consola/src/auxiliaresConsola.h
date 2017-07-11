@@ -29,8 +29,7 @@ typedef struct{
 }estadisticas;
 
 
-
-
+void desconexionConsola(int signo);
 void iniciarConsola();
 void crearArchivologgerConsola();
 void cargarConfiguracion();
