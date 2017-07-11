@@ -442,7 +442,7 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 }
 
 
-int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
+int nuevoProgramaAnsisop(un_socket socket, t_paquete* paquete){
 	int exito;
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	t_proceso* procesoin = malloc(sizeof(t_proceso));
@@ -460,15 +460,16 @@ int nuevoProgramaAnsisop(int* socket, t_paquete* paquete){
 	pthread_mutex_unlock(&mutex_new);
 	pthread_mutex_lock(&mutexGradoMultiprogramacion);
 	if(cantidadDeProgramas >= grado_multiprog){
+
+		log_error(logger, "GRADO DE MULTIPROGRAMACION ALCANZADO");
 		pthread_mutex_unlock(&mutexGradoMultiprogramacion);
-		int basura = 999;
-		enviar((un_socket)socket, ERROR_MULTIPROGRAMACION, sizeof(int), (void*)basura);
+
+		enviar(proceso->socketConsola, ERROR_MULTIPROGRAMACION, sizeof(int), &proceso->pcb->pid);
 
 		pthread_mutex_lock(&mutex_new);
 		t_proceso* proceso = queue_pop(cola_new);
 		sem_wait(&sem_new);
 		pthread_mutex_unlock(&mutex_new);
-
 		finalizarProceso(proceso, ErrorSinDefinicion);
 
 		return -1;
@@ -907,7 +908,7 @@ void escribeSemaforo(char* semaforo, int valor){
 	exit(0);
 }
 
-t_proceso* crearPrograma(int socketC , t_paquete* paquete){
+t_proceso* crearPrograma(un_socket socketC , t_paquete* paquete){
 	int size = paquete->tamanio;
 	char* codigo = paquete->data;
 	//printf("codigo: \n %s \n", codigo);
@@ -1464,6 +1465,7 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
 	if(exitCode != DesconexionDeConsola)
 		enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
+	cantidadDeProgramas--;
 
 }
 

@@ -220,7 +220,7 @@ t_list* getCodigosParciales(char* codigo, int size);
 
 int pedirPaginasParaProceso(int pid);
 t_proceso* crearPrograma(int socketC , t_paquete* paquete);
-int nuevoProgramaAnsisop(int* socket, t_paquete* paquete);
+int nuevoProgramaAnsisop(un_socket socket, t_paquete* paquete);
 int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instrucciones_serializados);
 
 //Ejecucion programas

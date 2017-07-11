@@ -164,7 +164,7 @@ void hiloNuevoPrograma(){
 		case ERROR_MULTIPROGRAMACION:
 			pthread_mutex_lock(&mutexEjecuta);
 
-			printf("Grado de multiprogramacion maximo\n");
+			printf("Grado de multiprogramacion maximo para el pid %d\n", pid);
 			/* Se muestran?
 			estadisticasPrograma.fechaYHoraFin = fechaYHora();
 			mostrarEstadisticas(estadisticasPrograma, pid);
