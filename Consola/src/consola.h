@@ -5,6 +5,9 @@
 #include <pthread.h>
 #include <time.h>
 #include <ctype.h>
+#include "hiloPrograma.h"
+#include "interfaceUsuario.h"
+#include "auxiliaresConsola.h"
 
 
 #define ARCHIVOLOG "Consola.log"
@@ -31,22 +34,8 @@ pthread_mutex_t mutexEjecuta;
 int matriz[MAXPID];
 pthread_t matrizHilos[MAXPID];
 
-typedef struct{
-	int d;
-	int m;
-	int y;
-	int H;
-	int M;
-	int S;
-}timeAct;
 
-//estadisticas
-typedef struct{
-	timeAct fechaYHoraInicio;
-	timeAct fechaYHoraFin;
-	int impresiones;
-	int tiempo;
-}estadisticas;
+
 
 
 
@@ -59,23 +48,6 @@ pthread_t threadNewProgram;
 int ejecuta;
 int opcion;
 
-//Funciones Consola
-void iniciarConsola();
-void limpiarArchivos();
-void crearArchivoLog();
-void cargarConfiguracion();
-void iniciarPrograma();
-void finalizarPrograma();
-void desconectarConsola();
-void limpiarMensajes();
-void hiloNuevoPrograma();
-void mostrarMenu();
-char * leerArchivo(FILE *archivo);
-timeAct fechaYHora();
-void mostrarEstadisticas(estadisticas estadisticasPrograma, int pid);
 
-
-//Funciones Sockets
-int conectarConElKernel();
 
 #endif
