@@ -117,7 +117,7 @@ void testLeerEscribirMemoriaConChars() {
 	almacenarBytesEnPagina(1,1,0,tamanioCodigo,codigo);
 	void* buffer = solicitarBytesDePagina(1,1,22,14);
 }
-
+/*
 void testCache() {
 	liberarProcesoDeCache(2);
 	escribirCache(1,0,1);
@@ -164,3 +164,4 @@ void testLeerEscribirMemoriaCacheConChars2() {
 	char* test2 = leerFrame(9,0,256);
 	log_info(logger, "codigo pag 2 %s",test2);
 }
+*/

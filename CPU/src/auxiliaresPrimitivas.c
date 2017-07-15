@@ -65,7 +65,7 @@ t_direccion* proximaDireccion(int posStack, int posUltVar) {
 	direccion->size = -1;
 
 	int offsetNuevo = ((t_variable*)(list_get(((t_contexto*)(list_get(pcb->contextoActual, posStack)))->vars, posUltVar)))->direccion->offset + 4;
-	if(offsetNuevo >= tamanioPagina){
+	if(offsetNuevo >= tamanio_pag){
 		direccion->pagina = ((t_variable*)(list_get(((t_contexto*)(list_get(pcb->contextoActual, posStack)))->vars, posUltVar)))->direccion->pagina + 1;
 		direccion->offset = 0;
 		direccion->size=4;
@@ -139,7 +139,7 @@ t_direccion* proximaDireccionArg(int posStack, int posUltVar) {
 	int offset = ((t_direccion*)(list_get(((t_contexto*)(list_get(pcb->contextoActual, posStack)))->args, posUltVar)))->offset + 4;
 	log_info(logger,"Offset siguiente es %i", offset);
 
-	if(offset >= tamanioPagina){
+	if(offset >= tamanio_pag){
 		direccion->pagina = ((t_direccion*)(list_get(((t_contexto*)(list_get(pcb->contextoActual, posStack)))->args, posUltVar)))->pagina + 1;
 		direccion->offset = 0;
 		direccion->size=4;
@@ -157,12 +157,21 @@ t_direccion* proximaDireccionArg(int posStack, int posUltVar) {
 	return direccion;
 }
 
-int convertirDireccionAPuntero(t_direccion* direccion) {
-	int direccion_real,pagina,offset;
-	pagina = (direccion->pagina) * tamanioPagina;
+t_puntero convertirDireccionAPuntero(t_direccion* direccion) {
+
+	printf("llega pagina: %d \n", direccion->pagina);
+	printf("llega offset: %d\n", direccion->offset);
+	printf("llega size: %d\n", direccion->size);
+	t_puntero puntero;
+	int pagina,offset;
+	pagina = (direccion->pagina) * tamanio_pag;
 	offset = direccion->offset;
-	direccion_real = pagina + offset;
-	return direccion_real;
+	printf("convertir dir a Puntero pagina: %d\n", pagina);
+	printf("convertir dir a Puntero offset: %d\n", offset);
+
+	puntero = pagina + offset;
+	printf("convertir dir a Puntero puntero: %d\n", puntero);
+	return puntero;
 }
 
 t_direccion* convertirPunteroADireccion(int puntero) {

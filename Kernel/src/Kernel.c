@@ -432,6 +432,11 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 
 			break;
 
+		case EXCEPCION_MEMORIA:
+			log_error(logger, "Se finaliza PID %d por Excepcion en Memoria", (int)paqueteRecibido->data);
+			finalizarProgramaKernel(socketActivo, paqueteRecibido, ExcepcionDeMemoria);
+			break;
+
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
 			finalizarProcesoCPU(paqueteRecibido, socketActivo);//QUE SERIA ESTO??
 			break;
@@ -520,7 +525,7 @@ int nuevoProgramaAnsisop(un_socket socket, t_paquete* paquete){
 }
 
 
-void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
+void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 	t_proceso* procesoPideSem = malloc(sizeof(t_proceso));
 	t_paquete* paqueteNuevo = malloc(sizeof(t_paquete));
 	t_pcb* pcb_temporal;
@@ -537,7 +542,7 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 		mandar =1;
 		log_info(logger, "KERNEL: Recibi proceso %d mando a bloquear por semaforo %s", procesoPideSem->pcb->pid, paqueteRecibido->data);
 
-		enviar((un_socket)socketActivo, PEDIDO_SEMAFORO_FALLO, sizeof(int), &mandar);//1 bloquea proceso
+		enviar(socketActivo, PEDIDO_SEMAFORO_FALLO, sizeof(int), &mandar);//1 bloquea proceso
 		paqueteNuevo = recibir(socketActivo);
 		pcb_temporal = desserializarPCB(paqueteNuevo->data);
 		liberar_paquete(paqueteNuevo);
@@ -563,7 +568,7 @@ void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 	else{
 		escribeSemaforo(paqueteNuevo->data,*buscarSemaforo(paqueteRecibido)-1);
 		mandar = 0;
-		enviar((un_socket)socketActivo, PEDIDO_SEMAFORO_OK, sizeof(int), &mandar);
+		enviar(socketActivo, PEDIDO_SEMAFORO_OK, sizeof(int), &mandar);
 		pthread_mutex_lock(&mutex_exec);
 		queue_push(cola_exec, procesoPideSem);
 		pthread_mutex_unlock(&mutex_exec);
@@ -607,24 +612,7 @@ void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 
 }
 
-void imprimirConsola(int* socketActivo, t_escribirArchivo* imprimir){
 
-	t_proceso* proceso;
-	pthread_mutex_lock(&mutex_exec);
-	proceso = obtenerProcesoSocketCPU(cola_exec, (un_socket)socketActivo);
-	queue_push(cola_exec, proceso);
-	pthread_mutex_unlock(&mutex_exec);
-	int basura=99;
-	if(proceso->abortado==false){
-		enviar((un_socket)(proceso->socketConsola), IMPRIMIR_CONSOLA, imprimir->size, imprimir->info);
-
-		enviar((un_socket)socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), (void*)basura);
-	}
-	else{
-		enviar((un_socket)socketActivo, ESCRIBIR_ARCHIVO_FALLO, sizeof(int), (void*)basura);
-	}
-	return;
-}
 
 void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 	//en el paquete esta el path del archivo y los permisos de apertura
@@ -665,12 +653,43 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 
 
 void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecibido){
+
 	t_escribirArchivo* escritura = malloc(sizeof(t_escribirArchivo));
+
 	escritura = paqueteRecibido->data;
+
+	t_paquete* info = recibir(socketActivo);
+
 
 	if(escritura->fd==1){
 		log_info(logger,"KERNEL: Proceso %d nos solicita imprimir texto por Consola", escritura->pid);
-		imprimirConsola(socketActivo, escritura);
+
+		log_debug(logger, "Informacion a mostrar: %s", (char*)info->data);
+
+		t_proceso* proceso;
+		pthread_mutex_lock(&mutex_exec);
+		proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
+		queue_push(cola_exec, proceso);
+		pthread_mutex_unlock(&mutex_exec);
+
+		int basura;
+
+
+		if(proceso->abortado==false){
+
+			enviar((un_socket)(proceso->socketConsola), IMPRIMIR_CONSOLA, escritura->size, info->data);
+
+			enviar(socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), basura);
+			printf("envie CPU\n");
+		}
+		else{
+			printf("entre 2\n");
+			enviar(socketActivo, ESCRIBIR_ARCHIVO_FALLO, sizeof(int), (void*)basura);
+		}
+
+
+
+		//imprimirConsola(socketActivo, (char*)info->data);
 	}
 	else{
 		//VER ESCRIBIR ARCHIVO
@@ -678,6 +697,14 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 
 
 
+}
+
+void imprimirConsola(un_socket socketActivo, char* imprimir){
+
+
+
+
+	return;
 }
 
 bool validarPermisoDeApertura(int pid, char* path, char* permisos){
@@ -1204,7 +1231,7 @@ void planificadorCortoPlazo(){
 			sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
 
 
-			if(flag==0){
+			if(flagCPU==0){
 				pthread_mutex_lock(&mutex_config);
 				socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
 
@@ -1219,7 +1246,7 @@ void planificadorCortoPlazo(){
 				pthread_mutex_unlock(&mutex_config);
 			}
 			else{
-				flag = 0;
+				flagCPU = 0;
 			}
 		}
 		else{
@@ -1260,7 +1287,7 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 
 
 
-t_proceso* obtenerProcesoSocketCPU(t_queue *cola, int socketBuscado){
+t_proceso* obtenerProcesoSocketCPU(t_queue *cola, un_socket socketBuscado){
 	int a = 0;
 	t_proceso*proceso;
 	while(proceso = (t_proceso*)list_get(cola->elements, a)){

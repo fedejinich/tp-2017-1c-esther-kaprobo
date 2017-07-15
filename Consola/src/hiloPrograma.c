@@ -123,9 +123,8 @@ void hiloNuevoPrograma(){
 		case IMPRIMIR_CONSOLA:
 			pthread_mutex_lock(&mutexEjecuta);
 
-			memcpy(&info_cadena, &paquete->data, paquete->tamanio);
 			log_info(logger,"Imprimiendo información del pid %d",pid);
-			printf("%s\n", info_cadena);
+			printf("%s\n", (char*)paquete->data);
 			estadisticasPrograma.impresiones ++;
 			mostrarMenu();
 			free(info_cadena);

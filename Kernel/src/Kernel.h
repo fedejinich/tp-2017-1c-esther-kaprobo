@@ -54,7 +54,7 @@ typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
 
 //Globales
 
-volatile int flag = 0;
+
 int flagCPU=0;
 //PID dando vueltas
 int cantidadDeProgramas  = 0;
@@ -226,13 +226,13 @@ int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instruccio
 //Ejecucion programas
 
 t_proceso* obtenerProcesoSocketCPU(t_queue *cola, int socketBuscado);
-void pideSemaforo(int* socketActivo, t_paquete* paqueteRecibido);
+void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido);
 void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido);
 t_pcb* desserializarPCB(char* serializado);
 void destruirPCB(t_pcb* pcb);
 int* buscarSemaforo(char*semaforo);
 void escribeSemaforo(char* semaforo, int valor);
-void imprimirConsola(int* socketActivo, t_escribirArchivo* imprimir);
+void imprimirConsola(un_socket socketActivo, char* imprimir);
 
 void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido);
 void escribirVariable(int* socketActivo, t_paquete* paqueteRecibido);

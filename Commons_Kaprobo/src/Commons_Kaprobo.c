@@ -156,7 +156,7 @@ int getParteEntera(double numeroDecimal) {
 double getParteDecimal(double numeroDecimal) {
 	return numeroDecimal - getParteEntera(numeroDecimal);
 }
-
+/*
 int cantidadPaginasCodigo(char* codigo) {
 	int cantidad = -1;
 
@@ -169,7 +169,7 @@ int cantidadPaginasCodigo(char* codigo) {
 
 	return cantidad;
 }
-
+*/
 int almacenarEnMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanio, void* buffer) {
 	void* bufferSerializado = malloc(sizeof(int) * 4 + tamanio);
 

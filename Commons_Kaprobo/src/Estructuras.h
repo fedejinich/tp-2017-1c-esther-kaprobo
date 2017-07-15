@@ -6,7 +6,7 @@
 #ifndef ESTRUCTURAS_H_
 #define ESTRUCTURAS_H_
 
-int tamanioPagina;
+//int tamanioPagina;
 
 typedef struct __attribute__((packed)){
 	int QUANTUM;
@@ -31,7 +31,7 @@ typedef struct __attribute__((packed))t_escribirArchivo{
 	int pid;
 	t_descriptor_archivo fd;
 	int size;
-	char* info;
+	void* info;
 }t_escribirArchivo;
 
 typedef struct __attribute__ ((packed))t_envioDeDatosKernelFSAbrir{

@@ -20,14 +20,14 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	//QUE ONDA LA PARTE DEL DICCIONARIO?
 	log_warning(logger, "definirVariable");
 
-	programaAbortado = 0; //ESTO ESTA HARDCODEADO, ADAPTAR;
+
 
 	if(!programaAbortado) {
 		log_info(logger, "Definiendo variable: %c", identificador_variable);
-		t_direccion* direccionVariable;
+		t_direccion* direccionVariable = malloc(sizeof(t_direccion));
 		t_variable* variable = malloc(sizeof(t_variable));
 		t_contexto *contexto = malloc(sizeof(t_contexto));
-		//int posicionStack = pcb->sizeContextoActual-1;
+
 		contexto= (t_contexto*)(list_get(pcb->contextoActual, pcb->sizeContextoActual-1));
 
 		if(pcb->sizeContextoActual == 1 &&  contexto->sizeVars == 0 ){
@@ -39,7 +39,10 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			list_add(contexto->vars, variable);
 			contexto->pos = 0;
 			contexto->sizeVars++;
+
 		} else if((identificador_variable >= '0') && (identificador_variable <= '9')){
+			//ES ARGUMENTO
+
 			log_info(logger, "Creando argumento %c", identificador_variable);
 			direccionVariable = armarDireccionDeArgumento();
 			list_add(contexto->args, direccionVariable);
@@ -49,8 +52,10 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 					direccionVariable->offset,
 					direccionVariable->size);
 			contexto->sizeArgs++;
+
 		} else if(contexto->sizeVars == 0 && (pcb->sizeContextoActual) > 1){
 			//La posicion va a estar definida cuando se llama a la primitiva funcion
+
 			log_info(logger, "Declarando variable '%c' de funcion", identificador_variable);
 			direccionVariable = armarDirecccionDeFuncion();
 			variable->etiqueta = identificador_variable;
@@ -66,19 +71,20 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			contexto->sizeVars++;
 		}
 
-		int* valor = (int*) 6451;
-		log_info(logger,"Basura: %i", valor);
-		int direccionRetorno = convertirDireccionAPuntero(direccionVariable);
+
+		t_puntero direccionRetorno = convertirDireccionAPuntero(direccionVariable);
 
 		if(direccionRetorno + 3 > var_max) {
 			log_error(logger, "STACK OVERFLOW");
 			log_error(logger,"No hay espacio para definir variable '%c'. Abortando programa", identificador_variable);
-			enviar(kernel, ABORTADO_STACKOVERFLOW, sizeof(int), pcb->pid);
+			enviar(kernel, ABORTADO_STACKOVERFLOW, sizeof(int), (void*)pcb->pid);
 			programaAbortado = true;
 			return EXIT_FAILURE_CUSTOM;
 		} else {
-			// VER FEDE almacenarBytesEnMemoria(direccionVariable, valor);
-			log_info(logger,"Direccion de retorno: %i", direccionRetorno);
+			int valor;
+			log_info("Basura: %d", valor);
+			almacenarEnMemoria(memoria, logger, pcb->pid, direccionVariable->pagina,direccionVariable->offset, direccionVariable->size, valor );
+			log_info(logger,"Direccion de retorno: %d", direccionRetorno);
 			return direccionRetorno;
 		}
 	}
@@ -98,37 +104,33 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 * @return	Donde se encuentre la variable buscada
 */
 t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable){
-	log_warning(logger, "obtenerPosicionVariable");
-	log_info(logger, "Obteniendo posicion variable: %c", identificador_variable);
+	log_debug(logger, "Obtener posicion de Variable %c", identificador_variable);
 
-	t_list* indiceStack = pcb->contextoActual;
-	t_contexto* entradaActualStack = list_get(indiceStack, list_size(indiceStack) - 1);
-
-	if((identificador_variable >= '0') && (identificador_variable <= '9')) {
-		t_list* args = entradaActualStack->args;
-
-		log_warning(logger, "Paso a int el identificador_varialbe '%c'",identificador_variable);
-		int variableInt = identificador_variable - '0';
-		log_warning(logger, "En int = %i", variableInt);
-
-		t_direccion* direccion = (t_direccion*) list_get(args, variableInt);
-
-		return direccion;
-	} else {
-		t_list* vars = entradaActualStack->vars;
-		int i;
-
-		for(i = 0; i <= list_size(vars); i++) {
-			t_variable* variable = list_get(vars, i);
-			if(variable->etiqueta == identificador_variable) {
-				return variable->direccion;
+	int posicionStack = pcb->sizeContextoActual-1;
+	t_puntero direccionRetorno;
+	if((identificador_variable>= '0')&&(identificador_variable <='9')){
+		t_direccion* direccion = (t_direccion*)(list_get(((t_contexto*)(list_get(pcb->contextoActual, posicionStack)))->args, (int)identificador_variable-48));
+		direccionRetorno = convertirDireccionAPuntero(direccion);
+		log_debug(logger, "Obtener valor de %c: pagina: %d, offset: %d, size:%d",identificador_variable, direccion->pagina, direccion->offset, direccion->size);
+		return(direccionRetorno);
+	}
+	else{
+		t_variable* variable_nueva;
+		int posMax = (((t_contexto*)(list_get(pcb->contextoActual, posicionStack)))->sizeVars)-1;
+		while(posMax>=0){
+			variable_nueva=((t_variable*)(list_get(((t_contexto*)(list_get(pcb->contextoActual, posicionStack)))->vars, posMax)));
+			log_debug(logger,"Variable %c", variable_nueva->etiqueta);
+			if(variable_nueva->etiqueta == identificador_variable){
+				direccionRetorno = convertirDireccionAPuntero(((t_variable*)(list_get(((t_contexto*)(list_get(pcb->contextoActual, posicionStack)))->vars, posMax)))->direccion);
+				log_debug(logger, "Obtengo valor de %c, pag: %d, offset: %d, size:%d", variable_nueva->etiqueta, variable_nueva->direccion->pagina, variable_nueva->direccion->offset, variable_nueva->direccion->size);
+				return(direccionRetorno);
 			}
+			posMax--;
 		}
 	}
-
-	log_error(logger, "No se puedo obtener posicion de variable '%c'", identificador_variable);
-
-	return EXIT_FAILURE_CUSTOM;
+	log_warning(logger, "Error MEMORIA PID: %d", pcb->pid);
+	enviar(kernel,EXCEPCION_MEMORIA, sizeof(int), (void*)pcb->pid );
+	return -1;
 }
 
 /*
@@ -141,23 +143,20 @@ t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable){
 * @return	Valor que se encuentra en esa posicion
 */
 t_valor_variable dereferenciar(t_puntero direccion_variable){
-	log_warning(logger, "dereferenciar");
+
 	log_info(logger, "Dereferenciando direccion de memoria %i", direccion_variable);
 
-	//solicitarBytesAMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanio)
+
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
-	solicitarBytesAMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size);
-	t_paquete* paquete = recibir(memoria);
+	int valor;
 
-	if(paquete->codigo_operacion == SOLICITAR_BYTES_FALLO) {
-		log_error(logger, "Error al dereferenciar(%i)", direccion_variable);
-		return EXIT_FAILURE_CUSTOM;
-	}
+	memcpy(&valor, (solicitarBytesAMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size)), 4);
 
-	int valor = (int) paquete->data;
+
+
 	log_info(logger,"Valor dereferenciado: %d", valor);
 
-	liberar_paquete(paquete);
+
 	free(direccion);
 
 	return valor;
@@ -175,25 +174,12 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 */
 void asignar(t_puntero direccion_variable, t_valor_variable valor){
 	log_warning(logger, "asignar");
-	log_info(logger, "Asigno el valor: %i a la variable en la posicion: %i", valor, direccion_variable);
-
-	log_warning(logger, "DIRECCION_FISICA %i", direccion_variable);
-
+	log_info(logger, "Asigno el valor: %d a la variable en la posicion: %d", valor, direccion_variable);
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
-
-	//log_info("Asignando valor %i en Pagina %i, Offset %i, Tamanio %i", valor, direccion->pagina, direccion->offset, direccion->size);
-
-	//almacenarBytesEnMemoria(direccion, valor); //VER SI TENGO QUE VERIFICAR QUE SE HAYA ALMACENADO OK
-
-	log_warning(logger, "VALOR %i", valor);
-
-	log_warning(logger, "PAGINA %i", direccion->pagina);
-
-	int* buffer = valor;
-
-	almacenarEnMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size, &buffer);
-
+	log_info(logger, "Asignando valor %i en Pagina %i, Offset %i, Tamanio %i", valor, direccion->pagina, direccion->offset, direccion->size);
+	almacenarEnMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size, &valor);
 	free(direccion);
+	return;
 }
 
 /*
@@ -731,17 +717,20 @@ void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posic
 */
 void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion, t_valor_variable tamanio){
 	log_debug(logger, "Primitiva escribir Archivo");
-	log_debug(logger, "FD: %d", descriptor_archivo);
+	log_debug(logger, "FD: %d, info: %s", descriptor_archivo, (char*)informacion);
+
 
 	t_escribirArchivo* escribir = malloc(sizeof(t_escribirArchivo));
 
 	escribir->pid = pcb->pid;
 	escribir->fd = descriptor_archivo;
 	escribir->size = tamanio;
-	escribir->info = (char*)informacion;
-
+	escribir->info = informacion;
+	char* texto = malloc(tamanio);
+	memcpy(texto, (char*)informacion, tamanio);
+	printf("PRUEBA, pid:%d, fd:%d, size:%d, info:%s", escribir->pid, escribir->fd, escribir->size, texto);
 	enviar(kernel, ESCRIBIR_ARCHIVO, sizeof(t_escribirArchivo), escribir);
-
+	enviar(kernel, 1, tamanio, texto);
 	t_paquete* paquete = recibir(kernel);
 
 	if(paquete->codigo_operacion== ESCRIBIR_ARCHIVO_OK){
