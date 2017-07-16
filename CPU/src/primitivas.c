@@ -447,7 +447,9 @@ void finalizar(){
 * @return	void
 */
 void wait_kernel(t_nombre_semaforo identificador_semaforo){
-	log_info(logger,"Tamanio semaforo %d", strlen(identificador_semaforo));
+	int size = strlen(identificador_semaforo);
+	log_info(logger,"Tamanio semaforo %d", size);
+	size++;
 	char* nombre_semaforo = malloc(strlen(identificador_semaforo)+1);
 
 	nombre_semaforo = identificador_semaforo;
@@ -455,12 +457,25 @@ void wait_kernel(t_nombre_semaforo identificador_semaforo){
 	printf("nombre: %s\n", nombre_semaforo);
 
 	nombre_semaforo[strlen(identificador_semaforo)] = '\0';
+
+	int i =0;
+	printf("PRUEBA: %c\n", nombre_semaforo[i]);
+
+	while (identificador_semaforo[i]!='\0'){
+		printf("pase %d", i);
+		printf("nombre: %c\n", identificador_semaforo[i]);
+		i++;
+	}
 	printf("pase nombre\n");
-	log_info(logger,"CPU: Pedir semaforo %s de tamanio %d", nombre_semaforo, strlen(nombre_semaforo+1));
-	enviar(kernel,PEDIR_SEMAFORO, strlen(nombre_semaforo)+1, nombre_semaforo);
+
+
+	log_info(logger,"CPU: Pedir semaforo %s de tamanio %d", identificador_semaforo, size);
+
+	enviar(kernel,PEDIR_SEMAFORO, size, identificador_semaforo);
 	t_paquete* paquete_semaforo;
 	paquete_semaforo= recibir(kernel);
 	memcpy(&programaBloqueado, paquete_semaforo->data, 4); //Me trae un 0 si no bloquea y un 1 si bloquea el proceso
+
 	log_info(logger, "ProgramaBloqueado = %d", programaBloqueado);
 	//free(nombre_semaforo);// VER ME TIRA ERROR
 	printf("pase free\n");

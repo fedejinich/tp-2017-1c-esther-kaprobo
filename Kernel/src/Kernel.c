@@ -1490,8 +1490,10 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 	queue_push(cola_CPU_libres, (void*)proceso->socketCPU);
 	sem_post(&sem_cpu);
 	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
+	log_debug(logger, "Se finalizo PID en Memoria");//VER
 	if(exitCode != DesconexionDeConsola)
 		enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
+		log_debug(logger, "Se finalizo PID en CONSOLA");
 	cantidadDeProgramas--;
 
 }

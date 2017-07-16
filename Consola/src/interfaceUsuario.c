@@ -65,19 +65,24 @@ void finalizarPrograma(){
 	printf("Ingrese el PID a finalizar: \n");
 	scanf("%i",&n);
 	soc = matriz[n];
-	//Tendria que informarle a Kernel por algun motivo que lo finalizo?
+
+	log_debug(logger,"Se finalizara PID: %d, en socket:%d ", n, soc);
+
+
 	if(soc > 0){
-		enviar(soc, FINALIZAR_PROGRAMA_DESDE_CONSOLA, sizeof(int), n);
+		enviar(soc, FINALIZAR_PROGRAMA_DESDE_CONSOLA, sizeof(int), &n);
+
 		close(soc);
+
 	}
 
 	else
 		printf("El pid %d ya no se encuentra conectado al Kernel\n", n);
 	if(pthread_cancel(matrizHilos[n]) == 0){
-		printf("Hilo finalizado\n");
+		log_debug(logger,"Hilo finalizado");
 	}
 	else{
-		printf("error al finalizar Hilo\n");
+		log_error(logger,"error al finalizar Hilo");
 	}
 
 	return;

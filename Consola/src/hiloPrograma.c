@@ -51,6 +51,8 @@ void hiloNuevoPrograma(){
 
 	kernel = conectar_a(ip_kernel, puerto_kernel);
 
+	printf("KERNEL: %d\n", kernel);
+
 	if (kernel < 0){
 		log_warning(logger,"CONSOLA: No se pudo conectar con el Kernel");
 		exit (EXIT_FAILURE);
