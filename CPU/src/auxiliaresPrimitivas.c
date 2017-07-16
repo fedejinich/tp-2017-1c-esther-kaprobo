@@ -158,27 +158,29 @@ t_direccion* proximaDireccionArg(int posStack, int posUltVar) {
 }
 
 t_puntero convertirDireccionAPuntero(t_direccion* direccion) {
-
-	printf("llega pagina: %d \n", direccion->pagina);
-	printf("llega offset: %d\n", direccion->offset);
-	printf("llega size: %d\n", direccion->size);
 	t_puntero puntero;
-	int pagina,offset;
-	pagina = (direccion->pagina) * tamanio_pag;
-	offset = direccion->offset;
-	printf("convertir dir a Puntero pagina: %d\n", pagina);
-	printf("convertir dir a Puntero offset: %d\n", offset);
+	int pagina = (direccion->pagina) * tamanio_pag;
+	int offset = direccion->offset;
+
+	log_info(logger, "Convirtiendo direccion a puntero");
+	log_info(logger, "Pagina %i, Offset %i, Tamanio %i", direccion->pagina, offset, direccion->size);
 
 	puntero = pagina + offset;
-	printf("convertir dir a Puntero puntero: %d\n", puntero);
+
+	log_info("Direccion convertida. Puntero: %d", puntero);
+
 	return puntero;
 }
 
-t_direccion* convertirPunteroADireccion(int puntero) {
+t_direccion* convertirPunteroADireccion(t_puntero puntero) {
 	t_direccion* direccion = malloc(sizeof(t_direccion));
 	direccion->pagina = -1;
 	direccion->offset = -1;
 	direccion->size = -1;
+
+	log_info(logger, "Convirtiendo puntero a direccion");
+	log_info(logger, "Puntero %d", puntero);
+
 	if(tamanio_pag > puntero){
 		direccion->pagina = 0;
 		direccion->offset = puntero;
@@ -188,10 +190,14 @@ t_direccion* convertirPunteroADireccion(int puntero) {
 		direccion->offset = puntero % tamanio_pag;
 		direccion->size = 4;
 	}
+
 	if(direccion->pagina == -1 || direccion->offset == -1 || direccion->size == -1) {
 		log_error(logger, "Error en convertirPunteroADireccion(%i)", puntero);
 		return EXIT_FAILURE_CUSTOM;
 	}
+
+	log_info(logger, "Puntero convertido");
+	log_info(logger, "Direccion: Pagina %i, Offset %i, Tamanio %i", direccion->pagina, direccion->offset, direccion->size);
 	return direccion;
 }
 

@@ -13,7 +13,6 @@
 #include <parser/parser.h>
 #include <signal.h>
 #include <commons/log.h>
-#include "leerEscribirMemoria.h"
 #include <math.h>
 
 #define ARCHIVOLOG "CPU.log"

@@ -203,11 +203,7 @@ void* solicitarBytesAMemoria(un_socket socketMemoria, t_log* logger, int pid, in
 
 	free(solicitud);
 
-	log_warning(logger, "Antes");
-
 	t_paquete* paquete = recibir(socketMemoria);
-
-	log_warning(logger, "Despues");
 
 	if(paquete->codigo_operacion == SOLICITAR_BYTES_FALLO) {
 		log_error(logger, "No se pudo cumplir la solicitud de bytes");

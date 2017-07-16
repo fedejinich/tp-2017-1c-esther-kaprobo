@@ -15,7 +15,7 @@ t_direccion* armarDireccionDeArgumento();
 t_direccion* proximaDireccion(int posStack, int posUltVar);
 t_direccion* armarDirecccionDeFuncion();
 t_direccion* proximaDireccionArg(int posStack, int posUltVar);
-t_direccion* convertirPunteroADireccion(int puntero); //NOMBRES FEOS
+t_direccion* convertirPunteroADireccion(t_puntero puntero); //NOMBRES FEOS
 t_puntero convertirDireccionAPuntero(t_direccion* direccion); //NOMBRES FEOS
 t_direccion* armarProximaDireccion();
 
