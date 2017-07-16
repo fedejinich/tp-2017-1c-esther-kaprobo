@@ -158,35 +158,12 @@ bool paginasDisponibles(int pid, int paginasRequeridas) {
 		return EXIT_FAILURE_CUSTOM;
 	}
 
-	if(cantidadFramesDisponibles >= paginasRequeridas) {
+	if(cantidadFramesDisponibles >= paginasRequeridas)
 		return true;
-	} else {
-		log_error(logger, "No hay mas espacio disponible en memoria para PID %i, Paginas requeridas %i", pid, paginasRequeridas);
-		return false;
-	}
-	/*
-	int i;
-	for(i = 1; i <= paginasRequeridas; i++) {
-		if(getFrameDisponible() == -1) {
-			log_warning(logger, "No hay mas espacio disponible en memoria.");
-			return false;
-		}
 
-	log_debug(logger, "Hay espacio disponible");
-	return true;
-	}*/
-}
+	log_error(logger, "No hay mas espacio disponible en memoria para PID %i, Paginas requeridas %i", pid, paginasRequeridas);
 
-int getFrameDisponible() {
-	int i;
-	int frameDisponible = -1;
-	for(i = 0; i <= frames; i++) {
-		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
-		if(entrada->pid == -1)
-			return entrada->frame;
-	}
-
-	return frameDisponible;
+	return false;
 }
 
 int getCantidadFramesDisponibles() {

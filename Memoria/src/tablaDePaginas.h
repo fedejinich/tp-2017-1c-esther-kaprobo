@@ -18,7 +18,6 @@ t_entradaTablaDePaginas* tablaDePaginas;
 
 void inicializarTablaDePaginas();
 int escribirTablaDePaginas(int frame, int pid, int pagina);
-int getFrameDisponible();
 int tablaDePaginasSize();
 int getCantidadFramesDisponibles();
 int getCantidadFramesOcupados();
