@@ -25,7 +25,7 @@ int inicializarCache();
 int escribirCache(int pid, int pagina, int tamanio, void* contenido);
 bool estaEnCache(int pid, int pagina);
 t_entradaCache* getEntradaCache(int pid, int pagina);
-bool hayEspacioEnCache(int pid);
+bool hayEspacioEnCache(int pid, int pagina);
 int cantidadDeEntradasPorProceso(int pid);
 int liberarProcesoDeCache(int pid);
 int liberarPaginaDeProcesoDeCache(int pid, int pagina);

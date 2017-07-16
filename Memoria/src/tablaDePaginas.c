@@ -387,7 +387,6 @@ void* getPaginaByPID(int pid, int pagina) {
 	log_info(logger, "Frame for cache %i", frame);
 
 	leerFrame(frame, 0, frame_size, buffer);
-	log_info(logger, "Buffer de getPaginaByPID %s", buffer);
 
 	return buffer;
 }

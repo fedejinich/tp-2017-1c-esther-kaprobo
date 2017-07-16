@@ -39,7 +39,6 @@ void cargarConfiguracion(){
 	log_info(logger,"CANTIDAD MARCOS: %i ", frames);
 
 	frame_size = config_get_int_value(config, "MARCO_SIZE");
-	tamanioPagina = frame_size;
 	log_info(logger,"TAMAÑO MARCO: %i ", frame_size);
 
 	entradas_cache = config_get_int_value(config, "ENTRADAS_CACHE");

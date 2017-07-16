@@ -24,7 +24,7 @@ void leerFrame(int frame, int offset, int tamanio, void* buffer) {
 
 	memcpy(buffer, memoria + (frame * frame_size) + offset, tamanio);
 
-	log_warning(logger, "Buffer Memoria - frames: %s", buffer);
+	log_warning(logger, "Buffer leido: %s", buffer);
 
 }
 

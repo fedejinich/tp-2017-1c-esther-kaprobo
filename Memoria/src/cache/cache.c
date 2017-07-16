@@ -33,7 +33,7 @@ int escribirCache(int pid, int pagina, int tamanio, void* contenido) {
 		return EXIT_FAILURE_CUSTOM;
 	}
 
-	if(hayEspacioEnCache(pid)) {
+	if(hayEspacioEnCache(pid, pagina)) {
 		entrada->pid = pid;
 		entrada->pagina = pagina;
 		entrada->cantidadDeLecturasSinUsar = 0;
@@ -197,22 +197,35 @@ bool estaEnCache(int pid, int pagina) {
 	return false;
 }
 
-bool hayEspacioEnCache(int pid) {
+bool hayEspacioEnCache(int pid, int pagina) {
 	int cantidadEntradasPID = cantidadDeEntradasPorProceso(pid);
+	log_warning(logger, "hayEspacio = %i < %i && %i < %i", cache->elements_count, entradas_cache, cantidadEntradasPID, cache_x_proc);
 	bool hayEspacio = (cache->elements_count < entradas_cache) && (cantidadEntradasPID < cache_x_proc); //es <= ?
 
-	if(!hayEspacio)
-		log_warning(logger, "No hay espacio disponible para el PID %i", pid);
+	log_info(logger, "Cantidad de elementos en cache: %i", cache->elements_count);
+	log_info(logger, "Cantidad de elementos de PID %i: %i", cantidadEntradasPID);
 
+	if(!hayEspacio) {
+		log_warning(logger, "No hay espacio disponible en cache para el PID %i, Pagina %i", pid, pagina);
+		return hayEspacio;
+	}
+
+	log_info(logger, "Hay espacio en cache para PID %i, Pagina %i", pid, pagina);
 	return hayEspacio;
 }
 
 int cantidadDeEntradasPorProceso(int pid) {
 	int i;
 	int cantidad = 0;
+	int cantidadDeElementosEnCache = cache->elements_count;
 
-	for(i = 0; i < cache->elements_count; i++) {
+	/*if(cantidadDeElementosEnCache == 0) {
+		return cantidad;
+	}*/
+
+	for(i = 0; i < cantidadDeElementosEnCache; i++) {
 		t_entradaCache* entrada = (t_entradaCache*) list_get(cache, i);
+		log_warning(logger, "Entrada cache %i:  PID %i, Pagina %i, Lecturas Sin Usar %i", i, entrada->pid, entrada->pagina, entrada->cantidadDeLecturasSinUsar);
 		if(entrada->pid == pid)
 			cantidad++;
 	}

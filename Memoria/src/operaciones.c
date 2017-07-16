@@ -20,6 +20,7 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 	if(estaEnCache(pid, pagina)) {
 		buffer = leerDeCache(pid, pagina, offset, tamanio);
 	} else {
+		log_info(logger, "Solicitando bytes en memoria..");
 		retardo();
 
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginasHash(pid, pagina);
@@ -37,10 +38,7 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 
 		void* bufferParaCache = getPaginaByPID(pid, pagina);
 
-		log_warning(logger, "Buffer Cache %s", bufferParaCache);
-
-		log_warning(logger, "Buffer Memoria-Operaciones: %s", buffer);
-
+		log_warning(logger, "Buffer para almacenar en Cache %s", bufferParaCache);
 
 		if(buffer == EXIT_FAILURE_CUSTOM) {
 			log_error(logger, "No se pudo cumplir la solicutd de bytes. PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
