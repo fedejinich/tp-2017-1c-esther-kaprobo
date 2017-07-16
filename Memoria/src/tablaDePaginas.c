@@ -53,7 +53,6 @@ int escribirTablaDePaginas(int frame, int pid, int pagina) {
 }
 
 t_entradaTablaDePaginas* getEntradaTablaDePaginas(int index) {
-
 	if(index > frames || index < 0) {
 		log_error(logger,"Error getEntradaTablaDePaginas(%i)", index);
 		return EXIT_FAILURE_CUSTOM;
@@ -287,6 +286,8 @@ t_list* getEntradasDePID(int pid) {
 }
 
 int esPaginaLiberable(int pid, int pagina) {
+	//ver si por algun motivo no se podria liberar la pagina
+
 	return EXIT_SUCCESS_CUSTOM;
 }
 
@@ -349,19 +350,11 @@ int getFramePrimeraPagina(int pid) {
 	return primeraPagina;
 }
 
-
-int getTablaDePaginasBytes() {
-	int tablaDePaginasSize = frames * sizeof(t_entradaTablaDePaginas);
-	int total = ceil((double) tablaDePaginasSize/ (double) frame_size);
-
-	return total * frame_size;
-}
-
 void* getPaginaByPID(int pid, int pagina) {
 	void* buffer = malloc(frame_size);
 
-	int frame = getFrameByPIDPagina(pid, pagina);
-	log_info(logger, "Frame for cache %i", frame);
+	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginasHash(pid, pagina);
+	int frame = entrada->frame;
 
 	leerFrame(frame, 0, frame_size, buffer);
 
