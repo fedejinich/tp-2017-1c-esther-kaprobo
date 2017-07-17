@@ -7,7 +7,7 @@
 
 #include "hiloKernel.h"
 
-void* hiloServidorKernel(void* arg) {
+void* hiloServidorKernel(pthread_mutex_t* mutex) {
     log_info(logger,"Inicio del hilo Kernel");
     int servidorSocket ;
     int *socketClienteTemp;
