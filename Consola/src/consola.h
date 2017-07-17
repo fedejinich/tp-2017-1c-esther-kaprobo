@@ -12,7 +12,7 @@
 
 
 #define ARCHIVOLOG "Consola.log"
-#define MAXPID 300
+#define MAXPID 50
 
 //Configuracion
 char* ip_kernel;

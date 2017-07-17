@@ -73,6 +73,7 @@ void finalizarPrograma(){
 		enviar(soc, FINALIZAR_PROGRAMA_DESDE_CONSOLA, sizeof(int), &n);
 
 		close(soc);
+		matriz[n] = 0;
 
 	}
 
@@ -93,9 +94,11 @@ void desconectarConsola(){
 	signed int soc;
 	log_info(logger, "Desconectar Consola\n\n");
 	for( i= 0; i< MAXPID; i++){
+
 		soc = matriz[i];
 		if (soc > 0){
-			enviar(soc, FINALIZAR_PROGRAMA_DESDE_CONSOLA, sizeof(int), i);
+			int algo;
+			enviar(soc, FINALIZAR_PROGRAMA_DESDE_CONSOLA, sizeof(int), algo);
 			close(soc);
 			printf("Se cierra pid: %d \n", i);
 			matriz[i] = 0;
