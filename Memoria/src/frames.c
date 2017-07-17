@@ -47,7 +47,7 @@ void liberarFrame(int frame) {
 }
 
 void inicializarFramePointer() {
-	framePointer = memoria + getTablaDePaginasBytes();
+	framePointer = &memoria[0];
 }
 
 int getFirstFrame() {
