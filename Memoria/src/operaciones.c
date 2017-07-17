@@ -135,19 +135,22 @@ int finalizarProceso(int pid) {
 	liberarProcesoDeCache(pid);
 
 	log_info(logger, "Finalizando proceso de memoria principal. PID %i ...", pid);
-	int i;
-	for(i = 0; i <= tablaDePaginasSize(); i++) {
-		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
-		if(entrada == EXIT_FAILURE_CUSTOM) {
-			log_error(logger, "No se pudo finalizar proceso. PID %i", pid);
-			return EXIT_FAILURE_CUSTOM;
-		}
 
-		if(entrada->pid == pid) {
-			log_info(logger, "Eliminando entrada %i de la tabla de paginas del PID: %i...", i, pid);
-			entrada->pid = -1;
-			entrada->pagina = 0;
-		}
+	t_list* entradasDePID = getEntradasDePID(pid);
+
+	if(entradasDePID == EXIT_FAILURE_CUSTOM) {
+		log_error(logger, "No se pudo finalizar proceso. PID %i", pid);
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	int i;
+	for(i = 0; i < entradasDePID->elements_count; i++) {
+		t_entradaTablaDePaginas* entrada = list_get(entradasDePID, i);
+
+		log_info(logger, "Eliminando de tabla de paginas PID %i, Pagina %i", entrada->pid, entrada->pagina);
+
+		escribirTablaDePaginas(entrada->frame, -1, -1);
+
 	}
 
 	log_debug(logger, "Proceso finalizado. PID %i", pid);

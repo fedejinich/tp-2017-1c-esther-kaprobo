@@ -40,14 +40,20 @@ void inicializarTablaDePaginas() {
 }
 
 int escribirTablaDePaginas(int frame, int pid, int pagina) {
+	bloquearTablaDePaginas();
+
 	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(frame);
 	if(entrada == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "No se puede escribir en tabla de paginas. Frame: %i, PID: %i, Pagina: %i", frame, pid, pagina);
+		desbloquearTablaDePaginas();
+
 		return EXIT_FAILURE_CUSTOM;
 	} else {
 		entrada->pid = pid;
 		entrada->pagina = pagina;
 		log_info(logger, "Se escrbio en tabla de paginas. Frame: %i, PID: %i, Pagina: %i", frame, pid, pagina);
+		desbloquearTablaDePaginas();
+
 		return EXIT_SUCCESS_CUSTOM;
 	}
 }
@@ -128,6 +134,7 @@ int getFrameDisponibleHash(int pid, int pagina) {
 		return posibleFrame;
 	else {
 		log_warning(logger, "Colision en funcion de hash, me voy para arriba");
+		log_error(logger, "POR ROMPER");
 		int i;
 		for(i = posibleFrame + 1; i <= tablaDePaginasSize(); i++) {
 			entrada = getEntradaTablaDePaginas(i);
@@ -292,14 +299,14 @@ int esPaginaLiberable(int pid, int pagina) {
 }
 
 int liberarPagina(int pid, int pagina) {
-	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginasHash(pid, pagina);
-	if(entrada == EXIT_FAILURE_CUSTOM) {
+	int frame = getFrameByPIDPagina(pid, pagina);
+
+	if(frame == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "No se puede liberar pagina nro %i del PID %i", pagina, pid);
 		return EXIT_FAILURE_CUSTOM;
 	}
 
-	entrada->pid = -1;
-	entrada->pagina = 0;
+	escribirTablaDePaginas(frame, -1, 0);
 
 	log_debug(logger, "Se libero la pagina nro %i del PID %i", pagina, pid);
 	return EXIT_SUCCESS_CUSTOM;
@@ -359,4 +366,14 @@ void* getPaginaByPID(int pid, int pagina) {
 	leerFrame(frame, 0, frame_size, buffer);
 
 	return buffer;
+}
+
+void bloquearTablaDePaginas() {
+	pthread_mutex_lock(&tablaDePaginasMutex);
+	log_info(logger, "Bloqueo tabla de paginas");
+}
+
+void desbloquearTablaDePaginas() {
+	pthread_mutex_unlock(&tablaDePaginasMutex);
+	log_info(logger, "Desbloqueo tabla de paginas");
 }
