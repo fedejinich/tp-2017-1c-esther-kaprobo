@@ -1585,7 +1585,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 		}
 	puntero = verificarEspacioLibreHeap(pid, tamanio);
 	if(puntero->pagina == -1){
-		puntero->pagina = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria + proceso->sizePaginasHeap ;
+		puntero->pagina = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria + proceso->sizePaginasHeap +1 ;
 
 		//VER mutex memoria?
 		resultado = reservarPaginaHeap(pid,puntero->pagina);
@@ -1608,6 +1608,10 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	direccion->pagina = puntero->pagina;
 	direccion->offset = puntero->offset;
 	direccion->size = tamanio;
+
+	printf("PAGINA: %d\n", direccion->pagina);
+	printf("OFFSET: %d\n", direccion->offset);
+	printf("SIZE: %d\n", direccion->size);
 
 	enviar(socketCPU, SOLICITAR_HEAP_OK, sizeof(t_direccion), direccion);
 	free(puntero);
@@ -1670,7 +1674,7 @@ codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
 
 
 int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
-	log_info(logger,"Reservando bloque en pagina &d del pid %d",puntero->pagina,pid );
+	log_info(logger,"Reservando bloque en pagina %d del pid %d",puntero->pagina,pid );
 	t_heapMetadata* auxBloque= malloc(sizeof(t_heapMetadata));
 	t_adminHeap * aux = malloc(sizeof(t_adminHeap));
 
@@ -1696,10 +1700,24 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 		i++;
 	}
 	printf("antes buffer\n");
+
+	printf("MEMORIA:%d\n", memoria);
+	printf("PID: %d\n", pid);
+	printf("PAGINA:%d\n", puntero->pagina);
+	printf("OFFSET:%d\n", puntero->offset);
+	printf("SIZEOF:%d\n", sizeof(t_heapMetadata));
+
+
 	buffer = solicitarBytesAMemoria(memoria, logger, pid, puntero->pagina, puntero->offset, sizeof(t_heapMetadata));
 
+	printf("Despues buffer\n");
 
 	memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
+
+	printf("DESPUES MEMCPY auxBloque\n");
+
+
+
 
 	sizeLibreViejo = auxBloque->size;
 	auxBloque->uso = 1;
@@ -1707,8 +1725,14 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 
 	memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
 
+
+	printf("DESPUES MEMCPY buffer\n");
+
+
+
 	int respuesta1 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina, puntero->offset, sizeof(t_heapMetadata), buffer);
 
+	printf("DESPUES respuesta\n");
 
 	if(respuesta1==EXIT_FAILURE_CUSTOM){
 		log_error(logger, "NO PUDE ALMACENAR DATOS EN BLOQUE");

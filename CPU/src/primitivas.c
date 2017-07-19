@@ -386,7 +386,7 @@ void retornar(t_valor_variable retorno){
 * @return	void
 */
 void finalizar(){
-	log_warning(logger, "finalizar");
+	log_debug(logger, "Finalizar");
 
 	t_contexto *contexto_a_finalizar = list_get(pcb->contextoActual, pcb->sizeContextoActual-1);
 
@@ -419,18 +419,13 @@ void finalizar(){
 	free(contexto_a_finalizar);
 
 	pcb->sizeContextoActual--;
-	log_info(logger,"El programa finalizo\n");
 
-	printf("1\n");
 	programaFinalizado = true;
 
-	printf("2\n");
 	void* ok = malloc(sizeof(int));
 	enviar(kernel, PROGRAMA_FINALIZADO, sizeof(int), ok);
-	//enviar(kernel, PROGRAMA_FINALIZADO, sizeof(int), (int*) programaFinalizado);
-	printf("3\n");
 	destruirPCB(pcb);
-	printf("4\n");
+
 }
 
 
@@ -532,14 +527,22 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 	enviar(kernel, SOLICITAR_HEAP, sizeof(t_pedidoHeap), pedido);
 	paquete = recibir(kernel);
 
+	t_direccion* dire = paquete->data;
+	printf("pagina: %d \n", dire->pagina);
+	printf("offset: %d \n", dire->offset);
+	printf("size: %d \n", dire->size);
+
 	if(paquete->codigo_operacion == SOLICITAR_HEAP_FALLO){
 		//VER ABORTAR PROCESO
 	}
 
+	t_puntero puntero = convertirDireccionAPuntero(paquete->data);
+/*
 	t_direccion* dire = malloc(sizeof(t_direccion));
 	dire = (t_direccion*)paquete->data;
 
 	t_puntero puntero = dire->pagina * tamanio_pag + dire->offset;
+	*/
 	log_info(logger, "Puntero %d", puntero);
 	return puntero;
 

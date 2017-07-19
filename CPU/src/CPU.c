@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
 		liberar_paquete(datos_kernel);
 		int quantumAux = quantum;
 
-		printf("quantum asignado aux: %d", quantumAux);
+
 
 		flag=0;
 
@@ -123,12 +123,12 @@ int main(int argc, char **argv) {
 				//char* sentencia2=malloc(tamanioAux);
 				 //sentencia2 = "variables a, f";
 				 //sentencia2[tamanioAux] = '\0';
-				log_debug(logger, "Sentencia: %s", sentencia);
+
 
 
 				if(sentencia == NULL){
 					programaAbortado = 1;
-					log_info(logger, "Se Aborta el programa");
+					log_warning(logger, "Se Aborta el programa");
 				}
 				else{
 					log_info(logger, "Se recibio instruccion para pid %d de tamanio %d", pidAux, tamanioAux);
@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
 					free(sentencia);
 
 					pcb->programCounter++;
-					printf("quantumAUX1 %d\n",quantumAux);
+
 					if(algoritmo==1){
 						quantumAux--;
 						usleep(quantum_sleep*1000);
@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
 					free(serializado);
 					destruirPCB(pcb);
 				}
-				printf("quantum_aux: %d\n", quantumAux);
+
 				if((quantumAux==0) && !programaFinalizado && !programaBloqueado && !programaAbortado){
 					log_info(logger,"Se sale por fin de QUANTUM");
 
