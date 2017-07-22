@@ -75,11 +75,14 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		t_puntero direccionRetorno = convertirDireccionAPuntero(direccionVariable);
 
 		if(direccionRetorno + 3 > var_max) {
+			int a;
 			log_error(logger, "STACK OVERFLOW");
 			log_error(logger,"No hay espacio para definir variable '%c'. Abortando programa", identificador_variable);
-			enviar(kernel, ABORTADO_STACKOVERFLOW, sizeof(int), (void*)pcb->pid);
+			enviar(kernel, ABORTADO_STACKOVERFLOW, sizeof(int), a);
+
 			programaAbortado = true;
-			return EXIT_FAILURE_CUSTOM;
+			flagStackOverflow = 1;
+			//return EXIT_FAILURE_CUSTOM;
 		} else {
 			int valor;
 			log_info("Basura: %d", valor);

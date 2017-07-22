@@ -14,6 +14,7 @@
 int flag = 0;
 
 
+
 AnSISOP_funciones primitivas = {
 		.AnSISOP_definirVariable			= definirVariable,
 		.AnSISOP_obtenerPosicionVariable	= obtenerPosicionVariable,
@@ -44,7 +45,7 @@ AnSISOP_kernel primitivas_kernel = {
 };
 
 int main(int argc, char **argv) {
-
+	flagStackOverflow = 0;
 
 	iniciarCPU();
 	sigusr1_desactivado=1;
@@ -167,17 +168,20 @@ int main(int argc, char **argv) {
 				}
 
 				if(programaAbortado){
-					log_info(logger,"El pid %d se aborto", pcb->pid);
-					serializado = serializarPCB(pcb);
-					if(!sigusr1_desactivado){
-						log_info(logger, "CPU, Bloqueado y sigusr1 activada");
-						int algo=11;
-						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), algo);
-						//VER ESTO DEL LADO KERNEL
-					}
-					enviar(kernel, PROGRAMA_ABORTADO, ((t_pcb*)serializado)->sizeTotal, serializado);
-					free(serializado);
-					destruirPCB(pcb);
+					if(flagStackOverflow == 0){
+						log_info(logger,"El pid %d se aborto", pcb->pid);
+						serializado = serializarPCB(pcb);
+						if(!sigusr1_desactivado){
+							log_info(logger, "CPU, Bloqueado y sigusr1 activada");
+							int algo=11;
+							enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), algo);
+							//VER ESTO DEL LADO KERNEL
+						}
+						enviar(kernel, PROGRAMA_ABORTADO, ((t_pcb*)serializado)->sizeTotal, serializado);
+						free(serializado);
+						destruirPCB(pcb);
+						}
+
 				}
 
 				if((quantumAux==0) && !programaFinalizado && !programaBloqueado && !programaAbortado){

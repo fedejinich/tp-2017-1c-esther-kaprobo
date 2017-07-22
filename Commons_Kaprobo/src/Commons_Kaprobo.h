@@ -239,7 +239,8 @@ typedef enum {
 	MOVER_CURSOR_ARCHIVO_FALLO = 30,
 	ESCRIBIR_ARCHIVO_OK = 31,
 	ESCRIBIR_ARCHIVO_FALLO = 32,
-	EXCEPCION_MEMORIA=33
+	EXCEPCION_MEMORIA=33,
+	ABORTADO_STACKOVERFLOW = 34
 
 
 } codigosKernelCPU;
@@ -278,10 +279,8 @@ typedef enum{
 } codigosKernelFileSystem;
 
 
-typedef enum{
-	ABORTADO_STACKOVERFLOW = 1
 
-}abortosPrograma;
+
 int cantidadPaginasCodigo(char* codigo);
 
 int almacenarEnMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanioBuffer, void* buffer);
