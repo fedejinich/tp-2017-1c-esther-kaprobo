@@ -76,7 +76,7 @@ void inicializar(){
 
 void cargarConfiguracion() {
 	int j;
-	printf("inicio\n");
+
 	bool haySemaforos(){
 
 		bool retorno = false;
@@ -181,18 +181,18 @@ void mostrarConfiguracion(){
 	log_debug(logger,"Puerto Prog: %i \n", puerto_prog );
 
 	log_debug(logger,"Puerto CPU: %i \n", puerto_cpu);
-	printf("IP Memoria: %s \n", ip_memoria);
-	printf("Puerto Memoria: %i \n", puerto_memoria);
-	printf("IP File System: %s \n", ip_fs);
-	printf("Puerto File System: %i \n", puerto_fs);
-	printf("Quantum: %i \n", quantum);
-	printf("Quantum Sleep: %i \n", quantum_sleep);
-	printf("Algoritmo: %i \n", algoritmo);
-	printf("Grado Multiprogramacion: %i \n", grado_multiprog);
+	log_debug(logger,"IP Memoria: %s \n", ip_memoria);
+	log_debug(logger,"Puerto Memoria: %i \n", puerto_memoria);
+	log_debug(logger,"IP File System: %s \n", ip_fs);
+	log_debug(logger,"Puerto File System: %i \n", puerto_fs);
+	log_debug(logger,"Quantum: %i \n", quantum);
+	log_debug(logger,"Quantum Sleep: %i \n", quantum_sleep);
+	log_debug(logger,"Algoritmo: %i \n", algoritmo);
+	log_debug(logger,"Grado Multiprogramacion: %i \n", grado_multiprog);
 
 	//Falta mostrar arrays
 
-	printf("Stack Size: %i \n", stack_size);
+
 }
 
 void prepararSocketsServidores(){
@@ -309,7 +309,7 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 	}
 	else{
 		log_error(logger, "Handshake fallo, pedido de conexion rechazado");
-		printf ("Handshake rechazado\n");
+
 	}
 
 	return;
@@ -402,8 +402,11 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			reservarHeap(socketActivo, paqueteRecibido);
 			break;
 
-		case PROGRAMA_BLOQUEADO_SIGUSR1:
-			flagCPU=1;
+		case PROGRAMA_ABORTADO_CPU:
+			log_error(logger, "CPU envio señal de cierre");
+			cpuCerrada(socketActivo, paqueteRecibido);
+
+
 			break;
 
 		case PROGRAMA_FINALIZADO:
@@ -411,9 +414,6 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			finalizarProgramaKernel(socketActivo, paqueteRecibido, finalizadoCorrectamente);
 			break;
 
-			//VER BLOQUEADO POR SEÑAL
-			//VER BLOQUEADO POR SEMAFORO
-			//VER ABORTADO
 
 		case LIBERAR_HEAP:
 			log_info(logger, "KERNEL: Proceso nos solicita liberar Heap");
@@ -435,6 +435,10 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 		case EXCEPCION_MEMORIA:
 			log_error(logger, "Se finaliza PID %d por Excepcion en Memoria", (int)paqueteRecibido->data);
 			finalizarProgramaKernel(socketActivo, paqueteRecibido, ExcepcionDeMemoria);
+			break;
+		case FIN_QUANTUM:
+			log_debug(logger, "Se recibio programa por fin de Quantum");
+			finQuantum(socketActivo, paqueteRecibido);
 			break;
 
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
@@ -552,15 +556,12 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 		if(procesoPideSem->abortado == false){
 			bloqueoSemaforo(procesoPideSem, paqueteRecibido->data);
-			if(flagCPU==0){
-				queue_push(cola_CPU_libres, (void*)socketActivo);
-				sem_post(&sem_cpu);
-			}
-			else{
-				log_info(logger,"KERNEL: se va a cerrar CPU");
-			}
+
+			queue_push(cola_CPU_libres, (void*)socketActivo);
+			sem_post(&sem_cpu);
+
 		}else{
-			log_info(logger,"KERNEL: Se recibio proceso %d por fin de quantum, abortado", procesoPideSem->pcb->pid);
+			log_info(logger,"KERNEL: Se recibio proceso %d abortado", procesoPideSem->pcb->pid);
 			abortar(procesoPideSem);
 		}
 
@@ -680,16 +681,16 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 			enviar((un_socket)(proceso->socketConsola), IMPRIMIR_CONSOLA, escritura->size, info->data);
 
 			enviar(socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), basura);
-			printf("envie CPU\n");
+
 		}
 		else{
-			printf("entre 2\n");
+
 			enviar(socketActivo, ESCRIBIR_ARCHIVO_FALLO, sizeof(int), (void*)basura);
 		}
 
 
 
-		//imprimirConsola(socketActivo, (char*)info->data);
+
 	}
 	else{
 		//VER ESCRIBIR ARCHIVO
@@ -699,13 +700,7 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 
 }
 
-void imprimirConsola(un_socket socketActivo, char* imprimir){
 
-
-
-
-	return;
-}
 
 bool validarPermisoDeApertura(int pid, char* path, char* permisos){
 	bool permisoParaSeguir = false;
@@ -955,7 +950,7 @@ t_proceso* crearPrograma(un_socket socketC , t_paquete* paquete){
 	pidcounter ++;
 
 	metadata = metadata_desde_literal(codigo);
-	printf("intrucciones: %d \n", metadata->instrucciones_size);
+	log_info(logger,"Intrucciones: %d \n", metadata->instrucciones_size);
 
 	procesoNuevo->pcb->paginasDeCodigo = ceil((double)size / (double)TAMPAG);
 	procesoNuevo->pcb->sizeIndiceDeCodigo = metadata->instrucciones_size;
@@ -1230,27 +1225,22 @@ void planificadorCortoPlazo(){
 			yaMeFijeReady = false;
 			sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
 
+			pthread_mutex_lock(&mutex_config);
+			socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
 
-			if(flagCPU==0){
-				pthread_mutex_lock(&mutex_config);
-				socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
+			pthread_mutex_lock(&mutex_ready);
+			proceso = queue_pop(cola_ready);
+			pthread_mutex_unlock(&mutex_ready);
 
-				pthread_mutex_lock(&mutex_ready);
-				proceso = queue_pop(cola_ready);
-				pthread_mutex_unlock(&mutex_ready);
+			log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
 
-				log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
+			mandarAEjecutar(proceso, socketCPULibre);
 
-				mandarAEjecutar(proceso, socketCPULibre);
+			pthread_mutex_unlock(&mutex_config);
 
-				pthread_mutex_unlock(&mutex_config);
-			}
-			else{
-				flagCPU = 0;
-			}
 		}
 		else{
-			printf("PLANIF DETENIDA \n");
+			log_error(logger,"PLANIF DETENIDA");
 			sleep(2);
 		}
 	}
@@ -1288,11 +1278,26 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 
 
 t_proceso* obtenerProcesoSocketCPU(t_queue *cola, un_socket socketBuscado){
+
+	bool esMiCPU(void* entrada){
+		t_proceso* proc = (t_proceso*) entrada;
+		return proc->socketCPU = socketBuscado;
+	}
+
 	int a = 0;
 	t_proceso*proceso;
 	while(proceso = (t_proceso*)list_get(cola->elements, a)){
 		if (proceso->socketCPU == socketBuscado) return (t_proceso*)list_remove(cola->elements, a);
 		a++;
+	}
+	int i;
+
+	for (i=0; i < strlen((char*)sem_ids)/sizeof(char*); i++){
+		proceso = (t_proceso*)list_remove_by_condition(cola_semaforos[i]->elements, esMiCPU);
+		if(proceso!=NULL){
+			log_debug(logger, "El proceso se encontraba bloqueado por Semaforo");
+			return proceso;
+		}
 	}
 	log_error(logger, "No hay proceso para retirar");
 	exit(0);
@@ -1475,8 +1480,12 @@ void finalizarProgramaKernel(un_socket socket, t_paquete* paquete, ExitCodes exi
  }
 
 void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
-	if(exitCode == DesconexionDeConsola)
+	if(exitCode == DesconexionDeConsola){
 		proceso->abortado = true;
+
+
+	}
+
 	proceso->pcb->exitCode = exitCode;
 
 	log_info("Se finalizara proceso %d por Exit Code %d", proceso->pcb->pid, exitCode);
@@ -1552,7 +1561,7 @@ t_proceso* obtenerProcesoPorPID(t_queue *cola, int pid){
 	}
 	return NULL;
 }
-
+//VER esto?
 int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instrucciones_serializados){
 	int i;
 	int **indice = malloc(sizeof(int*)*instrucciones);
@@ -1584,6 +1593,10 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 			return;
 		}
 	puntero = verificarEspacioLibreHeap(pid, tamanio);
+	if((puntero->pagina==EXIT_FAILURE_CUSTOM) &&(puntero->offset==EXIT_FAILURE_CUSTOM)){
+		finalizarProceso(proceso, ExcepcionDeMemoria);
+		return;
+	}
 	if(puntero->pagina == -1){
 		puntero->pagina = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria + proceso->sizePaginasHeap +1 ;
 
@@ -1591,7 +1604,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 		resultado = reservarPaginaHeap(pid,puntero->pagina);
 		puntero->offset = 8;
 		if(resultado <0){
-			//ver Excepcion por HEAP
+			finalizarProceso(proceso, ExcepcionDeMemoria);
 		}
 		proceso->sizePaginasHeap++;
 
@@ -1602,7 +1615,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	resultado = reservarBloqueHeap(pid,tamanio,puntero);
 
 	if(resultado<0){
-		// VER NO SE PUDO RESERVAR BLOQUE
+		finalizarProceso(proceso, ExcepcionDeMemoria);
 	}
 	t_direccion* direccion = malloc(sizeof(t_direccion));
 	direccion->pagina = puntero->pagina;
@@ -1772,7 +1785,13 @@ t_datosHeap* verificarEspacioLibreHeap( int pid, int tamanio){
 		aux= (t_adminHeap*) list_get(listaAdminHeap, i);
 
 		if(aux->disponible >= tamanio + sizeof(t_datosHeap) && aux->pid){
-			compactarPaginaHeap(aux->pagina, aux->pid);
+
+			int res = compactarPaginaHeap(aux->pagina, aux->pid);
+			if(res == EXIT_FAILURE_CUSTOM){
+				puntero->pagina = EXIT_FAILURE_CUSTOM;
+				puntero->offset = EXIT_FAILURE_CUSTOM;
+				return puntero;
+			}
 			puntero->offset = paginaHeapConBloqueSuficiente(i,aux->pagina, aux->pid, tamanio);
 			if(puntero->offset>0){
 				puntero->pagina=aux->pagina;
@@ -1832,8 +1851,8 @@ int reservarPaginaHeap(int pid,int pagina){
 
 }
 
-void compactarPaginaHeap( int pagina, int pid){
-
+int compactarPaginaHeap( int pagina, int pid){
+	int res = 1;
 	log_info(logger, "Compactando la pagina %d del Heap del pid %d", pagina, pid);
 	int offset = 0;
 	t_heapMetadata actual;
@@ -1861,9 +1880,8 @@ void compactarPaginaHeap( int pagina, int pid){
 			actual.size = actual.size + sizeof(t_heapMetadata)+ siguiente.size;
 			memcpy(buffer, &actual, sizeof(t_heapMetadata));
 
-			int resultado = almacenarEnMemoria(memoria, logger, pid, pagina,offset, sizeof(t_heapMetadata), (void*)buffer);
+			res = almacenarEnMemoria(memoria, logger, pid, pagina,offset, sizeof(t_heapMetadata), (void*)buffer);
 
-//VER FALLO ?
 		}
 		else{
 			offset += sizeof(t_heapMetadata)+ actual.size;
@@ -1873,6 +1891,7 @@ void compactarPaginaHeap( int pagina, int pid){
 	free(buffer);
 
 	log_info(logger,"Pagina %d del heap del pid %d compactada",pagina, pid);
+	return res;
 
 }
 
@@ -1903,4 +1922,61 @@ int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, i
 	return -1;
 }
 
+
+void finQuantum(un_socket socketCPU, t_paquete* paqueteRec){
+	t_proceso* proceso;
+	t_pcb* temporal;
+	pthread_mutex_lock(&mutex_exec);
+	proceso = obtenerProcesoSocketCPU(cola_exec, socketCPU);
+	pthread_mutex_unlock(&mutex_exec);
+	temporal = desserializarPCB(paqueteRec->data);
+	destruirPCB(proceso->pcb);
+	proceso->pcb = temporal;
+
+	if(proceso->abortado == false){
+		pthread_mutex_lock(&mutex_ready);
+		queue_push(cola_ready, proceso);
+		pthread_mutex_unlock(&mutex_ready);
+		sem_post(&sem_ready);
+		log_info(logger, "PID %d encolado en ready", proceso->pcb->pid);
+
+	}
+	else{
+		log_error(logger,"Pid abortado");
+		abortar(proceso);
+	}
+
+	queue_push(cola_CPU_libres, (void*)socketCPU);
+	sem_post(&sem_cpu);
+
+
+
+}
+
+
+void cpuCerrada(un_socket socketCPU, t_paquete* paqueteRec){
+
+	t_proceso* proceso;
+	t_pcb* temporal;
+	pthread_mutex_lock(&mutex_exec);
+	proceso = obtenerProcesoSocketCPU(cola_exec, socketCPU);
+	pthread_mutex_unlock(&mutex_exec);
+	temporal = desserializarPCB(paqueteRec->data);
+	destruirPCB(proceso->pcb);
+	proceso->pcb = temporal;
+
+	if(proceso->abortado == false){
+		pthread_mutex_lock(&mutex_ready);
+		queue_push(cola_ready, proceso);
+		pthread_mutex_unlock(&mutex_ready);
+		sem_post(&sem_ready);
+		log_info(logger, "PID %d encolado en ready", proceso->pcb->pid);
+
+	}
+	else{
+		log_error(logger,"Pid abortado");
+		abortar(proceso);
+	}
+
+}
 

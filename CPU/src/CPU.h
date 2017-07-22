@@ -30,7 +30,7 @@ signed int memoria;
 t_paquete* paquete_recibido;
 
 
-
+int abortadoProcesoConsola;
 
 //señales
 int sigusr1_desactivado;
