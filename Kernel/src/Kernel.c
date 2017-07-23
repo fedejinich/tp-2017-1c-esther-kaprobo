@@ -1575,6 +1575,7 @@ int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instruccio
 
 void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	int resultado;
+	t_pedidoHeap* pedido;
 	t_datosHeap* puntero;
 	t_proceso *proceso;
 	pthread_mutex_lock(&mutex_exec);
@@ -1584,10 +1585,12 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 	int pid;
 	int tamanio;
-	tamanio = *((int*)paqueteRecibido->data);
-	pid = proceso->pcb->pid;
 
+	pedido = paqueteRecibido->data;
+	tamanio = pedido->tamanio;
+	pid = pedido->pid;
 
+	printf("TAMPAG: %d\n\n", TAMPAG);
 	if(tamanio > TAMPAG - sizeof(t_heapMetadata)*2){
 			finalizarProceso(proceso, NoSePuedenAsignarMasPaginas);
 			return;
@@ -1602,13 +1605,14 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 		//VER mutex memoria?
 		resultado = reservarPaginaHeap(pid,puntero->pagina);
-		puntero->offset = 8;
+		puntero->offset = 0;
 		if(resultado <0){
 			finalizarProceso(proceso, ExcepcionDeMemoria);
 		}
 		proceso->sizePaginasHeap++;
 
 	}
+
 
 
 	//ver mutex memoria
@@ -1622,10 +1626,6 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	direccion->offset = puntero->offset;
 	direccion->size = tamanio;
 
-	printf("PAGINA: %d\n", direccion->pagina);
-	printf("OFFSET: %d\n", direccion->offset);
-	printf("SIZE: %d\n", direccion->size);
-
 	enviar(socketCPU, SOLICITAR_HEAP_OK, sizeof(t_direccion), direccion);
 	free(puntero);
 
@@ -1637,9 +1637,9 @@ void procesoLiberaHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 	libera = (t_liberarHeap*)(paqueteRecibido->data);
 	codigosKernelCPU codigo = liberarBloqueHeap(libera->pid, libera->nroPagina, libera->offset);
-	int algo =1;
+	int algo ;
 
-	enviar(socketCPU, codigo, sizeof(int), (void*)algo);
+	enviar(socketCPU, codigo, sizeof(int), algo);
 
 }
 
@@ -1649,38 +1649,27 @@ codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
 	int i = 0;
 
 	t_adminHeap* aux = malloc(sizeof(t_adminHeap));
-	t_heapMetadata bloque;
-
-	void* buffer = malloc(sizeof(t_heapMetadata));
+	t_heapMetadata * bloque= malloc(sizeof(t_heapMetadata));
 
 
-	buffer = solicitarBytesAMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata));
+	bloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata));
+	bloque->uso = 0;
 
-
-	memcpy(&bloque, buffer, sizeof(t_heapMetadata));
-
-	bloque.uso = -1;
-
-	memcpy(buffer, &bloque, sizeof(t_heapMetadata));
-
-	int resul= almacenarEnMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata), buffer);
+	int resul= almacenarEnMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata), bloque);
 
 	if (resul == EXIT_FAILURE_CUSTOM){
 		return LIBERAR_HEAP_FALLO;
 	}
 
-
 	while(i<list_size(listaAdminHeap)){
 		aux = list_get(listaAdminHeap, i);
 		if( aux->pagina == pagina && aux->pid  == pid){
-			aux->disponible = aux->disponible + bloque.size;
+			aux->disponible = aux->disponible + bloque->size;
 			list_replace(listaAdminHeap, i, aux);
 			break;
 		}
 		i++;
 	}
-
-//ver SEMAFOROS
 
 	return LIBERAR_HEAP_OK;
 }
@@ -1689,13 +1678,16 @@ codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
 int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 	log_info(logger,"Reservando bloque en pagina %d del pid %d",puntero->pagina,pid );
 	t_heapMetadata* auxBloque= malloc(sizeof(t_heapMetadata));
+	t_heapMetadata* auxBloque2= malloc(sizeof(t_heapMetadata));
 	t_adminHeap * aux = malloc(sizeof(t_adminHeap));
+	int offsetAux = puntero->offset;
 
-
+	printf("PUNTERO RESERVAR BLOQUE PAGINA: %d\n", puntero->pagina);
+	printf("PUNTERO RESERVAR BLOQUE OFFSET: %d\n", puntero->offset);
 	int i=0;
 	int sizeLibreViejo;
 
-	void* buffer = malloc(sizeof(t_heapMetadata));
+	//void* buffer = malloc(sizeof(t_heapMetadata));
 
 	while(i< list_size(listaAdminHeap)){
 		aux = list_get(listaAdminHeap, i);
@@ -1712,40 +1704,29 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 		}
 		i++;
 	}
-	printf("antes buffer\n");
-
-	printf("MEMORIA:%d\n", memoria);
-	printf("PID: %d\n", pid);
-	printf("PAGINA:%d\n", puntero->pagina);
-	printf("OFFSET:%d\n", puntero->offset);
-	printf("SIZEOF:%d\n", sizeof(t_heapMetadata));
 
 
-	buffer = solicitarBytesAMemoria(memoria, logger, pid, puntero->pagina, puntero->offset, sizeof(t_heapMetadata));
 
-	printf("Despues buffer\n");
+	auxBloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, puntero->pagina, offsetAux, sizeof(t_heapMetadata));
 
-	memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
-
-	printf("DESPUES MEMCPY auxBloque\n");
+	printf("AUX BLOQUE PEDIR ASIGNAR BLOQUE USO: %d\n",auxBloque->uso );
+	printf("AUX BLOQUE PEDIR ASIGNAR BLOQUE SIZE: %d\n",auxBloque->size );
 
 
+	//memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
 
 
 	sizeLibreViejo = auxBloque->size;
 	auxBloque->uso = 1;
 	auxBloque->size = size;
 
-	memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
+	//memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
+
+	printf("VOY A GUARDAR PRIMERO uso:%d, size:%d \n", auxBloque->uso, auxBloque->size);
+
+	int respuesta1 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina, offsetAux, sizeof(t_heapMetadata), auxBloque);
 
 
-	printf("DESPUES MEMCPY buffer\n");
-
-
-
-	int respuesta1 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina, puntero->offset, sizeof(t_heapMetadata), buffer);
-
-	printf("DESPUES respuesta\n");
 
 	if(respuesta1==EXIT_FAILURE_CUSTOM){
 		log_error(logger, "NO PUDE ALMACENAR DATOS EN BLOQUE");
@@ -1753,12 +1734,16 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 	}
 
 
-	auxBloque->uso = -1;
-	auxBloque->size = sizeLibreViejo - size - sizeof(t_heapMetadata);
+	auxBloque2->uso = 0;
+	auxBloque2->size = sizeLibreViejo - size - sizeof(t_heapMetadata);
 
-	memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
+	//memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
 
-	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina,puntero->offset+sizeof(t_heapMetadata)+size, sizeof(t_heapMetadata), buffer );
+	int nuevoOffset = offsetAux + sizeof(t_heapMetadata)+size;
+
+	printf("VOY A GUARDAR SEGUNDO uso:%d, size:%d \n", auxBloque2->uso, auxBloque2->size);
+
+	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina,nuevoOffset, sizeof(t_heapMetadata), auxBloque2 );
 
 
 	if(respuesta2==EXIT_FAILURE_CUSTOM){
@@ -1767,7 +1752,7 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 	}
 
 	log_info(logger, "Bloque de tamanio %d reservado en Heap del pid %d", size, pid);
-	free(buffer);
+	//free(buffer);
 
 	return 1;
 }
@@ -1810,7 +1795,7 @@ int reservarPaginaHeap(int pid,int pagina){
 	t_heapMetadata* aux = malloc(sizeof(t_heapMetadata));
 	void * buffer = malloc(sizeof(t_heapMetadata));
 
-	aux->uso = -1;
+	aux->uso = 0;
 	aux->size = TAMPAG - sizeof(t_heapMetadata);
 
 	memcpy(buffer, &aux, sizeof(t_heapMetadata));
@@ -1826,7 +1811,7 @@ int reservarPaginaHeap(int pid,int pagina){
 
 	if(resultado== ASIGNAR_PAGINAS_FALLO) return -1;
 
-	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, pagina, 0, sizeof(t_heapMetadata), buffer);
+	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, pagina, 0, sizeof(t_heapMetadata), aux);
 
 
 
@@ -1855,36 +1840,36 @@ int compactarPaginaHeap( int pagina, int pid){
 	int res = 1;
 	log_info(logger, "Compactando la pagina %d del Heap del pid %d", pagina, pid);
 	int offset = 0;
-	t_heapMetadata actual;
-	t_heapMetadata siguiente;
+	t_heapMetadata* actual = malloc(sizeof(t_heapMetadata));
+	t_heapMetadata* siguiente = malloc(sizeof(t_heapMetadata));
 	t_heapMetadata* buffer = malloc(sizeof(t_heapMetadata));
 
 
-	actual.size= 0;
+	actual->size= 0;
 
-	while(offset < TAMPAG && offset + sizeof(t_heapMetadata)+ actual.size> TAMPAG - sizeof(t_heapMetadata)){
+	while((offset < TAMPAG) && ((offset + sizeof(t_heapMetadata)+ actual->size) > (TAMPAG - sizeof(t_heapMetadata)))){
 
 
 		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria,logger,pid, pagina, offset, sizeof(t_heapMetadata));
 
-		actual.uso = buffer->uso;
-		actual.size = buffer->size;
+		actual->uso = buffer->uso;
+		actual->size = buffer->size;
 
 
-		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina,offset+sizeof(t_heapMetadata)+ actual.size, sizeof(t_heapMetadata));
+		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina,offset+sizeof(t_heapMetadata)+ actual->size, sizeof(t_heapMetadata));
 
-		siguiente.uso = buffer->uso;
-		siguiente.size = buffer->size;
+		siguiente->uso = buffer->uso;
+		siguiente->size = buffer->size;
 
-		if(actual.uso ==-1 && siguiente.uso ==-1){
-			actual.size = actual.size + sizeof(t_heapMetadata)+ siguiente.size;
-			memcpy(buffer, &actual, sizeof(t_heapMetadata));
+		if(actual->uso ==0 && siguiente->uso ==0){
+			actual->size = actual->size + sizeof(t_heapMetadata)+ siguiente->size;
+			//memcpy(buffer, &actual, sizeof(t_heapMetadata));
 
-			res = almacenarEnMemoria(memoria, logger, pid, pagina,offset, sizeof(t_heapMetadata), (void*)buffer);
+			res = almacenarEnMemoria(memoria, logger, pid, pagina,offset, sizeof(t_heapMetadata), actual);
 
 		}
 		else{
-			offset += sizeof(t_heapMetadata)+ actual.size;
+			offset += sizeof(t_heapMetadata)+ actual->size;
 		}
 
 	}
@@ -1899,26 +1884,30 @@ int compactarPaginaHeap( int pagina, int pid){
 int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, int tamanio){
 
 	int i=0;
-	t_heapMetadata auxBloque;
-	void* buffer = malloc(sizeof(t_heapMetadata));
+	t_heapMetadata* auxBloque = malloc(sizeof(t_heapMetadata));
+
 
 
 	while(i<TAMPAG){
 
-		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, i, sizeof(t_heapMetadata));
-		memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
+		auxBloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, i, sizeof(t_heapMetadata));
+		//memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
 
-		if(auxBloque.size >= tamanio + sizeof(t_heapMetadata) && auxBloque.uso == -1){
+		printf("AUX.SIZE: %d\n", auxBloque->size);
+		printf("AUX.USO: %d\n", auxBloque->uso);
+
+		if(auxBloque->size >= tamanio + sizeof(t_heapMetadata) && auxBloque->uso == 0){
 			log_info(logger,"Pagina %d del heap del pid %d suficiente", pagina, pid);
-			free(buffer);
+
+			printf("I:%d\n",i);
 			return i;
 		}
 		else{
-			i = i+sizeof(t_heapMetadata) + auxBloque.size;
+			i = i+sizeof(t_heapMetadata) + auxBloque->size;
 		}
 	}
 	log_error(logger, "Pagina %d del heap del pid %d no suficiente", pagina, pid);
-	free(buffer);
+
 	return -1;
 }
 

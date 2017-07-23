@@ -99,8 +99,8 @@ typedef struct __attribute__((packed))t_proceso{
 
 
 typedef struct __attribute__ ((packed))t_heapMetadata{
-	int size;
-	int uso;
+	uint32_t size;
+	bool uso;
 }t_heapMetadata;
 
 

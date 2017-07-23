@@ -525,6 +525,7 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 	t_direccion* dire = paquete->data;
 
 
+
 	if(paquete->codigo_operacion == SOLICITAR_HEAP_FALLO){
 		//VER ABORTAR PROCESO
 	}
