@@ -1585,6 +1585,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 	int pid;
 	int tamanio;
+	void* algo = malloc(sizeof(int));
 
 	pedido = paqueteRecibido->data;
 	tamanio = pedido->tamanio;
@@ -1592,7 +1593,13 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 	printf("TAMPAG: %d\n\n", TAMPAG);
 	if(tamanio > TAMPAG - sizeof(t_heapMetadata)*2){
-			finalizarProceso(proceso, NoSePuedenAsignarMasPaginas);
+			log_error(logger, "ERROR, Se intento Reservar mas memoria que el tamanio de una pagina ");
+			printf("voy a enviar\n");
+
+			enviar(socketCPU, SOLICITAR_HEAP_FALLO, sizeof(int), algo);
+			printf("envie\n");
+			finalizarProceso(proceso, IntentoDeReservaDeMemoriaErroneo);
+
 			return;
 		}
 	puntero = verificarEspacioLibreHeap(pid, tamanio);

@@ -31,6 +31,7 @@ t_paquete* paquete_recibido;
 
 
 int abortadoProcesoConsola;
+int abortadoHeap;
 
 //señales
 int sigusr1_desactivado;

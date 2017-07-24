@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
 		programaAbortado = 0;
 		programaFinalizado = 0;
 		abortadoProcesoConsola =0;
+		abortadoHeap=0;
 
 
 
@@ -112,7 +113,7 @@ int main(int argc, char **argv) {
 
 		var_max = (tamanio_pag*(stack_size+pcb->paginasDeCodigo))-1;
 
-		while((quantumAux!=0) && !programaBloqueado && !programaFinalizado && !programaAbortado &&!abortadoProcesoConsola){
+		while((quantumAux!=0) && !programaBloqueado && !programaFinalizado && !programaAbortado &&!abortadoProcesoConsola &&!abortadoHeap){
 
 				int pidAux = pcb->pid;
 				int paginaAux = (pcb->indiceDeCodigo[(pcb->programCounter)*2]/tamanio_pag)+1;
@@ -181,13 +182,17 @@ int main(int argc, char **argv) {
 						}
 
 				}
+				if(abortadoHeap){
+					log_warning(logger, "El proceso se aborto por HEAP");
+					destruirPCB(pcb);
+				}
 
 				if(abortadoProcesoConsola){
 					log_warning(logger, "El programa se Aborto por desconexion de Consola");
 					destruirPCB(pcb);
 				}
 
-				if((quantumAux==0) && !programaFinalizado && !programaBloqueado && !programaAbortado){
+				if((quantumAux==0) && !programaFinalizado && !programaBloqueado && !programaAbortado && !abortadoProcesoConsola && !abortadoHeap){
 					log_info(logger,"Se sale por fin de QUANTUM");
 
 					serializado = serializarPCB(pcb);

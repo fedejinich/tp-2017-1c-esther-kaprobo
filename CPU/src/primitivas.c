@@ -522,13 +522,16 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 	enviar(kernel, SOLICITAR_HEAP, sizeof(t_pedidoHeap), pedido);
 	paquete = recibir(kernel);
 
+	if(paquete->codigo_operacion == SOLICITAR_HEAP_FALLO){
+			abortadoHeap = 1;
+			return -1;
+		}
+
 	t_direccion* dire = paquete->data;
 
 
 
-	if(paquete->codigo_operacion == SOLICITAR_HEAP_FALLO){
-		//VER ABORTAR PROCESO
-	}
+
 
 	t_puntero puntero = convertirDireccionAPuntero(paquete->data);
 /*
