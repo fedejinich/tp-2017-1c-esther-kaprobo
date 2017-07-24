@@ -556,12 +556,17 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 */
 void liberarEnHeap(t_puntero puntero) {
 
+	printf("LIBERA HEAP PUNTERO: %d\n", puntero);
+
 	t_liberarHeap* libera = malloc(sizeof(t_liberarHeap));
 	t_paquete* paquete;
 	int pagina = puntero / tamanio_pag;
 	int offset = puntero - (pagina*tamanio_pag);
 
+	printf("LIBERA HEAP PAGINA: %d\n", pagina);
+	printf("LIBERA HEAP offset: %d\n", offset);
 
+/*
 	void * resul = solicitarBytesAMemoria(memoria, logger, pcb->pid, pagina, offset, sizeof(t_heapMetadata));
 
 	char* instruccion = *(char*)resul;
@@ -569,19 +574,19 @@ void liberarEnHeap(t_puntero puntero) {
 	int punteroHeap = atoi(instruccion);
 	int paginaHeap = punteroHeap/tamanio_pag;
 	int offsetHeap = punteroHeap - (paginaHeap * tamanio_pag);
-
+*/
 	libera->pid = pcb->pid;
-	libera->nroPagina = paginaHeap;
-	libera->offset = offsetHeap;
+	libera->nroPagina = pagina;
+	libera->offset = offset;
 
 	enviar(kernel, LIBERAR_HEAP, sizeof(t_liberarHeap), libera);
 
 	paquete = recibir(kernel);
 	if(paquete->codigo_operacion == LIBERAR_HEAP_OK){
-		log_debug(logger, "Bloque Heap apuntando a %d liberado correctamente", punteroHeap);
+		log_debug(logger, "Bloque Heap apuntando a %d liberado correctamente", puntero);
 	}
 	else{
-		log_warning(logger, "No se ha podido liberar el bloque Heap con puntero %d", punteroHeap);
+		log_warning(logger, "No se ha podido liberar el bloque Heap con puntero %d", puntero);
 	}
 }
 
