@@ -1658,18 +1658,28 @@ void procesoLiberaHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 }
 
 codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
-	log_info(logger, "Liberando Heap del pid &d", pid);
+	log_info(logger, "Liberando Heap del pid %d", pid);
 
 	int i = 0;
 
 	t_adminHeap* aux = malloc(sizeof(t_adminHeap));
+	t_adminHeap* aux2 = malloc(sizeof(t_adminHeap));
 	t_heapMetadata * bloque= malloc(sizeof(t_heapMetadata));
 
 
 	bloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata));
+
+	printf("LIBERAR HEAP, BLOQUE TRAJE uso: %d\n", bloque->uso);
+	printf("LIBERAR HEAP, BLOQUE TRAJE size:%d\n", bloque->size);
+
 	bloque->uso = 0;
 
 	int resul= almacenarEnMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata), bloque);
+
+	bloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata));
+
+	printf("LIBERAR HEAP, DESPUES ACTUALIZAR TRAJE uso: %d\n", bloque->uso);
+	printf("LIBERAR HEAP, DESPUES ACTUALIZAR TRAJE size:%d\n", bloque->size);
 
 	if (resul == EXIT_FAILURE_CUSTOM){
 		return LIBERAR_HEAP_FALLO;
@@ -1680,6 +1690,10 @@ codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
 		if( aux->pagina == pagina && aux->pid  == pid){
 			aux->disponible = aux->disponible + bloque->size;
 			list_replace(listaAdminHeap, i, aux);
+			aux2=list_get(listaAdminHeap, i);
+			printf("aux2 PID: %d\n", aux2->pid);
+			printf("aux2 pagina: %d\n", aux2->pagina);
+			printf("aux2 dispo: %d\n", aux2->disponible);
 			break;
 		}
 		i++;
@@ -1775,13 +1789,16 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 t_datosHeap* verificarEspacioLibreHeap( int pid, int tamanio){
 	int i = 0;
 	t_datosHeap* puntero = malloc(sizeof(t_datosHeap));
-	t_adminHeap * aux;
+	t_adminHeap* aux = malloc(sizeof(t_adminHeap));
 	puntero->pagina = -1;
 
 	pthread_mutex_lock(&mutex_listaHeap);
 
 	while(i<list_size(listaAdminHeap)){
-		aux= (t_adminHeap*) list_get(listaAdminHeap, i);
+		aux=  list_get(listaAdminHeap, i);
+		printf("VERIFICAR, AUX PID: %d\n", aux->pid);
+		printf("VERIFICAR, AUX pagina: %d\n", aux->pagina);
+		printf("VERIFICAR, AUX disponible: %d\n", aux->disponible);
 
 		if((aux->disponible >= tamanio + sizeof(t_datosHeap)) && (aux->pid==pid)){
 
@@ -1861,7 +1878,7 @@ int compactarPaginaHeap( int pagina, int pid){
 
 	actual->size= 0;
 
-	while((offset < TAMPAG) && ((offset + sizeof(t_heapMetadata)+ actual->size) > (TAMPAG - sizeof(t_heapMetadata)))){
+	while((offset < TAMPAG) && ((offset + sizeof(t_heapMetadata)+ actual->size) < (TAMPAG - sizeof(t_heapMetadata)))){
 
 
 		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria,logger,pid, pagina, offset, sizeof(t_heapMetadata));
