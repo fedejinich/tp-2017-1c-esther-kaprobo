@@ -109,6 +109,10 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable){
 	log_debug(logger, "Obtener posicion de Variable %c", identificador_variable);
 
+	if(abortadoHeap){
+		return -1;
+	}
+
 	int posicionStack = pcb->sizeContextoActual-1;
 	t_puntero direccionRetorno;
 	if((identificador_variable>= '0')&&(identificador_variable <='9')){
@@ -176,6 +180,9 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 * @return	void
 */
 void asignar(t_puntero direccion_variable, t_valor_variable valor){
+	if(abortadoHeap){
+		return;
+	}
 	log_warning(logger, "asignar");
 	log_info(logger, "Asigno el valor: %d a la variable en la posicion: %d", valor, direccion_variable);
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
@@ -519,27 +526,19 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 	pedido->pid = pid;
 	pedido->tamanio = espacio;
 
+	printf("VOY A PEDID HEAP DEL PID: %d\n", pid);
+
 	enviar(kernel, SOLICITAR_HEAP, sizeof(t_pedidoHeap), pedido);
 	paquete = recibir(kernel);
-
+	void* algo = malloc(sizeof(int));
 	if(paquete->codigo_operacion == SOLICITAR_HEAP_FALLO){
 			abortadoHeap = 1;
+			enviar(kernel, ABORTADO_HEAP,sizeof(int), algo );
 			return -1;
 		}
 
-	t_direccion* dire = paquete->data;
-
-
-
-
-
 	t_puntero puntero = convertirDireccionAPuntero(paquete->data);
-/*
-	t_direccion* dire = malloc(sizeof(t_direccion));
-	dire = (t_direccion*)paquete->data;
 
-	t_puntero puntero = dire->pagina * tamanio_pag + dire->offset;
-	*/
 	log_info(logger, "Puntero %d", puntero);
 	return puntero;
 

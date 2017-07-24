@@ -441,6 +441,10 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			finQuantum(socketActivo, paqueteRecibido);
 			break;
 
+		case ABORTADO_HEAP:
+			finalizarProgramaKernel(socketActivo, paqueteRecibido, IntentoDeReservaDeMemoriaErroneo);
+			break;
+
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
 			finalizarProcesoCPU(paqueteRecibido, socketActivo);//QUE SERIA ESTO??
 			break;
@@ -1490,19 +1494,22 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 
 	log_info("Se finalizara proceso %d por Exit Code %d", proceso->pcb->pid, exitCode);
 
+	printf("pase por aqui a finalizar\n");
 
 	pthread_mutex_lock(&mutex_exit);
 	destruirCONTEXTO(proceso->pcb);
 	queue_push(cola_exit, proceso);
 	pthread_mutex_unlock(&mutex_exit);
-
+	printf("CPU: %d\n", proceso->socketCPU);
 	queue_push(cola_CPU_libres, (void*)proceso->socketCPU);
 	sem_post(&sem_cpu);
 	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
-	log_debug(logger, "Se finalizo PID en Memoria");//VER
-	if(exitCode != DesconexionDeConsola)
+	log_debug(logger, "Se finalizo PID en Memoria");
+	if(exitCode != DesconexionDeConsola){
 		enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
 		log_debug(logger, "Se finalizo PID en CONSOLA");
+	}
+
 	cantidadDeProgramas--;
 
 }
@@ -1591,14 +1598,14 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	tamanio = pedido->tamanio;
 	pid = pedido->pid;
 
-	printf("TAMPAG: %d\n\n", TAMPAG);
+	printf("PROCESO %d nos pide HEAP\n\n", pid);
 	if(tamanio > TAMPAG - sizeof(t_heapMetadata)*2){
 			log_error(logger, "ERROR, Se intento Reservar mas memoria que el tamanio de una pagina ");
 			printf("voy a enviar\n");
 
 			enviar(socketCPU, SOLICITAR_HEAP_FALLO, sizeof(int), algo);
 			printf("envie\n");
-			finalizarProceso(proceso, IntentoDeReservaDeMemoriaErroneo);
+			//finalizarProceso(proceso, IntentoDeReservaDeMemoriaErroneo);
 
 			return;
 		}
@@ -1644,7 +1651,7 @@ void procesoLiberaHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 	libera = (t_liberarHeap*)(paqueteRecibido->data);
 	codigosKernelCPU codigo = liberarBloqueHeap(libera->pid, libera->nroPagina, libera->offset);
-	int algo ;
+	void* algo = malloc(sizeof(int));
 
 	enviar(socketCPU, codigo, sizeof(int), algo);
 
@@ -1776,7 +1783,7 @@ t_datosHeap* verificarEspacioLibreHeap( int pid, int tamanio){
 	while(i<list_size(listaAdminHeap)){
 		aux= (t_adminHeap*) list_get(listaAdminHeap, i);
 
-		if(aux->disponible >= tamanio + sizeof(t_datosHeap) && aux->pid){
+		if((aux->disponible >= tamanio + sizeof(t_datosHeap)) && (aux->pid==pid)){
 
 			int res = compactarPaginaHeap(aux->pagina, aux->pid);
 			if(res == EXIT_FAILURE_CUSTOM){
