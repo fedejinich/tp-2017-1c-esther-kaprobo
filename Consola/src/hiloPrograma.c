@@ -187,6 +187,7 @@ void hiloNuevoPrograma(){
 			pthread_mutex_lock(&mutexEjecuta);
 			printf("CONSOLA: Kernel se desconecto\n");
 			close(kernel);
+			matriz[pid]=0;
 			liberar_paquete(paquete);
 			pthread_mutex_unlock(&mutexEjecuta);
 			return;

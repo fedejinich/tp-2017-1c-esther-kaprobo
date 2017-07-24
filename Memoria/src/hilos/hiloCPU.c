@@ -9,8 +9,8 @@
 
 void* hiloServidorCPU(void* arg) {
 	log_info(logger,"Inicio del hilo CPU");
-	int servidorSocket, socketCliente;
-	int *socketClienteTemp;
+	int  socketCliente;
+
 	socketCPU = socket_escucha("127.0.0.2", puerto);
 	log_debug(logger,"Creacion socket servidor CPU exitosa");
 	listen(socketCPU, 1024);
@@ -24,11 +24,10 @@ void* hiloServidorCPU(void* arg) {
 			log_info(logger,"Handshake fallo, se aborta conexion");
 			exit (EXIT_FAILURE_CUSTOM);
 		}
-		socketClienteTemp = malloc(sizeof(int));
-		*socketClienteTemp = socketCliente;
+
 		pthread_t conexionCPU;
 		//pthread_create(&conexionCPU, NULL, hiloConexionCPU, (void*)socketClienteTemp);
-		pthread_create(&conexionCPU, NULL, hiloConexionCPU, socketCliente);
+		pthread_create(&conexionCPU, NULL, hiloConexionCPU, (void*)socketCliente);
 	}
 }
 
@@ -40,7 +39,7 @@ void* hiloConexionCPU(void* socket) {
 	//int pidActual; //para saber que pid esta ejecutando cada hilo
 
 	while(1) {
-		paqueteRecibido = recibir(socket);
+		paqueteRecibido = recibir((un_socket)socket);
 		char * codigoDeOperacion = getCodigoDeOperacion(paqueteRecibido->codigo_operacion);
 
 		log_warning(logger, "Codigo de operacion Memoria-CPU: %s", codigoDeOperacion);
@@ -110,11 +109,13 @@ void* hiloConexionCPU(void* socket) {
 				break;
 			case -1:
 				log_warning(logger, "Se desconecto una CPU");
+				pthread_exit(PTHREAD_CANCELED);
 				break;
 			default:
 				log_error(logger,"Exit por hilo CPU");
 				log_error(logger, "Tiro un exit(EXIT_FAILURE_CUSTOM) y mato Memoria desde hilo-CPU");
-				exit(EXIT_FAILURE_CUSTOM);
+				pthread_exit(PTHREAD_CANCELED);// Esto finaliza el hilo y no todo Memoria
+				//exit(EXIT_FAILURE_CUSTOM);
 				break;
 		}
 	}

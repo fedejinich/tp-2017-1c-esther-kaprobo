@@ -30,7 +30,8 @@ signed int memoria;
 t_paquete* paquete_recibido;
 
 
-
+int abortadoProcesoConsola;
+int abortadoHeap;
 
 //señales
 int sigusr1_desactivado;
@@ -45,6 +46,7 @@ char nomArchi[50];
 t_pcb* pcb;
 int algoritmo;
 t_paquete* paq_algoritmo;
+int flagStackOverflow;
 
 //Variables
 int quantum;

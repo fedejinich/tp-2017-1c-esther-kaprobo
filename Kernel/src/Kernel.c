@@ -76,7 +76,7 @@ void inicializar(){
 
 void cargarConfiguracion() {
 	int j;
-	printf("inicio\n");
+
 	bool haySemaforos(){
 
 		bool retorno = false;
@@ -181,18 +181,18 @@ void mostrarConfiguracion(){
 	log_debug(logger,"Puerto Prog: %i \n", puerto_prog );
 
 	log_debug(logger,"Puerto CPU: %i \n", puerto_cpu);
-	printf("IP Memoria: %s \n", ip_memoria);
-	printf("Puerto Memoria: %i \n", puerto_memoria);
-	printf("IP File System: %s \n", ip_fs);
-	printf("Puerto File System: %i \n", puerto_fs);
-	printf("Quantum: %i \n", quantum);
-	printf("Quantum Sleep: %i \n", quantum_sleep);
-	printf("Algoritmo: %i \n", algoritmo);
-	printf("Grado Multiprogramacion: %i \n", grado_multiprog);
+	log_debug(logger,"IP Memoria: %s \n", ip_memoria);
+	log_debug(logger,"Puerto Memoria: %i \n", puerto_memoria);
+	log_debug(logger,"IP File System: %s \n", ip_fs);
+	log_debug(logger,"Puerto File System: %i \n", puerto_fs);
+	log_debug(logger,"Quantum: %i \n", quantum);
+	log_debug(logger,"Quantum Sleep: %i \n", quantum_sleep);
+	log_debug(logger,"Algoritmo: %i \n", algoritmo);
+	log_debug(logger,"Grado Multiprogramacion: %i \n", grado_multiprog);
 
 	//Falta mostrar arrays
 
-	printf("Stack Size: %i \n", stack_size);
+
 }
 
 void prepararSocketsServidores(){
@@ -309,7 +309,7 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 	}
 	else{
 		log_error(logger, "Handshake fallo, pedido de conexion rechazado");
-		printf ("Handshake rechazado\n");
+
 	}
 
 	return;
@@ -402,8 +402,11 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			reservarHeap(socketActivo, paqueteRecibido);
 			break;
 
-		case PROGRAMA_BLOQUEADO_SIGUSR1:
-			flagCPU=1;
+		case PROGRAMA_ABORTADO_CPU:
+			log_error(logger, "CPU envio señal de cierre");
+			cpuCerrada(socketActivo, paqueteRecibido);
+
+
 			break;
 
 		case PROGRAMA_FINALIZADO:
@@ -411,9 +414,6 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			finalizarProgramaKernel(socketActivo, paqueteRecibido, finalizadoCorrectamente);
 			break;
 
-			//VER BLOQUEADO POR SEÑAL
-			//VER BLOQUEADO POR SEMAFORO
-			//VER ABORTADO
 
 		case LIBERAR_HEAP:
 			log_info(logger, "KERNEL: Proceso nos solicita liberar Heap");
@@ -435,6 +435,14 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 		case EXCEPCION_MEMORIA:
 			log_error(logger, "Se finaliza PID %d por Excepcion en Memoria", (int)paqueteRecibido->data);
 			finalizarProgramaKernel(socketActivo, paqueteRecibido, ExcepcionDeMemoria);
+			break;
+		case FIN_QUANTUM:
+			log_debug(logger, "Se recibio programa por fin de Quantum");
+			finQuantum(socketActivo, paqueteRecibido);
+			break;
+
+		case ABORTADO_HEAP:
+			finalizarProgramaKernel(socketActivo, paqueteRecibido, IntentoDeReservaDeMemoriaErroneo);
 			break;
 
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
@@ -552,15 +560,12 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 		if(procesoPideSem->abortado == false){
 			bloqueoSemaforo(procesoPideSem, paqueteRecibido->data);
-			if(flagCPU==0){
-				queue_push(cola_CPU_libres, (void*)socketActivo);
-				sem_post(&sem_cpu);
-			}
-			else{
-				log_info(logger,"KERNEL: se va a cerrar CPU");
-			}
+
+			queue_push(cola_CPU_libres, (void*)socketActivo);
+			sem_post(&sem_cpu);
+
 		}else{
-			log_info(logger,"KERNEL: Se recibio proceso %d por fin de quantum, abortado", procesoPideSem->pcb->pid);
+			log_info(logger,"KERNEL: Se recibio proceso %d abortado", procesoPideSem->pcb->pid);
 			abortar(procesoPideSem);
 		}
 
@@ -680,16 +685,16 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 			enviar((un_socket)(proceso->socketConsola), IMPRIMIR_CONSOLA, escritura->size, info->data);
 
 			enviar(socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), basura);
-			printf("envie CPU\n");
+
 		}
 		else{
-			printf("entre 2\n");
+
 			enviar(socketActivo, ESCRIBIR_ARCHIVO_FALLO, sizeof(int), (void*)basura);
 		}
 
 
 
-		//imprimirConsola(socketActivo, (char*)info->data);
+
 	}
 	else{
 		//VER ESCRIBIR ARCHIVO
@@ -699,13 +704,7 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 
 }
 
-void imprimirConsola(un_socket socketActivo, char* imprimir){
 
-
-
-
-	return;
-}
 
 bool validarPermisoDeApertura(int pid, char* path, char* permisos){
 	bool permisoParaSeguir = false;
@@ -955,7 +954,7 @@ t_proceso* crearPrograma(un_socket socketC , t_paquete* paquete){
 	pidcounter ++;
 
 	metadata = metadata_desde_literal(codigo);
-	printf("intrucciones: %d \n", metadata->instrucciones_size);
+	log_info(logger,"Intrucciones: %d \n", metadata->instrucciones_size);
 
 	procesoNuevo->pcb->paginasDeCodigo = ceil((double)size / (double)TAMPAG);
 	procesoNuevo->pcb->sizeIndiceDeCodigo = metadata->instrucciones_size;
@@ -1230,27 +1229,22 @@ void planificadorCortoPlazo(){
 			yaMeFijeReady = false;
 			sem_wait(&sem_cpu);//Cuando conecta CPU, sumo un signal y sumo una cpuLibre a la lista
 
+			pthread_mutex_lock(&mutex_config);
+			socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
 
-			if(flagCPU==0){
-				pthread_mutex_lock(&mutex_config);
-				socketCPULibre = (un_socket)queue_pop(cola_CPU_libres);
+			pthread_mutex_lock(&mutex_ready);
+			proceso = queue_pop(cola_ready);
+			pthread_mutex_unlock(&mutex_ready);
 
-				pthread_mutex_lock(&mutex_ready);
-				proceso = queue_pop(cola_ready);
-				pthread_mutex_unlock(&mutex_ready);
+			log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
 
-				log_info(logger, "KERNEL: Saco proceso %d de Ready, se envia a Ejecutar", proceso->pcb->pid);
+			mandarAEjecutar(proceso, socketCPULibre);
 
-				mandarAEjecutar(proceso, socketCPULibre);
+			pthread_mutex_unlock(&mutex_config);
 
-				pthread_mutex_unlock(&mutex_config);
-			}
-			else{
-				flagCPU = 0;
-			}
 		}
 		else{
-			printf("PLANIF DETENIDA \n");
+			log_error(logger,"PLANIF DETENIDA");
 			sleep(2);
 		}
 	}
@@ -1288,11 +1282,26 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 
 
 t_proceso* obtenerProcesoSocketCPU(t_queue *cola, un_socket socketBuscado){
+
+	bool esMiCPU(void* entrada){
+		t_proceso* proc = (t_proceso*) entrada;
+		return proc->socketCPU = socketBuscado;
+	}
+
 	int a = 0;
 	t_proceso*proceso;
 	while(proceso = (t_proceso*)list_get(cola->elements, a)){
 		if (proceso->socketCPU == socketBuscado) return (t_proceso*)list_remove(cola->elements, a);
 		a++;
+	}
+	int i;
+
+	for (i=0; i < strlen((char*)sem_ids)/sizeof(char*); i++){
+		proceso = (t_proceso*)list_remove_by_condition(cola_semaforos[i]->elements, esMiCPU);
+		if(proceso!=NULL){
+			log_debug(logger, "El proceso se encontraba bloqueado por Semaforo");
+			return proceso;
+		}
 	}
 	log_error(logger, "No hay proceso para retirar");
 	exit(0);
@@ -1475,25 +1484,32 @@ void finalizarProgramaKernel(un_socket socket, t_paquete* paquete, ExitCodes exi
  }
 
 void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
-	if(exitCode == DesconexionDeConsola)
+	if(exitCode == DesconexionDeConsola){
 		proceso->abortado = true;
+
+
+	}
+
 	proceso->pcb->exitCode = exitCode;
 
 	log_info("Se finalizara proceso %d por Exit Code %d", proceso->pcb->pid, exitCode);
 
+	printf("pase por aqui a finalizar\n");
 
 	pthread_mutex_lock(&mutex_exit);
 	destruirCONTEXTO(proceso->pcb);
 	queue_push(cola_exit, proceso);
 	pthread_mutex_unlock(&mutex_exit);
-
+	printf("CPU: %d\n", proceso->socketCPU);
 	queue_push(cola_CPU_libres, (void*)proceso->socketCPU);
 	sem_post(&sem_cpu);
 	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
-	log_debug(logger, "Se finalizo PID en Memoria");//VER
-	if(exitCode != DesconexionDeConsola)
+	log_debug(logger, "Se finalizo PID en Memoria");
+	if(exitCode != DesconexionDeConsola){
 		enviar(proceso->socketConsola, FINALIZAR_PROGRAMA, sizeof(int), &proceso->pcb->pid);
 		log_debug(logger, "Se finalizo PID en CONSOLA");
+	}
+
 	cantidadDeProgramas--;
 
 }
@@ -1552,7 +1568,7 @@ t_proceso* obtenerProcesoPorPID(t_queue *cola, int pid){
 	}
 	return NULL;
 }
-
+//VER esto?
 int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instrucciones_serializados){
 	int i;
 	int **indice = malloc(sizeof(int*)*instrucciones);
@@ -1566,6 +1582,7 @@ int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instruccio
 
 void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	int resultado;
+	t_pedidoHeap* pedido;
 	t_datosHeap* puntero;
 	t_proceso *proceso;
 	pthread_mutex_lock(&mutex_exec);
@@ -1575,34 +1592,48 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 	int pid;
 	int tamanio;
-	tamanio = *((int*)paqueteRecibido->data);
-	pid = proceso->pcb->pid;
+	void* algo = malloc(sizeof(int));
 
+	pedido = paqueteRecibido->data;
+	tamanio = pedido->tamanio;
+	pid = pedido->pid;
 
+	printf("PROCESO %d nos pide HEAP\n\n", pid);
 	if(tamanio > TAMPAG - sizeof(t_heapMetadata)*2){
-			finalizarProceso(proceso, NoSePuedenAsignarMasPaginas);
+			log_error(logger, "ERROR, Se intento Reservar mas memoria que el tamanio de una pagina ");
+			printf("voy a enviar\n");
+
+			enviar(socketCPU, SOLICITAR_HEAP_FALLO, sizeof(int), algo);
+			printf("envie\n");
+			//finalizarProceso(proceso, IntentoDeReservaDeMemoriaErroneo);
+
 			return;
 		}
 	puntero = verificarEspacioLibreHeap(pid, tamanio);
+	if((puntero->pagina==EXIT_FAILURE_CUSTOM) &&(puntero->offset==EXIT_FAILURE_CUSTOM)){
+		finalizarProceso(proceso, ExcepcionDeMemoria);
+		return;
+	}
 	if(puntero->pagina == -1){
-		puntero->pagina = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria + proceso->sizePaginasHeap ;
+		puntero->pagina = proceso->pcb->paginasDeCodigo + proceso->pcb->paginasDeMemoria + proceso->sizePaginasHeap +1 ;
 
 		//VER mutex memoria?
 		resultado = reservarPaginaHeap(pid,puntero->pagina);
-		puntero->offset = 8;
+		puntero->offset = 0;
 		if(resultado <0){
-			//ver Excepcion por HEAP
+			finalizarProceso(proceso, ExcepcionDeMemoria);
 		}
 		proceso->sizePaginasHeap++;
 
 	}
 
 
+
 	//ver mutex memoria
 	resultado = reservarBloqueHeap(pid,tamanio,puntero);
 
 	if(resultado<0){
-		// VER NO SE PUDO RESERVAR BLOQUE
+		finalizarProceso(proceso, ExcepcionDeMemoria);
 	}
 	t_direccion* direccion = malloc(sizeof(t_direccion));
 	direccion->pagina = puntero->pagina;
@@ -1620,65 +1651,71 @@ void procesoLiberaHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 	libera = (t_liberarHeap*)(paqueteRecibido->data);
 	codigosKernelCPU codigo = liberarBloqueHeap(libera->pid, libera->nroPagina, libera->offset);
-	int algo =1;
+	void* algo = malloc(sizeof(int));
 
-	enviar(socketCPU, codigo, sizeof(int), (void*)algo);
+	enviar(socketCPU, codigo, sizeof(int), algo);
 
 }
 
 codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
-	log_info(logger, "Liberando Heap del pid &d", pid);
+	log_info(logger, "Liberando Heap del pid %d", pid);
 
 	int i = 0;
 
 	t_adminHeap* aux = malloc(sizeof(t_adminHeap));
-	t_heapMetadata bloque;
-
-	void* buffer = malloc(sizeof(t_heapMetadata));
-
-
-	buffer = solicitarBytesAMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata));
+	t_adminHeap* aux2 = malloc(sizeof(t_adminHeap));
+	t_heapMetadata * bloque= malloc(sizeof(t_heapMetadata));
 
 
-	memcpy(&bloque, buffer, sizeof(t_heapMetadata));
+	bloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata));
 
-	bloque.uso = -1;
+	printf("LIBERAR HEAP, BLOQUE TRAJE uso: %d\n", bloque->uso);
+	printf("LIBERAR HEAP, BLOQUE TRAJE size:%d\n", bloque->size);
 
-	memcpy(buffer, &bloque, sizeof(t_heapMetadata));
+	bloque->uso = 0;
 
-	int resul= almacenarEnMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata), buffer);
+	int resul= almacenarEnMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata), bloque);
+
+	bloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata));
+
+	printf("LIBERAR HEAP, DESPUES ACTUALIZAR TRAJE uso: %d\n", bloque->uso);
+	printf("LIBERAR HEAP, DESPUES ACTUALIZAR TRAJE size:%d\n", bloque->size);
 
 	if (resul == EXIT_FAILURE_CUSTOM){
 		return LIBERAR_HEAP_FALLO;
 	}
 
-
 	while(i<list_size(listaAdminHeap)){
 		aux = list_get(listaAdminHeap, i);
 		if( aux->pagina == pagina && aux->pid  == pid){
-			aux->disponible = aux->disponible + bloque.size;
+			aux->disponible = aux->disponible + bloque->size;
 			list_replace(listaAdminHeap, i, aux);
+			aux2=list_get(listaAdminHeap, i);
+			printf("aux2 PID: %d\n", aux2->pid);
+			printf("aux2 pagina: %d\n", aux2->pagina);
+			printf("aux2 dispo: %d\n", aux2->disponible);
 			break;
 		}
 		i++;
 	}
-
-//ver SEMAFOROS
 
 	return LIBERAR_HEAP_OK;
 }
 
 
 int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
-	log_info(logger,"Reservando bloque en pagina &d del pid %d",puntero->pagina,pid );
+	log_info(logger,"Reservando bloque en pagina %d del pid %d",puntero->pagina,pid );
 	t_heapMetadata* auxBloque= malloc(sizeof(t_heapMetadata));
+	t_heapMetadata* auxBloque2= malloc(sizeof(t_heapMetadata));
 	t_adminHeap * aux = malloc(sizeof(t_adminHeap));
+	int offsetAux = puntero->offset;
 
-
+	printf("PUNTERO RESERVAR BLOQUE PAGINA: %d\n", puntero->pagina);
+	printf("PUNTERO RESERVAR BLOQUE OFFSET: %d\n", puntero->offset);
 	int i=0;
 	int sizeLibreViejo;
 
-	void* buffer = malloc(sizeof(t_heapMetadata));
+	//void* buffer = malloc(sizeof(t_heapMetadata));
 
 	while(i< list_size(listaAdminHeap)){
 		aux = list_get(listaAdminHeap, i);
@@ -1695,19 +1732,28 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 		}
 		i++;
 	}
-	printf("antes buffer\n");
-	buffer = solicitarBytesAMemoria(memoria, logger, pid, puntero->pagina, puntero->offset, sizeof(t_heapMetadata));
 
 
-	memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
+
+	auxBloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, puntero->pagina, offsetAux, sizeof(t_heapMetadata));
+
+	printf("AUX BLOQUE PEDIR ASIGNAR BLOQUE USO: %d\n",auxBloque->uso );
+	printf("AUX BLOQUE PEDIR ASIGNAR BLOQUE SIZE: %d\n",auxBloque->size );
+
+
+	//memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
+
 
 	sizeLibreViejo = auxBloque->size;
 	auxBloque->uso = 1;
 	auxBloque->size = size;
 
-	memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
+	//memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
 
-	int respuesta1 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina, puntero->offset, sizeof(t_heapMetadata), buffer);
+	printf("VOY A GUARDAR PRIMERO uso:%d, size:%d \n", auxBloque->uso, auxBloque->size);
+
+	int respuesta1 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina, offsetAux, sizeof(t_heapMetadata), auxBloque);
+
 
 
 	if(respuesta1==EXIT_FAILURE_CUSTOM){
@@ -1716,12 +1762,16 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 	}
 
 
-	auxBloque->uso = -1;
-	auxBloque->size = sizeLibreViejo - size - sizeof(t_heapMetadata);
+	auxBloque2->uso = 0;
+	auxBloque2->size = sizeLibreViejo - size - sizeof(t_heapMetadata);
 
-	memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
+	//memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
 
-	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina,puntero->offset+sizeof(t_heapMetadata)+size, sizeof(t_heapMetadata), buffer );
+	int nuevoOffset = offsetAux + sizeof(t_heapMetadata)+size;
+
+	printf("VOY A GUARDAR SEGUNDO uso:%d, size:%d \n", auxBloque2->uso, auxBloque2->size);
+
+	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina,nuevoOffset, sizeof(t_heapMetadata), auxBloque2 );
 
 
 	if(respuesta2==EXIT_FAILURE_CUSTOM){
@@ -1730,7 +1780,7 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 	}
 
 	log_info(logger, "Bloque de tamanio %d reservado en Heap del pid %d", size, pid);
-	free(buffer);
+	//free(buffer);
 
 	return 1;
 }
@@ -1739,16 +1789,25 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 t_datosHeap* verificarEspacioLibreHeap( int pid, int tamanio){
 	int i = 0;
 	t_datosHeap* puntero = malloc(sizeof(t_datosHeap));
-	t_adminHeap * aux;
+	t_adminHeap* aux = malloc(sizeof(t_adminHeap));
 	puntero->pagina = -1;
 
 	pthread_mutex_lock(&mutex_listaHeap);
 
 	while(i<list_size(listaAdminHeap)){
-		aux= (t_adminHeap*) list_get(listaAdminHeap, i);
+		aux=  list_get(listaAdminHeap, i);
+		printf("VERIFICAR, AUX PID: %d\n", aux->pid);
+		printf("VERIFICAR, AUX pagina: %d\n", aux->pagina);
+		printf("VERIFICAR, AUX disponible: %d\n", aux->disponible);
 
-		if(aux->disponible >= tamanio + sizeof(t_datosHeap) && aux->pid){
-			compactarPaginaHeap(aux->pagina, aux->pid);
+		if((aux->disponible >= tamanio + sizeof(t_datosHeap)) && (aux->pid==pid)){
+
+			int res = compactarPaginaHeap(aux->pagina, aux->pid);
+			if(res == EXIT_FAILURE_CUSTOM){
+				puntero->pagina = EXIT_FAILURE_CUSTOM;
+				puntero->offset = EXIT_FAILURE_CUSTOM;
+				return puntero;
+			}
 			puntero->offset = paginaHeapConBloqueSuficiente(i,aux->pagina, aux->pid, tamanio);
 			if(puntero->offset>0){
 				puntero->pagina=aux->pagina;
@@ -1767,7 +1826,7 @@ int reservarPaginaHeap(int pid,int pagina){
 	t_heapMetadata* aux = malloc(sizeof(t_heapMetadata));
 	void * buffer = malloc(sizeof(t_heapMetadata));
 
-	aux->uso = -1;
+	aux->uso = 0;
 	aux->size = TAMPAG - sizeof(t_heapMetadata);
 
 	memcpy(buffer, &aux, sizeof(t_heapMetadata));
@@ -1783,7 +1842,7 @@ int reservarPaginaHeap(int pid,int pagina){
 
 	if(resultado== ASIGNAR_PAGINAS_FALLO) return -1;
 
-	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, pagina, 0, sizeof(t_heapMetadata), buffer);
+	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, pagina, 0, sizeof(t_heapMetadata), aux);
 
 
 
@@ -1808,47 +1867,47 @@ int reservarPaginaHeap(int pid,int pagina){
 
 }
 
-void compactarPaginaHeap( int pagina, int pid){
-
+int compactarPaginaHeap( int pagina, int pid){
+	int res = 1;
 	log_info(logger, "Compactando la pagina %d del Heap del pid %d", pagina, pid);
 	int offset = 0;
-	t_heapMetadata actual;
-	t_heapMetadata siguiente;
+	t_heapMetadata* actual = malloc(sizeof(t_heapMetadata));
+	t_heapMetadata* siguiente = malloc(sizeof(t_heapMetadata));
 	t_heapMetadata* buffer = malloc(sizeof(t_heapMetadata));
 
 
-	actual.size= 0;
+	actual->size= 0;
 
-	while(offset < TAMPAG && offset + sizeof(t_heapMetadata)+ actual.size> TAMPAG - sizeof(t_heapMetadata)){
+	while((offset < TAMPAG) && ((offset + sizeof(t_heapMetadata)+ actual->size) < (TAMPAG - sizeof(t_heapMetadata)))){
 
 
 		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria,logger,pid, pagina, offset, sizeof(t_heapMetadata));
 
-		actual.uso = buffer->uso;
-		actual.size = buffer->size;
+		actual->uso = buffer->uso;
+		actual->size = buffer->size;
 
 
-		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina,offset+sizeof(t_heapMetadata)+ actual.size, sizeof(t_heapMetadata));
+		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina,offset+sizeof(t_heapMetadata)+ actual->size, sizeof(t_heapMetadata));
 
-		siguiente.uso = buffer->uso;
-		siguiente.size = buffer->size;
+		siguiente->uso = buffer->uso;
+		siguiente->size = buffer->size;
 
-		if(actual.uso ==-1 && siguiente.uso ==-1){
-			actual.size = actual.size + sizeof(t_heapMetadata)+ siguiente.size;
-			memcpy(buffer, &actual, sizeof(t_heapMetadata));
+		if(actual->uso ==0 && siguiente->uso ==0){
+			actual->size = actual->size + sizeof(t_heapMetadata)+ siguiente->size;
+			//memcpy(buffer, &actual, sizeof(t_heapMetadata));
 
-			int resultado = almacenarEnMemoria(memoria, logger, pid, pagina,offset, sizeof(t_heapMetadata), (void*)buffer);
+			res = almacenarEnMemoria(memoria, logger, pid, pagina,offset, sizeof(t_heapMetadata), actual);
 
-//VER FALLO ?
 		}
 		else{
-			offset += sizeof(t_heapMetadata)+ actual.size;
+			offset += sizeof(t_heapMetadata)+ actual->size;
 		}
 
 	}
 	free(buffer);
 
 	log_info(logger,"Pagina %d del heap del pid %d compactada",pagina, pid);
+	return res;
 
 }
 
@@ -1856,27 +1915,88 @@ void compactarPaginaHeap( int pagina, int pid){
 int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, int tamanio){
 
 	int i=0;
-	t_heapMetadata auxBloque;
-	void* buffer = malloc(sizeof(t_heapMetadata));
+	t_heapMetadata* auxBloque = malloc(sizeof(t_heapMetadata));
+
 
 
 	while(i<TAMPAG){
 
-		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, i, sizeof(t_heapMetadata));
-		memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
+		auxBloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, i, sizeof(t_heapMetadata));
+		//memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
 
-		if(auxBloque.size >= tamanio + sizeof(t_heapMetadata) && auxBloque.uso == -1){
+		printf("AUX.SIZE: %d\n", auxBloque->size);
+		printf("AUX.USO: %d\n", auxBloque->uso);
+
+		if(auxBloque->size >= tamanio + sizeof(t_heapMetadata) && auxBloque->uso == 0){
 			log_info(logger,"Pagina %d del heap del pid %d suficiente", pagina, pid);
-			free(buffer);
+
+			printf("I:%d\n",i);
 			return i;
 		}
 		else{
-			i = i+sizeof(t_heapMetadata) + auxBloque.size;
+			i = i+sizeof(t_heapMetadata) + auxBloque->size;
 		}
 	}
 	log_error(logger, "Pagina %d del heap del pid %d no suficiente", pagina, pid);
-	free(buffer);
+
 	return -1;
 }
 
+
+void finQuantum(un_socket socketCPU, t_paquete* paqueteRec){
+	t_proceso* proceso;
+	t_pcb* temporal;
+	pthread_mutex_lock(&mutex_exec);
+	proceso = obtenerProcesoSocketCPU(cola_exec, socketCPU);
+	pthread_mutex_unlock(&mutex_exec);
+	temporal = desserializarPCB(paqueteRec->data);
+	destruirPCB(proceso->pcb);
+	proceso->pcb = temporal;
+
+	if(proceso->abortado == false){
+		pthread_mutex_lock(&mutex_ready);
+		queue_push(cola_ready, proceso);
+		pthread_mutex_unlock(&mutex_ready);
+		sem_post(&sem_ready);
+		log_info(logger, "PID %d encolado en ready", proceso->pcb->pid);
+
+	}
+	else{
+		log_error(logger,"Pid abortado");
+		abortar(proceso);
+	}
+
+	queue_push(cola_CPU_libres, (void*)socketCPU);
+	sem_post(&sem_cpu);
+
+
+
+}
+
+
+void cpuCerrada(un_socket socketCPU, t_paquete* paqueteRec){
+
+	t_proceso* proceso;
+	t_pcb* temporal;
+	pthread_mutex_lock(&mutex_exec);
+	proceso = obtenerProcesoSocketCPU(cola_exec, socketCPU);
+	pthread_mutex_unlock(&mutex_exec);
+	temporal = desserializarPCB(paqueteRec->data);
+	destruirPCB(proceso->pcb);
+	proceso->pcb = temporal;
+
+	if(proceso->abortado == false){
+		pthread_mutex_lock(&mutex_ready);
+		queue_push(cola_ready, proceso);
+		pthread_mutex_unlock(&mutex_ready);
+		sem_post(&sem_ready);
+		log_info(logger, "PID %d encolado en ready", proceso->pcb->pid);
+
+	}
+	else{
+		log_error(logger,"Pid abortado");
+		abortar(proceso);
+	}
+
+}
 

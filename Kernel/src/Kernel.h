@@ -55,7 +55,6 @@ typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
 //Globales
 
 
-int flagCPU=0;
 //PID dando vueltas
 int cantidadDeProgramas  = 0;
 
@@ -128,7 +127,7 @@ t_queue * cola_exit;
 int cant_new, cant_ready, cant_exec, cant_block, cant_exit = 0;
 
 
-t_queue** colas_ios;
+
 
 
 t_queue * cola_CPU_libres;
@@ -246,7 +245,8 @@ void abortar(t_proceso* proceso);
 void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecibido);
 
 void finalizarProceso(t_proceso* proceso, ExitCodes exitCode);
-
+void finQuantum(un_socket socketActivo, t_paquete* paqueteRecibido);
+void cpuCerrada(un_socket socketActivo, t_paquete* paqueteRecibido);
 
 //HEAP
 void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido);
@@ -254,7 +254,7 @@ void procesoLiberaHeap(un_socket socketCPU, t_paquete * paqueteRecibido);
 int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero);
 t_datosHeap* verificarEspacioLibreHeap( int pid, int tamanio);
 int reservarPaginaHeap(int pid,int pagina);
-void compactarPaginaHeap( int pagina, int pid);
+int compactarPaginaHeap( int pagina, int pid);
 
 int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, int tamanio);
 codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset);

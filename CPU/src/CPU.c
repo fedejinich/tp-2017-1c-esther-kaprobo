@@ -14,6 +14,7 @@
 int flag = 0;
 
 
+
 AnSISOP_funciones primitivas = {
 		.AnSISOP_definirVariable			= definirVariable,
 		.AnSISOP_obtenerPosicionVariable	= obtenerPosicionVariable,
@@ -44,8 +45,8 @@ AnSISOP_kernel primitivas_kernel = {
 };
 
 int main(int argc, char **argv) {
-
-
+	flagStackOverflow = 0;
+	int yaEnvieCierre = 0;
 	iniciarCPU();
 	sigusr1_desactivado=1;
 
@@ -82,6 +83,8 @@ int main(int argc, char **argv) {
 		programaBloqueado = 0;
 		programaAbortado = 0;
 		programaFinalizado = 0;
+		abortadoProcesoConsola =0;
+		abortadoHeap=0;
 
 
 
@@ -90,15 +93,17 @@ int main(int argc, char **argv) {
 		flag = 1;
 
 		datos_kernel = recibir(kernel);
+
 		asignarDatosDelKernel(datos_kernel);
 		liberar_paquete(datos_kernel);
 		int quantumAux = quantum;
 
-		printf("quantum asignado aux: %d", quantumAux);
+
 
 		flag=0;
 
 		paquete_recibido = recibir(kernel);
+
 		log_info(logger,"Se recibio PCB, envio a deserializar");
 		pcb = desserializarPCB(paquete_recibido->data);
 
@@ -108,7 +113,7 @@ int main(int argc, char **argv) {
 
 		var_max = (tamanio_pag*(stack_size+pcb->paginasDeCodigo))-1;
 
-		while((quantumAux!=0) && !programaBloqueado && !programaFinalizado && !programaAbortado){
+		while((quantumAux!=0) && !programaBloqueado && !programaFinalizado && !programaAbortado &&!abortadoProcesoConsola &&!abortadoHeap){
 
 				int pidAux = pcb->pid;
 				int paginaAux = (pcb->indiceDeCodigo[(pcb->programCounter)*2]/tamanio_pag)+1;
@@ -123,12 +128,12 @@ int main(int argc, char **argv) {
 				//char* sentencia2=malloc(tamanioAux);
 				 //sentencia2 = "variables a, f";
 				 //sentencia2[tamanioAux] = '\0';
-				log_debug(logger, "Sentencia: %s", sentencia);
+
 
 
 				if(sentencia == NULL){
 					programaAbortado = 1;
-					log_info(logger, "Se Aborta el programa");
+					log_warning(logger, "Se Aborta el programa");
 				}
 				else{
 					log_info(logger, "Se recibio instruccion para pid %d de tamanio %d", pidAux, tamanioAux);
@@ -145,7 +150,7 @@ int main(int argc, char **argv) {
 					free(sentencia);
 
 					pcb->programCounter++;
-					printf("quantumAUX1 %d\n",quantumAux);
+
 					if(algoritmo==1){
 						quantumAux--;
 						usleep(quantum_sleep*1000);
@@ -167,20 +172,27 @@ int main(int argc, char **argv) {
 				}
 
 				if(programaAbortado){
-					log_info(logger,"El pid %d se aborto", pcb->pid);
-					serializado = serializarPCB(pcb);
-					if(!sigusr1_desactivado){
-						log_info(logger, "CPU, Bloqueado y sigusr1 activada");
-						int algo=11;
-						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), algo);
-						//VER ESTO DEL LADO KERNEL
-					}
-					enviar(kernel, PROGRAMA_ABORTADO, ((t_pcb*)serializado)->sizeTotal, serializado);
-					free(serializado);
+					if(flagStackOverflow == 0){
+						log_info(logger,"El pid %d se aborto", pcb->pid);
+						serializado = serializarPCB(pcb);
+						enviar(kernel, PROGRAMA_ABORTADO_CPU, ((t_pcb*)serializado)->sizeTotal, serializado);
+						free(serializado);
+						destruirPCB(pcb);
+						yaEnvieCierre = 1;
+						}
+
+				}
+				if(abortadoHeap){
+					log_warning(logger, "El proceso se aborto por HEAP");
 					destruirPCB(pcb);
 				}
-				printf("quantum_aux: %d\n", quantumAux);
-				if((quantumAux==0) && !programaFinalizado && !programaBloqueado && !programaAbortado){
+
+				if(abortadoProcesoConsola){
+					log_warning(logger, "El programa se Aborto por desconexion de Consola");
+					destruirPCB(pcb);
+				}
+
+				if((quantumAux==0) && !programaFinalizado && !programaBloqueado && !programaAbortado && !abortadoProcesoConsola && !abortadoHeap){
 					log_info(logger,"Se sale por fin de QUANTUM");
 
 					serializado = serializarPCB(pcb);
@@ -198,8 +210,13 @@ int main(int argc, char **argv) {
 
 		}
 		log_info(logger,"Se cierra CPU por senial SIGUSR1");
-		int basura=11;
-		enviar(kernel,SENIAL_SIGUSR1,sizeof(int), basura);
+		if(!yaEnvieCierre){
+			serializado = serializarPCB(pcb);
+			enviar(kernel, PROGRAMA_ABORTADO_CPU, ((t_pcb*)serializado)->sizeTotal, serializado);
+			free(serializado);
+			destruirPCB(pcb);
+		}
+
 
 		close(kernel);
 		close(memoria);
@@ -219,24 +236,7 @@ void crearArchivoLog(){
 	log_info(logger, "Iniciando CPU. \n");
 }
 
-void prueboParser(){
-	printf("Inicio prueba de parser anSISOP. \n");
-	//Deberia poder leer el archivo, pero no lo lee.
-	archivo = fopen("testParser", "r");
-	ejecutarArchivo(archivo);
-	fclose(archivo);
-}
 
-void ejecutarArchivo(FILE *archivo){
-	fseek(archivo, 0, SEEK_END);
-	long fsize = ftell(archivo);
-	fseek(archivo, 0, SEEK_SET);
-	char sentencia[256];
-	//Obtengo linea a linea y la ejecuto con el analizador.
-	while(fgets(sentencia, sizeof(sentencia), archivo)){
-		analizadorLinea(depurarSentencia(sentencia), &primitivas, &primitivas_kernel);
-	}
-}
 
 char* depurarSentencia(char* sentencia){
 
@@ -273,11 +273,12 @@ void sig_handler(int signo) {
 
 void sig_handler2(int signo) {
 	sigusr1_desactivado = 0;
+	printf("flag %d", flag);
 	if(flag==1) exit(0);
 	programaAbortado=1;
 
 	log_info(logger,"Se detecto señal sig int CRT C.\n");
-	exit(0);//VER SACAR DESPUES
+	//exit(0);//VER SACAR DESPUES
 	return;
 }
 

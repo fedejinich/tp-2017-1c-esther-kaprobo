@@ -69,8 +69,8 @@ char* getCodigoDeOperacion(int codigoInt) {
 		return codigoString;
 	}
 
-	codigoString = "ERROR";
-	return EXIT_FAILURE_CUSTOM;
+	return codigoString = "ERROR";
+	//return EXIT_FAILURE_CUSTOM;
 }
 
 t_list* getCodigosParciales(char* codigo, int size) {

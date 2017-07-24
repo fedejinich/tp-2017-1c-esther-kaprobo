@@ -31,9 +31,9 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		contexto= (t_contexto*)(list_get(pcb->contextoActual, pcb->sizeContextoActual-1));
 
 		if(pcb->sizeContextoActual == 1 &&  contexto->sizeVars == 0 ){
-			printf("1\n");
+
 			direccionVariable = armarDireccionPrimeraPagina();
-			printf("pagina %d,offset %d, size %d ", direccionVariable->pagina, direccionVariable->offset, direccionVariable->size);
+
 			variable->etiqueta = identificador_variable;
 			variable->direccion = direccionVariable;
 			list_add(contexto->vars, variable);
@@ -63,7 +63,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			list_add(contexto->vars, variable);
 			contexto->sizeVars++;
 		} else {
-			printf("ultima\n");
+
 			direccionVariable = armarProximaDireccion();
 			variable->etiqueta = identificador_variable;
 			variable->direccion = direccionVariable;
@@ -75,11 +75,14 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		t_puntero direccionRetorno = convertirDireccionAPuntero(direccionVariable);
 
 		if(direccionRetorno + 3 > var_max) {
+			int a;
 			log_error(logger, "STACK OVERFLOW");
 			log_error(logger,"No hay espacio para definir variable '%c'. Abortando programa", identificador_variable);
-			enviar(kernel, ABORTADO_STACKOVERFLOW, sizeof(int), (void*)pcb->pid);
+			enviar(kernel, ABORTADO_STACKOVERFLOW, sizeof(int), a);
+
 			programaAbortado = true;
-			return EXIT_FAILURE_CUSTOM;
+			flagStackOverflow = 1;
+			//return EXIT_FAILURE_CUSTOM;
 		} else {
 			int valor;
 			log_info("Basura: %d", valor);
@@ -105,6 +108,10 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 */
 t_puntero obtenerPosicionVariable (t_nombre_variable identificador_variable){
 	log_debug(logger, "Obtener posicion de Variable %c", identificador_variable);
+
+	if(abortadoHeap){
+		return -1;
+	}
 
 	int posicionStack = pcb->sizeContextoActual-1;
 	t_puntero direccionRetorno;
@@ -173,6 +180,9 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 * @return	void
 */
 void asignar(t_puntero direccion_variable, t_valor_variable valor){
+	if(abortadoHeap){
+		return;
+	}
 	log_warning(logger, "asignar");
 	log_info(logger, "Asigno el valor: %d a la variable en la posicion: %d", valor, direccion_variable);
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
@@ -307,12 +317,12 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta){
 */
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 	log_warning(logger, "llamarConRetorno");
-	printf("1\n");
+
 	t_direccion* direccion_nueva = convertirPunteroADireccion(donde_retornar);
-	printf("2\n");
+
 	int posicionStack = pcb->sizeContextoActual;
 	log_info(logger, "Tamanio contexto actual %i", pcb->sizeContextoActual);
-	printf("3\n");
+
 	t_contexto* contexto_nuevo = malloc(sizeof(t_contexto));
 	contexto_nuevo->pos = posicionStack;
 	contexto_nuevo->args = list_create();
@@ -321,15 +331,15 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 	contexto_nuevo->sizeVars = 0;
 	contexto_nuevo->retPos = pcb->programCounter;
 	contexto_nuevo->retVar = direccion_nueva;
-	printf("4\n");
+
 	log_info(logger, "Creo nuevo contexto con posicion: %i que debe volver en la sentencia %i y retorno en la variable de posicion Pagina %i,  Offset %i",
 			contexto_nuevo->pos, contexto_nuevo->retPos, contexto_nuevo->retVar->pagina, contexto_nuevo->retVar->offset);
-	printf("5\n");
+
 	list_add(pcb->contextoActual, contexto_nuevo);
 	pcb->sizeContextoActual++;
-	printf("6\n");
+
 	irAlLabel(etiqueta);
-	printf("7\n");
+
 }
 
 /*
@@ -386,7 +396,7 @@ void retornar(t_valor_variable retorno){
 * @return	void
 */
 void finalizar(){
-	log_warning(logger, "finalizar");
+	log_debug(logger, "Finalizar");
 
 	t_contexto *contexto_a_finalizar = list_get(pcb->contextoActual, pcb->sizeContextoActual-1);
 
@@ -419,18 +429,13 @@ void finalizar(){
 	free(contexto_a_finalizar);
 
 	pcb->sizeContextoActual--;
-	log_info(logger,"El programa finalizo\n");
 
-	printf("1\n");
 	programaFinalizado = true;
 
-	printf("2\n");
 	void* ok = malloc(sizeof(int));
 	enviar(kernel, PROGRAMA_FINALIZADO, sizeof(int), ok);
-	//enviar(kernel, PROGRAMA_FINALIZADO, sizeof(int), (int*) programaFinalizado);
-	printf("3\n");
 	destruirPCB(pcb);
-	printf("4\n");
+
 }
 
 
@@ -454,19 +459,11 @@ void wait_kernel(t_nombre_semaforo identificador_semaforo){
 
 	nombre_semaforo = identificador_semaforo;
 	//memcpy(nombre_semaforo, identificador_semaforo, strlen(identificador_semaforo));
-	printf("nombre: %s\n", nombre_semaforo);
+
 
 	nombre_semaforo[strlen(identificador_semaforo)] = '\0';
 
-	int i =0;
-	printf("PRUEBA: %c\n", nombre_semaforo[i]);
 
-	while (identificador_semaforo[i]!='\0'){
-		printf("pase %d", i);
-		printf("nombre: %c\n", identificador_semaforo[i]);
-		i++;
-	}
-	printf("pase nombre\n");
 
 
 	log_info(logger,"CPU: Pedir semaforo %s de tamanio %d", identificador_semaforo, size);
@@ -478,7 +475,7 @@ void wait_kernel(t_nombre_semaforo identificador_semaforo){
 
 	log_info(logger, "ProgramaBloqueado = %d", programaBloqueado);
 	//free(nombre_semaforo);// VER ME TIRA ERROR
-	printf("pase free\n");
+
 	liberar_paquete(paquete_semaforo);
 	log_info(logger, "Saliendo del wait");
 	return;
@@ -529,17 +526,19 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 	pedido->pid = pid;
 	pedido->tamanio = espacio;
 
+	printf("VOY A PEDID HEAP DEL PID: %d\n", pid);
+
 	enviar(kernel, SOLICITAR_HEAP, sizeof(t_pedidoHeap), pedido);
 	paquete = recibir(kernel);
-
+	void* algo = malloc(sizeof(int));
 	if(paquete->codigo_operacion == SOLICITAR_HEAP_FALLO){
-		//VER ABORTAR PROCESO
-	}
+			abortadoHeap = 1;
+			enviar(kernel, ABORTADO_HEAP,sizeof(int), algo );
+			return -1;
+		}
 
-	t_direccion* dire = malloc(sizeof(t_direccion));
-	dire = (t_direccion*)paquete->data;
+	t_puntero puntero = convertirDireccionAPuntero(paquete->data);
 
-	t_puntero puntero = dire->pagina * tamanio_pag + dire->offset;
 	log_info(logger, "Puntero %d", puntero);
 	return puntero;
 
@@ -557,12 +556,17 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 */
 void liberarEnHeap(t_puntero puntero) {
 
+	printf("LIBERA HEAP PUNTERO: %d\n", puntero);
+
 	t_liberarHeap* libera = malloc(sizeof(t_liberarHeap));
 	t_paquete* paquete;
 	int pagina = puntero / tamanio_pag;
 	int offset = puntero - (pagina*tamanio_pag);
 
+	printf("LIBERA HEAP PAGINA: %d\n", pagina);
+	printf("LIBERA HEAP offset: %d\n", offset);
 
+/*
 	void * resul = solicitarBytesAMemoria(memoria, logger, pcb->pid, pagina, offset, sizeof(t_heapMetadata));
 
 	char* instruccion = *(char*)resul;
@@ -570,19 +574,19 @@ void liberarEnHeap(t_puntero puntero) {
 	int punteroHeap = atoi(instruccion);
 	int paginaHeap = punteroHeap/tamanio_pag;
 	int offsetHeap = punteroHeap - (paginaHeap * tamanio_pag);
-
+*/
 	libera->pid = pcb->pid;
-	libera->nroPagina = paginaHeap;
-	libera->offset = offsetHeap;
+	libera->nroPagina = pagina;
+	libera->offset = offset;
 
 	enviar(kernel, LIBERAR_HEAP, sizeof(t_liberarHeap), libera);
 
 	paquete = recibir(kernel);
 	if(paquete->codigo_operacion == LIBERAR_HEAP_OK){
-		log_debug(logger, "Bloque Heap apuntando a %d liberado correctamente", punteroHeap);
+		log_debug(logger, "Bloque Heap apuntando a %d liberado correctamente", puntero);
 	}
 	else{
-		log_warning(logger, "No se ha podido liberar el bloque Heap con puntero %d", punteroHeap);
+		log_warning(logger, "No se ha podido liberar el bloque Heap con puntero %d", puntero);
 	}
 }
 
@@ -748,7 +752,7 @@ void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion,
 	escribir->info = informacion;
 	char* texto = malloc(tamanio);
 	memcpy(texto, (char*)informacion, tamanio);
-	printf("PRUEBA, pid:%d, fd:%d, size:%d, info:%s", escribir->pid, escribir->fd, escribir->size, texto);
+
 	enviar(kernel, ESCRIBIR_ARCHIVO, sizeof(t_escribirArchivo), escribir);
 	enviar(kernel, 1, tamanio, texto);
 	t_paquete* paquete = recibir(kernel);
