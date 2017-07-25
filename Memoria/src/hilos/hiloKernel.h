@@ -10,7 +10,7 @@
 
 #include "../Memoria.h"
 
-void* hiloServidorKernel(pthread_mutex_t* mutex);
+void* hiloServidorKernel(void* arg);
 void* hiloConexionKernel(void* socketKernel);
 
 

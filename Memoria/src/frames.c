@@ -61,7 +61,7 @@ int getFirstFrame() {
 
 
 bool superaLimiteFrame(int offset, int tamanio) {
-	bool supera = (tamanio >= frame_size) || (offset > frame_size) || ((offset + tamanio) >= frame_size);
+	bool supera = (tamanio > frame_size) || (offset > frame_size) || ((offset + tamanio) > frame_size);
 
 	if(supera) {
 		log_error(logger, "Supera limite de frame. Offset %i, Tamanio %i", offset, tamanio);

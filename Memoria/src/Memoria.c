@@ -74,7 +74,7 @@ void iniciarHilos() {
 	log_info(logger, "Inicializando hilos...");
 
 	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
-	pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel(tablaDePaginasMutex), NULL);
+	pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
 	pthread_create(&consolaMemoria, NULL, hiloConsolaMemoria, NULL);
 
 	pthread_join(servidorConexionesCPU, NULL);
