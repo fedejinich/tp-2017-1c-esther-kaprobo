@@ -223,11 +223,11 @@ bool hayEspacioEnCache(int pid, int pagina) {
 int cantidadDeEntradasPorProceso(int pid) {
 	int i;
 	int cantidad = 0;
-	int cantidadDeElementosEnCache = cache->elements_count;
+	int cantidadDeElementosEnCache = list_size(cache);
 
-	/*if(cantidadDeElementosEnCache == 0) {
+	if(cantidadDeElementosEnCache == 0) {
 		return cantidad;
-	}*/
+	}
 
 	for(i = 0; i < cantidadDeElementosEnCache; i++) {
 		t_entradaCache* entrada = (t_entradaCache*) list_get(cache, i);
@@ -259,6 +259,18 @@ int cacheCantidadEntradasUsadas() {
 	return list_size(cache);
 }
 
+void bloquearCache() {
+	pthread_mutex_lock(&cacheMutex);
+	log_info(logger, "Bloqueo cache");
+}
+
+void desbloquearCache() {
+	pthread_mutex_unlock(&cacheMutex);
+	log_info(logger, "Desbloqueo cache");
+}
+
 int cacheCantidadEntradasLibres() {
 	return entradas_cache - list_size(cache);
 }
+
+
