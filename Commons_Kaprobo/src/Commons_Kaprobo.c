@@ -193,6 +193,8 @@ int almacenarEnMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagi
 }
 
 void* solicitarBytesAMemoria(un_socket socketMemoria, t_log* logger, int pid, int pagina, int offset, int tamanio) {
+	log_info(logger, "Solicitud de bytes en proceso, PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
+
 	t_solicitudBytes* solicitud = malloc(sizeof(t_solicitudBytes));
 	solicitud->pid = pid;
 	solicitud->pagina = pagina;
