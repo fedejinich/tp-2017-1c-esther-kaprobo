@@ -866,10 +866,27 @@ void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido){
 }
 
 int* valorVariable(char* variable){
+	char* aux = malloc(strlen(variable)+2);
+	aux[0]= '!';
+	int j;
+	for(j=0; j<strlen(variable);j++){
+		printf("variable[j]: %c\n", variable[j]);
+		aux[j+1] = variable[j];
+		printf("AUX[j+1]: %c\n", aux[j+1]);
+		printf("J:%d\n\n", j);
+
+	}
+	printf("J:%d\n\n", j);
+	aux[j+1] = '\0';
+	printf("strlen variable: %d\n", strlen(variable));
+	printf("aux: %s\n", aux);
 	int i;
-	log_info(logger, "Se solicita variable %s", variable);
+	log_info(logger, "Se solicita variable %s", aux);
 	for(i=0; i < strlen((char*)shared_vars)/ sizeof(char*); i++){
-		if(strcmp((char*)shared_vars[i], variable)==0){
+		printf("VALOR i: %d\n", i);
+		printf("SHARED VAR: %s\n", (char*)shared_vars[i]);
+		if(strcmp((char*)shared_vars[i], aux)==0){
+			printf("ENTRE IF\n");
 			return &valor_shared_vars[i];
 		}
 	}

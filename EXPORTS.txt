@@ -1,0 +1,7 @@
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug
+
+export archivo_configuracion_consola="/home/utnso/Escritorio/tp-2017-1c-Kaprobo/Consola/consola.config"
+export archivo_configuracion_CPU="/home/utnso/Escritorio/tp-2017-1c-Kaprobo/CPU/CPU.config"
+export archivo_configuracion_fs="/home/utnso/Escritorio/tp-2017-1c-Kaprobo/File_System/file_system.config"
+export archivo_configuracion_kernel="/home/utnso/Escritorio/tp-2017-1c-Kaprobo/Kernel/kernel.config"
+export archivo_configuracion_memoria="/home/utnso/Escritorio/tp-2017-1c-Kaprobo/Memoria/memoria.config"
