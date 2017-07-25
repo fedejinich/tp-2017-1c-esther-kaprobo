@@ -426,7 +426,7 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			break;
 
 		case ABORTADO_STACKOVERFLOW:
-			log_error(logger, "Se finaliza PID %d por STACKOVERFLOW", paqueteRecibido->data);
+			log_error(logger, "Se finaliza PID %d por STACKOVERFLOW", *(int*)paqueteRecibido->data);
 			finalizarProgramaKernel(socketActivo, paqueteRecibido, FaltaDeMemoria);
 			//VER FINALIZAR PROGRAMA
 
@@ -443,6 +443,10 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 
 		case ABORTADO_HEAP:
 			finalizarProgramaKernel(socketActivo, paqueteRecibido, IntentoDeReservaDeMemoriaErroneo);
+			break;
+		case DESCONEXION_CPU:
+			log_info(logger, "CPU:%d se desconecto sin estar ejecutando", (int)socketActivo);
+			sacarCPUDeListas(socketActivo);
 			break;
 
 		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
@@ -1509,15 +1513,37 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 
 	proceso->pcb->exitCode = exitCode;
 
-	log_info("Se finalizara proceso %d por Exit Code %d", proceso->pcb->pid, exitCode);
+	log_info(logger, "Se finalizara proceso %d por Exit Code %d", (int)proceso->pcb->pid, (int)exitCode);
+	int i = 0;
 
-	printf("pase por aqui a finalizar\n");
+	t_adminHeap* aux = malloc(sizeof(t_adminHeap));
+
+	int sizeAux = list_size(listaAdminHeap);
+	while(i<sizeAux){
+		if(list_size(listaAdminHeap)==0){
+			i++;
+		}
+		else{
+
+			aux = list_get(listaAdminHeap, i);
+
+			if( aux->pid  == (proceso->pcb->pid)){
+				log_debug(logger, "Se elimina el registro en heap de pagina %d del PID %d ", aux->pagina, aux->pid);
+				t_adminHeap* aux2 = malloc(sizeof(t_adminHeap));
+				aux2 = list_remove(listaAdminHeap, i);
+				free(aux2);
+
+			}
+			else i++;
+		}
+
+	}
 
 	pthread_mutex_lock(&mutex_exit);
 	destruirCONTEXTO(proceso->pcb);
 	queue_push(cola_exit, proceso);
 	pthread_mutex_unlock(&mutex_exit);
-	printf("CPU: %d\n", proceso->socketCPU);
+
 	queue_push(cola_CPU_libres, (void*)proceso->socketCPU);
 	sem_post(&sem_cpu);
 	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
@@ -1659,6 +1685,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 	enviar(socketCPU, SOLICITAR_HEAP_OK, sizeof(t_direccion), direccion);
 	free(puntero);
+	free(algo);
 
 }
 
@@ -1671,6 +1698,7 @@ void procesoLiberaHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	void* algo = malloc(sizeof(int));
 
 	enviar(socketCPU, codigo, sizeof(int), algo);
+	free(algo);
 
 }
 
@@ -2005,6 +2033,7 @@ void cpuCerrada(un_socket socketCPU, t_paquete* paqueteRec){
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketCPU);
 	pthread_mutex_unlock(&mutex_exec);
+	sacarCPUDeListas(socketCPU);
 	temporal = desserializarPCB(paqueteRec->data);
 	destruirPCB(proceso->pcb);
 	proceso->pcb = temporal;
@@ -2023,4 +2052,29 @@ void cpuCerrada(un_socket socketCPU, t_paquete* paqueteRec){
 	}
 
 }
+
+
+
+
+
+void sacarCPUDeListas(un_socket cpu){
+	int a=0;
+	int w;
+
+	while(w=(un_socket)list_get(cola_CPU_libres->elements, a)){
+		if(w==cpu){
+			list_remove(cola_CPU_libres->elements, a);
+			sem_wait(&sem_cpu);
+			log_info(logger, "Se quito a la cpu: %d de la cola de CPU Libres", (int)cpu);
+		}
+		a++;
+	}
+
+}
+
+
+
+
+
+
 

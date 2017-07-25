@@ -248,6 +248,9 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode);
 void finQuantum(un_socket socketActivo, t_paquete* paqueteRecibido);
 void cpuCerrada(un_socket socketActivo, t_paquete* paqueteRecibido);
 
+
+void sacarCPUDeListas(un_socket cpu);
+
 //HEAP
 void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido);
 void procesoLiberaHeap(un_socket socketCPU, t_paquete * paqueteRecibido);
