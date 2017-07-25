@@ -1896,18 +1896,25 @@ int compactarPaginaHeap( int pagina, int pid){
 	actual->size= 0;
 
 	while((offset < TAMPAG) && ((offset + sizeof(t_heapMetadata)+ actual->size) < (TAMPAG - sizeof(t_heapMetadata)))){
+		int offsetAux = 0;
 
 
-		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria,logger,pid, pagina, offset, sizeof(t_heapMetadata));
+		actual = (t_heapMetadata*)solicitarBytesAMemoria(memoria,logger,pid, pagina, offset, sizeof(t_heapMetadata));
 
-		actual->uso = buffer->uso;
-		actual->size = buffer->size;
+		//actual->uso = buffer->uso;
+		//actual->size = buffer->size;
 
+		offsetAux = offset + sizeof(t_heapMetadata)+ actual->size;
+		if(offsetAux < (TAMPAG - sizeof(t_heapMetadata))){
+			siguiente = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina,offsetAux, sizeof(t_heapMetadata));
+		}
+		else
+		{
+			siguiente->uso = 1;
+		}
 
-		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina,offset+sizeof(t_heapMetadata)+ actual->size, sizeof(t_heapMetadata));
-
-		siguiente->uso = buffer->uso;
-		siguiente->size = buffer->size;
+		//siguiente->uso = buffer->uso;
+		//siguiente->size = buffer->size;
 
 		if(actual->uso ==0 && siguiente->uso ==0){
 			actual->size = actual->size + sizeof(t_heapMetadata)+ siguiente->size;
