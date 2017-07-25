@@ -37,14 +37,12 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 			buffer = malloc(tamanio);
 			leerFrame(entrada->frame, offset, tamanio, buffer);
 
-			void* bufferParaCache = getPaginaByPID(pid, pagina);
-
-
-
 			if(buffer == EXIT_FAILURE_CUSTOM) {
 				log_error(logger, "No se pudo cumplir la solicutd de bytes. PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
 				return EXIT_FAILURE_CUSTOM;
 			}
+
+			void* bufferParaCache = getPaginaByPID(pid, pagina);
 
 			if(cache_x_proc > 0) {
 				escribirCache(pid, pagina, tamanio, bufferParaCache);
@@ -77,6 +75,11 @@ int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* b
 	if(!superaLimiteFrame(offset, tamanio)) {
 		escribirFrame(frame, offset, tamanio, buffer);
 		log_debug(logger, "Almacenados %i bytes de PID %i en pagina %i con offset %i", tamanio, pid, pagina, offset);
+
+		if(estaEnCache(pid, pagina)) {
+			void* bufferAReplicarEnCache = getPaginaByPID(pid, pagina);
+			escribirCache(pid, pagina, frame_size, bufferAReplicarEnCache);
+		}
 
 		return EXIT_SUCCESS_CUSTOM;
 	}

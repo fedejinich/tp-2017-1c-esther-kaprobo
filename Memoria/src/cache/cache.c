@@ -22,6 +22,15 @@ int inicializarCache() {
 }
 
 int escribirCache(int pid, int pagina, int tamanio, void* contenido) {
+	if(estaEnCache(pid, pagina)) {
+		log_warning(logger, "Actualizando en Cache PID %i Pagina %i", pid, pagina);
+		t_entradaCache* entrada = getEntradaCache(pid, pagina);
+		entrada->contenido = contenido;
+
+		log_debug(logger, "Actualizado en Cache PID %i, Pagina %i", pid, pagina);
+		return EXIT_SUCCESS_CUSTOM;
+	}
+
 	log_info(logger, "Escribiendo cache PID %i Pagina %i", pid, pagina);
 
 	t_entradaCache* entrada = malloc(sizeof(t_entradaCache));
@@ -83,7 +92,7 @@ int liberarProcesoDeCache(int pid) {
 	log_warning(logger, "Liberando de cache PID %i", pid);
 	bool existeProceso = false;
 	int i;
-	for(i = 0; i < cache->elements_count; i++) {
+	for(i = 0; i < list_size(cache); i++) {
 		t_entradaCache* entrada = list_get(cache, i);
 		if(entrada->pid == pid) {
 			log_warning(logger, "Liberando contenido de cache PID: %i, Pagina: %i", entrada->pid, entrada->pagina);
