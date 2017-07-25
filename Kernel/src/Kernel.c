@@ -866,10 +866,27 @@ void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido){
 }
 
 int* valorVariable(char* variable){
+	char* aux = malloc(strlen(variable)+2);
+	aux[0]= '!';
+	int j;
+	for(j=0; j<strlen(variable);j++){
+		printf("variable[j]: %c\n", variable[j]);
+		aux[j+1] = variable[j];
+		printf("AUX[j+1]: %c\n", aux[j+1]);
+		printf("J:%d\n\n", j);
+
+	}
+	printf("J:%d\n\n", j);
+	aux[j+1] = '\0';
+	printf("strlen variable: %d\n", strlen(variable));
+	printf("aux: %s\n", aux);
 	int i;
-	log_info(logger, "Se solicita variable %s", variable);
+	log_info(logger, "Se solicita variable %s", aux);
 	for(i=0; i < strlen((char*)shared_vars)/ sizeof(char*); i++){
-		if(strcmp((char*)shared_vars[i], variable)==0){
+		printf("VALOR i: %d\n", i);
+		printf("SHARED VAR: %s\n", (char*)shared_vars[i]);
+		if(strcmp((char*)shared_vars[i], aux)==0){
+			printf("ENTRE IF\n");
 			return &valor_shared_vars[i];
 		}
 	}
@@ -1879,18 +1896,25 @@ int compactarPaginaHeap( int pagina, int pid){
 	actual->size= 0;
 
 	while((offset < TAMPAG) && ((offset + sizeof(t_heapMetadata)+ actual->size) < (TAMPAG - sizeof(t_heapMetadata)))){
+		int offsetAux = 0;
 
 
-		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria,logger,pid, pagina, offset, sizeof(t_heapMetadata));
+		actual = (t_heapMetadata*)solicitarBytesAMemoria(memoria,logger,pid, pagina, offset, sizeof(t_heapMetadata));
 
-		actual->uso = buffer->uso;
-		actual->size = buffer->size;
+		//actual->uso = buffer->uso;
+		//actual->size = buffer->size;
 
+		offsetAux = offset + sizeof(t_heapMetadata)+ actual->size;
+		if(offsetAux < (TAMPAG - sizeof(t_heapMetadata))){
+			siguiente = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina,offsetAux, sizeof(t_heapMetadata));
+		}
+		else
+		{
+			siguiente->uso = 1;
+		}
 
-		buffer = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina,offset+sizeof(t_heapMetadata)+ actual->size, sizeof(t_heapMetadata));
-
-		siguiente->uso = buffer->uso;
-		siguiente->size = buffer->size;
+		//siguiente->uso = buffer->uso;
+		//siguiente->size = buffer->size;
 
 		if(actual->uso ==0 && siguiente->uso ==0){
 			actual->size = actual->size + sizeof(t_heapMetadata)+ siguiente->size;
