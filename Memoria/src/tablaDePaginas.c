@@ -19,7 +19,7 @@ void inicializarTablaDePaginas() {
 
 		int frame = nroDeFrameTablaDePaginas;
 		int pid = -1;
-		int pagina = 0;
+		int pagina = -1;
 
 		entradaTablaDePaginas->frame = frame;
 		entradaTablaDePaginas->pid = pid;
@@ -34,25 +34,25 @@ void inicializarTablaDePaginas() {
 	int sizeTablaDePaginas = ceil((double)(sizeof(t_entradaTablaDePaginas) * frames) / (double)frame_size);
 	int i;
 	for(i = 0; i <= sizeTablaDePaginas; i++)
-		escribirTablaDePaginas(i, -33, 0);
+		escribirTablaDePaginas(i, -33, -1);
 
 	log_info(logger,"Tabla de paginas inicializada.");
 }
 
 int escribirTablaDePaginas(int frame, int pid, int pagina) {
-	//bloquearTablaDePaginas();
+	bloquearTablaDePaginas();
 
 	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(frame);
 	if(entrada == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "No se puede escribir en tabla de paginas. Frame: %i, PID: %i, Pagina: %i", frame, pid, pagina);
-		//desbloquearTablaDePaginas();
+		desbloquearTablaDePaginas();
 
 		return EXIT_FAILURE_CUSTOM;
 	} else {
 		entrada->pid = pid;
 		entrada->pagina = pagina;
 		log_info(logger, "Se escrbio en tabla de paginas. Frame: %i, PID: %i, Pagina: %i", frame, pid, pagina);
-		//desbloquearTablaDePaginas();
+		desbloquearTablaDePaginas();
 
 		return EXIT_SUCCESS_CUSTOM;
 	}

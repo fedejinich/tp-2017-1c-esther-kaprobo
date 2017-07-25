@@ -39,6 +39,9 @@ void iniciarHilos();
 
 void testFuncionHashObtengoPosicionCandidataOk();
 
+pthread_mutex_t tablaDePaginasMutex;
+pthread_mutex_t cacheMutex;
+
 
 
 
