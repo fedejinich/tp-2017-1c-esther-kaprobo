@@ -11,6 +11,7 @@
 void escribirFrame(int frame, int offset, int tamanio, void * contenido) {
 	log_info(logger, "Escribiendo frame %i con offset %i y tamanio %i", frame, offset, tamanio);
 
+
 	memcpy(memoria + (frame * frame_size) + offset, contenido, tamanio);
 }
 
