@@ -28,14 +28,15 @@ int main() {
 		//Recibimos pedidos de kernel y se hace switch dependiendo operacion
 		paquete = recibir(socketKernel);
 		log_info(logger, "Se recibio paquete desde Kernel");
-		void* path, *buffer;
+		void* buffer;
+		char* path;
 		int tmpsize = 0, tmpoffset = 0;
 		t_num offset, size;
 		t_num sizePath = 0;
 
-		char * codigoDeOperacion = getCodigoDeOperacion(paquete->codigo_operacion);
+		//char * codigoDeOperacion = getCodigoDeOperacion(paquete->codigo_operacion);
 		pthread_mutex_lock(&solicitud_mutex);
-		log_info(logger, "Codigo de operacion FileSystem-Kernel: %s", codigoDeOperacion);
+		//log_info(logger, "Codigo de operacion FileSystem-Kernel: %s", codigoDeOperacion);
 
 		switch (paquete->codigo_operacion)
 		{
