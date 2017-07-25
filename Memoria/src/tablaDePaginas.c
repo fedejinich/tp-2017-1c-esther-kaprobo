@@ -40,19 +40,19 @@ void inicializarTablaDePaginas() {
 }
 
 int escribirTablaDePaginas(int frame, int pid, int pagina) {
-	bloquearTablaDePaginas();
+	//bloquearTablaDePaginas();
 
 	t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(frame);
 	if(entrada == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "No se puede escribir en tabla de paginas. Frame: %i, PID: %i, Pagina: %i", frame, pid, pagina);
-		desbloquearTablaDePaginas();
+		//desbloquearTablaDePaginas();
 
 		return EXIT_FAILURE_CUSTOM;
 	} else {
 		entrada->pid = pid;
 		entrada->pagina = pagina;
 		log_info(logger, "Se escrbio en tabla de paginas. Frame: %i, PID: %i, Pagina: %i", frame, pid, pagina);
-		desbloquearTablaDePaginas();
+		//desbloquearTablaDePaginas();
 
 		return EXIT_SUCCESS_CUSTOM;
 	}
@@ -134,7 +134,6 @@ int getFrameDisponibleHash(int pid, int pagina) {
 		return posibleFrame;
 	else {
 		log_warning(logger, "Colision en funcion de hash, me voy para arriba");
-		log_error(logger, "POR ROMPER");
 		int i;
 		for(i = posibleFrame + 1; i <= tablaDePaginasSize(); i++) {
 			entrada = getEntradaTablaDePaginas(i);

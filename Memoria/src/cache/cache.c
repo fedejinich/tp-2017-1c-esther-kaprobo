@@ -41,17 +41,20 @@ int escribirCache(int pid, int pagina, int tamanio, void* contenido) {
 
 		list_add(cache, entrada);
 	} else {
-		//ACA ESTA LA GRACIA DEL LRU
-		log_warning(logger, "No hay mas espacio en memoria cache, remplazando elementos");
+		if(cache_x_proc > 0) {
+			//ACA ESTA LA GRACIA DEL LRU
+			log_warning(logger, "No hay mas espacio en memoria cache, remplazando elementos");
 
-		int exito = remplazoLRU(pid, pagina, contenido);
+			int exito = remplazoLRU(pid, pagina, contenido);
 
-		if(exito == EXIT_FAILURE_CUSTOM) {
-			log_error(logger, "No se pudo escribir en cache, PID %i, Pagina %i", pid, pagina);
-			return EXIT_FAILURE_CUSTOM;
+			if(exito == EXIT_FAILURE_CUSTOM) {
+				log_error(logger, "No se pudo escribir en cache, PID %i, Pagina %i", pid, pagina);
+				return EXIT_FAILURE_CUSTOM;
+			}
 		}
 	}
 
+	log_debug(logger, "Se escribio en cache PID %i, Pagina %i", pid, pagina);
 	return EXIT_SUCCESS_CUSTOM;
 }
 
@@ -72,8 +75,6 @@ void* leerDeCache(int pid, int pagina, int offset, int tamanio) {
 	void* buffer = malloc(tamanio + 1); //por el \0
 	memcpy(buffer, entrada->contenido + offset, tamanio);
 	strcpy(buffer + tamanio, "\0");
-
-	log_error(logger, "BUFFER QUE IMPRIMI DE CACHE %s", buffer);
 
 	return buffer;
 }
@@ -177,11 +178,16 @@ t_entradaCache* getEntradaMasAntigua(int pid) {
 }
 
 bool estaEnCache(int pid, int pagina) {
+	//printf("CANTIDAD DE ELEMENTOS EN CACHE %i\n", list_size(cache));
+	//printf("PID a cheuear %i Pagina %i\n", pid, pagina);
 	if(list_size(cache) > 0) {
 		int i;
 		bool estaEnCache = false;
-		for(i = 0; i <= list_size(cache) && !estaEnCache; i++) {
+		for(i = 0; i < list_size(cache) && !estaEnCache; i++) {
+			//printf("list_get(cache,%i)\n", i);
 			t_entradaCache* entrada = list_get(cache, i);
+			//printf("despues del list_get\n");
+			//printf("Entrada cache PID %i, Pagina %i", entrada->pid, entrada->pagina);
 			estaEnCache = (entrada->pid == pid && entrada->pagina == pagina);
 		}
 

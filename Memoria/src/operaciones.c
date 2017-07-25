@@ -15,40 +15,47 @@ void retardo() {
 void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 	log_info(logger, "Solicitando bytes de PID: %i, pagina: %i, offset: %i y tamanio: %i", pid, pagina, offset, tamanio);
 
-	void* buffer;
+	if(!superaLimiteFrame(offset, tamanio)) {
+		void* buffer;
 
-	if(estaEnCache(pid, pagina)) {
-		buffer = leerDeCache(pid, pagina, offset, tamanio);
-	} else {
-		log_info(logger, "Solicitando bytes en memoria..");
-		retardo();
+		if(cache_x_proc > 0 && estaEnCache(pid, pagina)) {
+			buffer = leerDeCache(pid, pagina, offset, tamanio);
+		} else {
+			log_info(logger, "Solicitando bytes en memoria..");
+			retardo();
 
-		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginasHash(pid, pagina);
+			t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginasHash(pid, pagina);
 
-		if(entrada == EXIT_FAILURE_CUSTOM) {
-			log_error(logger, "Error en solicitar bytes de una pagina");
-			return EXIT_FAILURE_CUSTOM;
+			if(entrada == EXIT_FAILURE_CUSTOM) {
+				log_error(logger, "Error en solicitar bytes de una pagina");
+				return EXIT_FAILURE_CUSTOM;
+			}
+
+			log_info(logger, "Los bytes del PID: %i, pagina: %i se encuentran en el frame %i", pid, pagina, entrada->frame);
+
+
+			buffer = malloc(tamanio);
+			leerFrame(entrada->frame, offset, tamanio, buffer);
+
+			void* bufferParaCache = getPaginaByPID(pid, pagina);
+
+
+
+			if(buffer == EXIT_FAILURE_CUSTOM) {
+				log_error(logger, "No se pudo cumplir la solicutd de bytes. PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
+				return EXIT_FAILURE_CUSTOM;
+			}
+
+			if(cache_x_proc > 0) {
+				escribirCache(pid, pagina, tamanio, bufferParaCache);
+			}
 		}
 
-		log_info(logger, "Los bytes del PID: %i, pagina: %i se encuentran en el frame %i", pid, pagina, entrada->frame);
-
-
-		buffer = malloc(tamanio);
-		leerFrame(entrada->frame, offset, tamanio, buffer);
-
-		void* bufferParaCache = getPaginaByPID(pid, pagina);
-
-		log_warning(logger, "Buffer para almacenar en Cache %s", bufferParaCache);
-
-		if(buffer == EXIT_FAILURE_CUSTOM) {
-			log_error(logger, "No se pudo cumplir la solicutd de bytes. PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
-			return EXIT_FAILURE_CUSTOM;
-		}
-
-		escribirCache(pid, pagina, tamanio, bufferParaCache);
+		return buffer;
 	}
 
-	return buffer;
+	log_error(logger, "Error al solicitar bytes PID %i, Pagina %i, Offset %i, Tamanio %i", pid, pagina, offset, tamanio);
+	return EXIT_FAILURE_CUSTOM;
 }
 
 int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer) {
