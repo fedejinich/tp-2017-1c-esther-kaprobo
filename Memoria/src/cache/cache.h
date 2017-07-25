@@ -36,6 +36,7 @@ t_entradaCache* getEntradaMasAntigua(int pid);
 bool superaElLimitePorPID();
 int cacheCantidadEntradasUsadas();
 int cacheCantidadEntradasLibres();
+bool estaEnCachePID(int pid);
 
 //QUE PASA SI HAY HUECOS?
 

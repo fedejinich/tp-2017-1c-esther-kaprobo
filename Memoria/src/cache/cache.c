@@ -22,12 +22,16 @@ int inicializarCache() {
 }
 
 int escribirCache(int pid, int pagina, int tamanio, void* contenido) {
+	bloquearCache();
+
 	if(estaEnCache(pid, pagina)) {
 		log_warning(logger, "Actualizando en Cache PID %i Pagina %i", pid, pagina);
 		t_entradaCache* entrada = getEntradaCache(pid, pagina);
 		entrada->contenido = contenido;
 
 		log_debug(logger, "Actualizado en Cache PID %i, Pagina %i", pid, pagina);
+
+		desbloquearCache();
 		return EXIT_SUCCESS_CUSTOM;
 	}
 
@@ -39,6 +43,7 @@ int escribirCache(int pid, int pagina, int tamanio, void* contenido) {
 
 	if(exito == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "Error al escribir cache");
+		desbloquearCache();
 		return EXIT_FAILURE_CUSTOM;
 	}
 
@@ -58,12 +63,14 @@ int escribirCache(int pid, int pagina, int tamanio, void* contenido) {
 
 			if(exito == EXIT_FAILURE_CUSTOM) {
 				log_error(logger, "No se pudo escribir en cache, PID %i, Pagina %i", pid, pagina);
+				desbloquearCache();
 				return EXIT_FAILURE_CUSTOM;
 			}
 		}
 	}
 
 	log_debug(logger, "Se escribio en cache PID %i, Pagina %i", pid, pagina);
+	desbloquearCache();
 	return EXIT_SUCCESS_CUSTOM;
 }
 
@@ -88,25 +95,47 @@ void* leerDeCache(int pid, int pagina, int offset, int tamanio) {
 	return buffer;
 }
 
-int liberarProcesoDeCache(int pid) {
-	log_warning(logger, "Liberando de cache PID %i", pid);
-	bool existeProceso = false;
+bool estaEnCachePID(int pid) {
+	if(list_size(cache) <= 0) {
+		log_info("No hay elementos en cache", pid);
+		return false;
+	}
+
+	bool esta = false;
 	int i;
 	for(i = 0; i < list_size(cache); i++) {
 		t_entradaCache* entrada = list_get(cache, i);
 		if(entrada->pid == pid) {
-			log_warning(logger, "Liberando contenido de cache PID: %i, Pagina: %i", entrada->pid, entrada->pagina);
-			list_remove(cache,i);
-			i = 0;
-			existeProceso = true;
-			log_warning(logger, "Liberado contenido de cache PID: %i, Pagina: %i");
+			log_info(logger, "PID %i se encuentra en cache", pid);
+			return true;
 		}
 	}
+
+	log_info(logger, "PID %i no se encuentra en cache", pid);
+	return false;
+}
+
+int liberarProcesoDeCache(int pid) {
+	log_warning(logger, "Liberando de cache PID %i", pid);
+	bool existeProceso = estaEnCachePID(pid);
 
 	if(!existeProceso) {
 		log_warning(logger, "No existe en cache PID %i");
 		log_warning(logger, "No se libero de cache PID %i");
 		return EXIT_SUCCESS_CUSTOM;
+	}
+
+	while(existeProceso) {
+		int i;
+		for(i = 0; i < list_size(cache) && existeProceso; i++) {
+			t_entradaCache* entrada = list_get(cache, i);
+			if(entrada->pid == pid) {
+				log_warning(logger, "Liberando contenido de cache PID: %i, Pagina: %i", entrada->pid, entrada->pagina);
+				list_remove(cache,i);
+				log_warning(logger, "Liberado contenido de cache PID: %i, Pagina: %i");
+				existeProceso = estaEnCachePID(pid);
+			}
+		}
 	}
 
 	log_debug(logger, "Liberado todo el contenido del PID %i de cache", pid);

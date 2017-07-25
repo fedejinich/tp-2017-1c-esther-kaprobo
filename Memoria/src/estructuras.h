@@ -46,9 +46,6 @@ int framesOcupados;
 void* memoria;
 t_frame* framePointer;
 
-pthread_mutex_t* cacheMutex;
-pthread_mutex_t* tablaDePaginasMutex;
-
 
 
 

@@ -16,6 +16,9 @@
 int main(int argc, char **argv) {
 	logger = iniciarLog("memoria.log","Memoria");
 
+	pthread_mutex_init(&tablaDePaginasMutex, NULL);
+	pthread_mutex_init(&cacheMutex, NULL);
+
 	printf("%s", "\n====== INICIO MEMORIA ======\n\n");
 
 	cargarConfiguracion();
