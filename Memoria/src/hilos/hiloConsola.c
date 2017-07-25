@@ -17,8 +17,6 @@ void* hiloConsolaMemoria() {
 		//opciones para consola memoria
 		/*if(esDump(comando))
 			dump();
-		else if(string_equals_ignore_case(comando,"flush"))
-			flush();
 		else if(string_equals_ignore_case(comando,"size memory"))
 			sizeMemory();
 		else if(string_equals_ignore_case(comando,"retardo"))*/
@@ -34,6 +32,8 @@ void* hiloConsolaMemoria() {
 			dumpPID(comando);
 		else if(esSizeMemory(comando))
 			sizeMemory();
+		else if(esFlush(comando))
+			flush();
 	}
 
 }
@@ -74,6 +74,10 @@ bool esSizeMemory(char* comando) {
 bool esSizePID(char* comando) {
 	char* posibleSizePID = string_substring(comando, 0, string_length(sizePIDCommand));
 	return string_equals_ignore_case(posibleSizePID, sizePIDCommand);
+}
+
+bool esFlush(char* comando) {
+	return string_equals_ignore_case(comando,"flush\n");
 }
 
 void retardoUpdate(char* comando) {
@@ -143,9 +147,10 @@ int sizeMemory() {
 
 
 void flush() {
-
-	printf("Implementa flush, pajero");
-
+	log_warning(logger, "Flushing cache...");
+	list_destroy(cache);
+	cache = list_create();
+	log_warning(logger, "Flush completo");
 }
 
 bool isNumber(char* palabra) {
