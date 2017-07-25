@@ -78,6 +78,7 @@ typedef uint32_t t_num;
 	void* hiloConexionKernel(void* socket);
 
 	//Archivos
+	int existeArchivo(char* path);
 	void crearArchivo(void* path);
 	void borrarArchivo(void* path);
 	void leerMetadataArchivo();
