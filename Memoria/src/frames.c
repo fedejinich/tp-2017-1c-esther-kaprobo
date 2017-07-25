@@ -11,21 +11,15 @@
 void escribirFrame(int frame, int offset, int tamanio, void * contenido) {
 	log_info(logger, "Escribiendo frame %i con offset %i y tamanio %i", frame, offset, tamanio);
 
-
-	log_warning(logger, "escribirFrame(%i,%i,%i,%s)", frame, offset, tamanio, contenido);
 	memcpy(memoria + (frame * frame_size) + offset, contenido, tamanio);
 }
 
 void leerFrame(int frame, int offset, int tamanio, void* buffer) {
-	log_warning(logger, "leerFrame(%i,%i,%i)", frame, offset, tamanio);
 	log_info(logger, "Leyendo frame %i con offset %i y tamanio %i", frame, offset, tamanio);
 
 	//t_frame* posicion = framePointer[frame];
 
 	memcpy(buffer, memoria + (frame * frame_size) + offset, tamanio);
-
-	log_warning(logger, "Buffer leido: %s", buffer);
-
 }
 
 int cantidadDeFramesOcupados() {
@@ -68,9 +62,9 @@ int getFirstFrame() {
 bool superaLimiteFrame(int offset, int tamanio) {
 	bool supera = (tamanio >= frame_size) || (offset > frame_size) || ((offset + tamanio) >= frame_size);
 
-	if(supera == true) {
+	if(supera) {
 		log_error(logger, "Supera limite de frame. Offset %i, Tamanio %i", offset, tamanio);
-		return false;
+		return supera;
 	}
 
 	return supera;
