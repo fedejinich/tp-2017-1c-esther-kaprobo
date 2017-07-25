@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
 			}
 
 		}
-		log_info(logger,"Se cierra CPU por senial SIGUSR1");
+		log_info(logger,"Se cierra CPU ");
 		if(!yaEnvieCierre){
 			serializado = serializarPCB(pcb);
 			enviar(kernel, PROGRAMA_ABORTADO_CPU, ((t_pcb*)serializado)->sizeTotal, serializado);
@@ -274,11 +274,10 @@ void sig_handler(int signo) {
 }
 
 void sig_handler2(int signo) {
-	printf("flag %d\n", flag);
-	printf("\nENTRE\n\n");
 	sigusr1_desactivado = 0;
 
 	if(flag==1){
+		log_info(logger,"Se detecto señal sig int CRT C, no se encontraba ejecutando\n");
 		void* algo = malloc(sizeof(int));
 		enviar(kernel, DESCONEXION_CPU, sizeof(int),algo);
 		free(algo);
@@ -288,7 +287,7 @@ void sig_handler2(int signo) {
 	programaAbortado=1;
 
 	log_info(logger,"Se detecto señal sig int CRT C.\n");
-	//exit(0);//VER SACAR DESPUES
+
 	return;
 }
 

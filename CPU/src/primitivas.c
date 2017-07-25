@@ -234,14 +234,21 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable,t_valor_variable valor){
 	log_warning(logger, "asignarValorCompartida");
 
-	char* variableCompartida = malloc(5+strlen(variable));
-	char* barraCero = "\0";
-	memcpy(variableCompartida, &valor, 4);
-	memcpy(variableCompartida, &variable, strlen(variable));
-	memcpy(variableCompartida + strlen(variable) + 4, barraCero, 1);
-	log_info(logger, "Variable compartida %s le asignamos valor %d", variableCompartida + 4, (int*) variableCompartida[0]);
-	enviar(kernel, ESCRIBIR_VARIABLE, 5 + strlen(variable), variableCompartida);
-	free(variableCompartida);
+	t_shared_var* shared = malloc(sizeof(t_shared_var));
+
+
+	printf("VARIABLE: %s\n", variable);
+	printf("VALOR: %d\n", valor);
+
+	shared->nombre= variable;
+	shared->valor = valor;
+
+	log_info(logger, "Variable compartida %s le asignamos valor %d", shared->nombre , shared->valor);
+	enviar(kernel, ESCRIBIR_VARIABLE, strlen(variable)+1,variable);
+	enviar(kernel, 1, sizeof(int), &valor);
+
+
+	free(shared);
 	return valor;
 }
 

@@ -397,6 +397,11 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			solicitaVariable(socketActivo, paqueteRecibido);
 			break;
 
+		case ESCRIBIR_VARIABLE:
+			log_info(logger, "KERNEL: Proceso nos solicita escribir variable");
+			escribirVariable(socketActivo, paqueteRecibido);
+			break;
+
 		case SOLICITAR_HEAP:
 			log_info(logger,"KERNEL: Proceso nos solicita espacio Dinamico");
 			reservarHeap(socketActivo, paqueteRecibido);
@@ -855,7 +860,7 @@ void borrarArchivoDeTabla(int pid, int fd){
 }
 
 
-void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido){
+void solicitaVariable(un_socket socketActivo, t_paquete* paqueteRecibido){
 	int* valor;
 	t_proceso* proceso;
 	pthread_mutex_lock(&mutex_exec);
@@ -864,6 +869,7 @@ void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido){
 	pthread_mutex_unlock(&mutex_exec);
 	pthread_mutex_lock(&mutex_config);
 	valor = valorVariable(paqueteRecibido->data);
+
 	enviar((un_socket)socketActivo,SOLICITAR_VARIABLE_OK, sizeof(int), &valor);
 	pthread_mutex_unlock(&mutex_config);
 	return;
@@ -874,59 +880,64 @@ int* valorVariable(char* variable){
 	aux[0]= '!';
 	int j;
 	for(j=0; j<strlen(variable);j++){
-		printf("variable[j]: %c\n", variable[j]);
 		aux[j+1] = variable[j];
-		printf("AUX[j+1]: %c\n", aux[j+1]);
-		printf("J:%d\n\n", j);
-
 	}
-	printf("J:%d\n\n", j);
+
 	aux[j+1] = '\0';
-	printf("strlen variable: %d\n", strlen(variable));
-	printf("aux: %s\n", aux);
+
 	int i;
 	log_info(logger, "Se solicita variable %s", aux);
 	for(i=0; i < strlen((char*)shared_vars)/ sizeof(char*); i++){
-		printf("VALOR i: %d\n", i);
-		printf("SHARED VAR: %s\n", (char*)shared_vars[i]);
 		if(strcmp((char*)shared_vars[i], aux)==0){
-			printf("ENTRE IF\n");
-			return &valor_shared_vars[i];
+			return valor_shared_vars[i];
 		}
 	}
 	log_error(logger, "KERNEL, no se encontro variable %s, exit", variable);
 	exit(0);
 }
 
-void escribirVariable(int* socketActivo, t_paquete* paqueteRecibido){
-	char* variable;
+void escribirVariable(un_socket socketActivo, t_paquete* paqueteRecibido){
+
+	t_paquete* paq1;
+
+	char* nombre = malloc(paqueteRecibido->tamanio);
+	nombre = paqueteRecibido->data;
+
+	paq1 = recibir(socketActivo);
+	int valor2 = *(int*)paq1->data;
+
+	char* aux = malloc(strlen(nombre)+2);
+	aux[0]= '!';
+
+	int j;
+	for(j=0; j<strlen(nombre);j++){
+		aux[j+1] = nombre[j];
+	}
+	aux[j+1] = '\0';
+	log_info(logger,"Se va a escribir la variable %s con el valor %d", aux, valor2);
+	free(nombre);
+
 	t_proceso* proceso;
-	int* valor;
+
 	int i;
 
-	pthread_mutex_lock(&cola_exec);
+	pthread_mutex_lock(&mutex_exec);
 	proceso=obtenerProcesoSocketCPU(cola_exec, socketActivo);
 	queue_push(cola_exec, proceso);
-	pthread_mutex_unlock(&cola_exec);
+	pthread_mutex_unlock(&mutex_exec);
 	pthread_mutex_lock(&mutex_config);
 
-	//Para escribir primero enviamos el int y despues el string con el nombre
-	variable = paqueteRecibido->data;
-	valor = (int*)variable;
-	variable +=4;
 	for(i=0; i<strlen((char*)shared_vars)/sizeof(char*);i++){
-		if(strcmp((char*)shared_vars[i], variable)==0){
-			memcpy(&valor_shared_vars[i], valor, sizeof(int));
+		if(strcmp((char*)shared_vars[i], aux)==0){
+			valor_shared_vars[i] = valor2;
+			pthread_mutex_unlock(&mutex_config);
 			return;
 		}
 	}
-	log_error(logger, "No se encontro Variable %s, EXIT",variable);
+	log_error(logger, "No se encontro Variable %s, EXIT",aux);
+	pthread_mutex_unlock(&mutex_config);
 	exit(0);
 }
-
-
-
-
 
 
 int* buscarSemaforo(char*semaforo){

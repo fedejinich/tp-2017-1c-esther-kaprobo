@@ -8,6 +8,11 @@
 
 //int tamanioPagina;
 
+typedef struct __attribute__ ((packed))t_shared_var{
+	char* nombre;
+	int valor;
+}t_shared_var;
+
 typedef struct __attribute__((packed)){
 	int QUANTUM;
 	int QUANTUM_SLEEP;

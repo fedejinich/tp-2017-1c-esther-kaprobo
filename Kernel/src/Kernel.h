@@ -233,8 +233,8 @@ int* buscarSemaforo(char*semaforo);
 void escribeSemaforo(char* semaforo, int valor);
 void imprimirConsola(un_socket socketActivo, char* imprimir);
 
-void solicitaVariable(int* socketActivo, t_paquete* paqueteRecibido);
-void escribirVariable(int* socketActivo, t_paquete* paqueteRecibido);
+void solicitaVariable(un_socket socketActivo, t_paquete* paqueteRecibido);
+void escribirVariable(un_socket socketActivo, t_paquete* paqueteRecibido);
 int* valorVariable(char* variable);
 
 void bloqueoSemaforo(t_proceso* proceso, char* semaforo);
