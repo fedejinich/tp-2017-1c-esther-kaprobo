@@ -92,6 +92,7 @@ int main(int argc, char **argv) {
 
 		flag = 1;
 
+
 		datos_kernel = recibir(kernel);
 
 		asignarDatosDelKernel(datos_kernel);
@@ -114,6 +115,8 @@ int main(int argc, char **argv) {
 		var_max = (tamanio_pag*(stack_size+pcb->paginasDeCodigo))-1;
 
 		while((quantumAux!=0) && !programaBloqueado && !programaFinalizado && !programaAbortado &&!abortadoProcesoConsola &&!abortadoHeap){
+
+
 
 				int pidAux = pcb->pid;
 				int paginaAux = (pcb->indiceDeCodigo[(pcb->programCounter)*2]/tamanio_pag)+1;
@@ -208,6 +211,43 @@ int main(int argc, char **argv) {
 					free(serializado);
 					destruirPCB(pcb);
 				}
+
+
+				printf("ANTES DEL QUILOMBO\n\n\n");
+				int modo = 1;
+				if(ioctl(kernel, FIONBIO, &modo )==0){
+					printf("ENTRE ACA SE PUDRE TODO\n");
+					t_paquete* paq = malloc(sizeof(t_paquete));
+					paq->codigo_operacion=5555;
+					printf("CODIGO: %d\n", paq->codigo_operacion);
+					paq= recibir(kernel);
+					printf("CODIGO: %d\n", paq->codigo_operacion);
+					if((paq->codigo_operacion ==ABORTADO_CONSOLA)||(paq->codigo_operacion ==ABORTADO_CONSOLA_KERNEL)){
+						printf("YA RECIBI\n");
+						serializado= serializarPCB(pcb);
+
+						if((paq->codigo_operacion)== ABORTADO_CONSOLA){
+							enviar(kernel, ABORTADO_CONSOLA, ((t_pcb*)serializado)->sizeTotal, serializado);
+						}
+						else{
+							enviar(kernel, ABORTADO_CONSOLA_KERNEL,((t_pcb*)serializado)->sizeTotal, serializado);
+						}
+
+						log_warning(logger, "KERNEL NOS AVISA QUE EL PROCESO FUE ABORTADO POR PROCESO CONSOLA O POR CONSOLA KERNEL");
+						abortadoProcesoConsola = 1;
+						free(serializado);
+
+					}
+					else
+					{
+						printf("NO RECIBI NADA CHE ): \n\n");
+					}
+					liberar_paquete(paq);
+				}
+				printf("DESPUES DEL QUILOMBO\n\n\n");
+				printf("abortado:%d\n\n", abortadoProcesoConsola);
+				modo = 0;
+				if(ioctl(kernel, FIONBIO, &modo )==0) printf("CAMBIE MODO A BLOQUEANTE\n");
 			}
 
 		}

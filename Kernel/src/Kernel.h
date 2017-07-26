@@ -250,6 +250,9 @@ void cpuCerrada(un_socket socketActivo, t_paquete* paqueteRecibido);
 
 
 void sacarCPUDeListas(un_socket cpu);
+t_proceso* verSiEstaBloqueado(int pid);
+t_proceso* eliminarProcesoDeCola(t_queue* cola, int pid);
+void deserializarYFinalizar(un_socket socketActivo, t_paquete* paqueteRecibido, ExitCodes code);
 
 //HEAP
 void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido);

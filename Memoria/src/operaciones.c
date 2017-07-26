@@ -10,6 +10,7 @@
 
 void retardo() {
 	log_info(logger, "sleep(%i)", retardo_memoria);
+	usleep(retardo_memoria * 1000);
 }
 
 void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {

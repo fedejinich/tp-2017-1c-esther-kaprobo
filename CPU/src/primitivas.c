@@ -212,8 +212,11 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 	memcpy(variable_compartida+strlen(variable), barra_cero,1);
 	log_info(logger,"Obteniendo la variable %s", variable_compartida);
 	enviar(kernel, SOLICITAR_VARIABLE, strlen(variable)+1, variable_compartida);
+	printf("ENVIE SOLICITUD VARIABLE\n\n");
 	paquete = recibir(kernel);
-	memcpy(&valor, paquete->data, 4);
+	printf("RECIBI VARIABLE\n\n");
+	//memcpy(&valor, paquete->data, 4);
+	valor =  *(int*)paquete->data;
 	log_info(logger, "El valor de la variable %s es %d", variable_compartida,valor);
 	free(variable_compartida);
 	liberar_paquete(paquete);

@@ -425,8 +425,9 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			procesoLiberaHeap(socketActivo, paqueteRecibido);
 			break;
 		case FINALIZAR_PROGRAMA_DESDE_CONSOLA:
-			log_info(logger, "Se finalizo PID desde Consola");
-			finalizarProgramaKernel(socketActivo, paqueteRecibido, DesconexionDeConsola);
+
+			log_info(logger, "Se finalizo PID: %d desde Consola",*(int*)paqueteRecibido->data );
+			finalizarProcesoPorPID(*(int*)paqueteRecibido->data, DesconexionDeConsola);
 			//VER AVISAR A CPU Y MEMORIA?
 			break;
 
@@ -453,10 +454,15 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			log_info(logger, "CPU:%d se desconecto sin estar ejecutando", (int)socketActivo);
 			sacarCPUDeListas(socketActivo);
 			break;
-
-		case 1000000: //Codigo a definir que indica fin de proceso en CPU y libero
-			finalizarProcesoCPU(paqueteRecibido, socketActivo);//QUE SERIA ESTO??
+		case ABORTADO_CONSOLA:
+			log_info(logger, "CPU nos envia el PCB serializado que se finalizo desde proceso Consola");
+			deserializarYFinalizar(socketActivo, paqueteRecibido, DesconexionDeConsola);
 			break;
+		case ABORTADO_CONSOLA_KERNEL:
+			log_info(logger, "CPU nos envia el PCB serializado que se finalizo desde consola de Kernel");
+			deserializarYFinalizar(socketActivo, paqueteRecibido, FinalizacionPorConsolaDeKernel);
+			break;
+
 
 		default:
 			break;
@@ -469,6 +475,7 @@ int nuevoProgramaAnsisop(un_socket socket, t_paquete* paquete){
 	t_proceso* proceso = malloc(sizeof(t_proceso));
 	t_proceso* procesoin = malloc(sizeof(t_proceso));
 	proceso = crearPrograma(socket, paquete);
+	proceso->socketCPU = -1;
 
 	log_info(logger, "KERNEL: Creando proceso %d", proceso->pcb->pid);
 
@@ -869,6 +876,7 @@ void solicitaVariable(un_socket socketActivo, t_paquete* paqueteRecibido){
 	pthread_mutex_unlock(&mutex_exec);
 	pthread_mutex_lock(&mutex_config);
 	valor = valorVariable(paqueteRecibido->data);
+	printf("VALOR VARIABLE: %d\n", valor);
 
 	enviar((un_socket)socketActivo,SOLICITAR_VARIABLE_OK, sizeof(int), &valor);
 	pthread_mutex_unlock(&mutex_config);
@@ -1026,15 +1034,6 @@ t_proceso* crearPrograma(un_socket socketC , t_paquete* paquete){
 
 	return procesoNuevo;
 }
-
-void finalizarProcesoCPU(t_paquete* paquete, un_socket socketCPU){
-	//Desarmar paquete para ver codigo de finalizacion
-	int pid = 0; //CAMBIAR POR PID DEL PAQUETE
-	int codigoDeFinalizacion = 0; //CAMBIAR POR CODIGO DEL PAQUETE
-	finalizarProcesoPorPID(pid, codigoDeFinalizacion);
-}
-
-
 
 
 int conectarConLaMemoria(){
@@ -1384,7 +1383,9 @@ void hiloConKer(){
 			printf("Ingrese PID del proceso a finalizar\n");
 			scanf("%i",&opcionPID);
 			finalizarProcesoPorPID(opcionPID, FinalizacionPorConsolaDeKernel);
+			printf("SALI CHE\n");
 			pthread_mutex_unlock(&mutexEjecuta);
+			printf("SALI DE UNLOCK\n");
 			break;
 		case 6:
 			//Detiene la planificacion
@@ -1516,12 +1517,12 @@ void finalizarProgramaKernel(un_socket socket, t_paquete* paquete, ExitCodes exi
  }
 
 void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
-	if(exitCode == DesconexionDeConsola){
+	/*if(exitCode == DesconexionDeConsola){
 		proceso->abortado = true;
 
 
 	}
-
+*/
 	proceso->pcb->exitCode = exitCode;
 
 	log_info(logger, "Se finalizara proceso %d por Exit Code %d", (int)proceso->pcb->pid, (int)exitCode);
@@ -1555,8 +1556,12 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 	queue_push(cola_exit, proceso);
 	pthread_mutex_unlock(&mutex_exit);
 
-	queue_push(cola_CPU_libres, (void*)proceso->socketCPU);
-	sem_post(&sem_cpu);
+	if(proceso->socketCPU >0){
+		queue_push(cola_CPU_libres, (void*)proceso->socketCPU);
+		sem_post(&sem_cpu);
+
+	}
+
 	enviar(memoria,FINALIZAR_PROCESO, sizeof(int), &proceso->pcb->pid);
 	log_debug(logger, "Se finalizo PID en Memoria");
 	if(exitCode != DesconexionDeConsola){
@@ -1565,6 +1570,7 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 	}
 
 	cantidadDeProgramas--;
+	return;
 
 }
 
@@ -1583,46 +1589,139 @@ void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
 }
 
 void finalizarProcesoPorPID(int pid, int exitCode){
+
+	printf("PID: %d \n\n", pid);
+	printf("EXIT: %d \n\n", exitCode);
+	t_proceso* proceso;
 	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
-	t_proceso* proceso = obtenerProcesoPorPID(colaDelProceso, pid);
+	if(colaDelProceso == NULL){
+		printf("IF COLADELPROCESO==NULL\n");
+		proceso = verSiEstaBloqueado(pid);
+	}
+	else{
+		if((int)colaDelProceso ==1){
+			printf("IF COLAPROCESO ==1\n");
+			proceso = obtenerProcesoPorPID(cola_exec, pid);
+
+			if(exitCode == FinalizacionPorConsolaDeKernel){
+				printf("IF FINALIZACION CONSOLA KERNEL\n");
+				enviar(proceso->socketCPU, ABORTADO_CONSOLA_KERNEL, sizeof(int),&proceso->pcb->pid);
+			}
+			else{
+				printf("FINALIZACION CONSOLA\n");
+				enviar(proceso->socketCPU, ABORTADO_CONSOLA, sizeof(int),&proceso->pcb->pid);
+			}
+			proceso = NULL;
+
+		}
+		else{
+			printf("ELIMINAR PROCESO DE COLA\n");
+			pthread_mutex_lock(&mutex_new);
+			pthread_mutex_lock(&mutex_ready);
+			proceso = eliminarProcesoDeCola(colaDelProceso, pid);
+			pthread_mutex_unlock(&mutex_new);
+			pthread_mutex_unlock(&mutex_ready);
+		}
+	}
+
 	if(proceso != NULL){
+		printf("PROCESO != NULL\n");
 		finalizarProceso(proceso, exitCode);
 		printf("El proceso %i se ha finalizado.\n", pid);
 	}
 	else{
-		printf("El proceso no se puede finalizar. Ya ha finalizado o no se encuentra.\n");
+		printf("El proceso %d ya fue finalizado o no se encuentra.\n", pid);
 	}
+	return;
+
+}
+
+
+t_proceso* verSiEstaBloqueado(int pid){
+	int i;
+	t_proceso* proc;
+	for (i=0; i < strlen((char*)sem_ids)/sizeof(char*); i++){
+			proc = (t_proceso*)list_get(cola_semaforos[i]->elements,i);
+
+			if((proc->pcb->pid) == pid){
+				log_debug(logger, "El proceso se encontraba bloqueado por Semaforo");
+				proc = (t_proceso*)list_remove(cola_semaforos[i]->elements,i);
+				return proc;
+			}
+		}
+	return NULL;
 
 }
 
 t_queue* buscarProcesoEnLasColas(int pid){
 	t_proceso* proceso;
-	if((proceso = obtenerProcesoPorPID(cola_new, pid))){
+
+	pthread_mutex_lock(&mutex_new);
+	proceso = obtenerProcesoPorPID(cola_new, pid);
+	if(proceso != NULL){
+		printf("ESTA EN NEW\n");
+		pthread_mutex_unlock(&mutex_new);
 		return cola_new;
 	}
-	if((proceso = obtenerProcesoPorPID(cola_ready, pid))){
+	pthread_mutex_unlock(&mutex_new);
+
+	pthread_mutex_lock(&mutex_ready);
+	proceso = obtenerProcesoPorPID(cola_ready, pid);
+	if(proceso != NULL){
+		printf("ESTA EN READY\n");
+		pthread_mutex_unlock(&mutex_ready);
 		return cola_ready;
 	}
-	if((proceso = obtenerProcesoPorPID(cola_exec, pid))){
-		//TODO AVISARLE A CPU QUE LO DEJE DE EJECUTAR
-		return cola_exec;
+	pthread_mutex_unlock(&mutex_ready);
+
+
+
+
+	pthread_mutex_lock(&mutex_exec);
+	proceso = obtenerProcesoPorPID(cola_exec, pid);
+	if(proceso!= NULL){
+		printf("ESTA EN EXEC\n");
+		pthread_mutex_unlock(&mutex_exec);
+
+
+		return 1;
+
 	}
-	if((proceso = obtenerProcesoPorPID(cola_block, pid))){
-		return cola_block;
+	pthread_mutex_unlock(&mutex_exec);
+
+	return NULL;
+}
+
+t_proceso* eliminarProcesoDeCola(t_queue* cola, int pid){
+	int a = 0;
+	t_proceso* proceso;
+	printf("LIST SIZE: %d\n", list_size(cola->elements));
+	while(a<list_size(cola->elements)){
+		proceso = list_get(cola->elements, a);
+		if (proceso->pcb->pid == pid){
+			proceso = list_remove(cola->elements, a);
+			return proceso;
+		}
+
+		a++;
 	}
 	return NULL;
+
 }
 
 t_proceso* obtenerProcesoPorPID(t_queue *cola, int pid){
 	int a = 0;
 	t_proceso* proceso;
-	while(proceso = (t_proceso*)list_get(cola->elements, a)){
-		if (proceso->pcb->pid == pid) return (t_proceso*)list_remove(cola->elements, a);
+	printf("LIST SIZE: %d\n", list_size(cola->elements));
+	while(a<list_size(cola->elements)){
+		proceso = list_get(cola->elements, a);
+		if (proceso->pcb->pid == pid)
+			return proceso;
 		a++;
 	}
 	return NULL;
 }
-//VER esto?
+
 int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instrucciones_serializados){
 	int i;
 	int **indice = malloc(sizeof(int*)*instrucciones);
@@ -2031,9 +2130,30 @@ void finQuantum(un_socket socketCPU, t_paquete* paqueteRec){
 
 	queue_push(cola_CPU_libres, (void*)socketCPU);
 	sem_post(&sem_cpu);
+}
 
 
-
+void deserializarYFinalizar(un_socket socketActivo, t_paquete* paqueteRecibido, ExitCodes code){
+	printf("ENTRE A DESERIALIZAR Y FINALIZAR\n");
+	t_proceso* proceso;
+	printf("1\n");
+	t_pcb* temporal;
+	printf("2\n");
+	pthread_mutex_lock(&mutex_exec);
+	printf("3\n");
+	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
+	printf("4\n");
+	pthread_mutex_unlock(&mutex_exec);
+	printf("PASE OBTENERPROCESO CPU\n");
+	temporal = desserializarPCB(paqueteRecibido->data);
+	printf("DESSERIALICE\n");
+	destruirPCB(proceso->pcb);
+	proceso->pcb = temporal;
+	printf("TEMPORAL\n");
+	finalizarProceso(proceso,code);
+	printf("FINALIZAR\n");
+	queue_push(cola_CPU_libres, (void*)socketActivo);
+	sem_post(&sem_cpu);
 }
 
 

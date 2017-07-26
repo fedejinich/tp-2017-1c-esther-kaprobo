@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <commons/log.h>
 #include <math.h>
+#include <sys/ioctl.h>
 
 #define ARCHIVOLOG "CPU.log"
 

@@ -59,7 +59,7 @@ void iniciarPrograma(){
 }
 
 void finalizarPrograma(){
-	int n;
+	int n ;
 	signed int soc;
 	printf("Finalizar Programa\n\n");
 	printf("Ingrese el PID a finalizar: \n");
@@ -97,8 +97,8 @@ void desconectarConsola(){
 
 		soc = matriz[i];
 		if (soc > 0){
-			int algo;
-			enviar(soc, FINALIZAR_PROGRAMA_DESDE_CONSOLA, sizeof(int), algo);
+
+			enviar(soc, FINALIZAR_PROGRAMA_DESDE_CONSOLA, sizeof(int), &i);
 			close(soc);
 			printf("Se cierra pid: %d \n", i);
 			matriz[i] = 0;
