@@ -116,6 +116,8 @@ pthread_mutex_t mutexEjecuta;
 
 pthread_mutex_t mutexGradoMultiprogramacion;
 
+pthread_mutex_t mutexServidor;
+
 //COLAS
 
 t_queue * cola_new;

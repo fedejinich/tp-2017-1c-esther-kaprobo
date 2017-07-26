@@ -95,6 +95,11 @@ int main(int argc, char **argv) {
 
 		datos_kernel = recibir(kernel);
 
+		if (datos_kernel->codigo_operacion == -1){
+			log_error(logger, "KERNEL SE DESCONECTO, SE CIERRA CPU");
+			exit(0);
+		}
+
 		asignarDatosDelKernel(datos_kernel);
 		liberar_paquete(datos_kernel);
 		int quantumAux = quantum;

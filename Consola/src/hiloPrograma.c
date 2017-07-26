@@ -41,6 +41,7 @@ void hiloNuevoPrograma(){
 
 	char* scriptParaEnviar = malloc(strlen(script));
 	memcpy(scriptParaEnviar, script, strlen(script));
+	free(script);
 	log_debug(logger, "Se pudo armar el Script correctamente");
 
 	//Abro conexion con Kernel, realizo Handshake

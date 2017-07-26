@@ -43,6 +43,13 @@ void inicializar(){
 	pthread_mutex_init(&mutex_ready, NULL);
 	pthread_mutex_init(&mutexEjecuta, NULL);
 	pthread_mutex_init(&mutex_listaHeap, NULL);
+	pthread_mutex_init(&mutexServidor, NULL);
+	pthread_mutex_init(&mutexGradoMultiprogramacion, NULL);
+	pthread_mutex_init(&mutex_exec, NULL);
+	pthread_mutex_init(&mutex_exit, NULL);
+
+
+
 
 	sem_init(&sem_new, 0, 0);
 	sem_init(&sem_ready, 0, 0);
@@ -238,7 +245,9 @@ void manejarSockets(){
 		t_paquete* paqueteRecibido;
 		log_info(logger, "Verificando cliente %d", i+1);
 		if(FD_ISSET(socketCliente[i],&fds_activos)){
+			pthread_mutex_lock(&mutexServidor);
 			paqueteRecibido = recibir(socketCliente[i]);
+			pthread_mutex_unlock(&mutexServidor);
 
 			//verifica codigo de operacion, si es -1 se desconecto
 			if(paqueteRecibido->codigo_operacion > -1){
@@ -567,7 +576,10 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 		log_info(logger, "KERNEL: Recibi proceso %d mando a bloquear por semaforo %s", procesoPideSem->pcb->pid, paqueteRecibido->data);
 
 		enviar(socketActivo, PEDIDO_SEMAFORO_FALLO, sizeof(int), &mandar);//1 bloquea proceso
+		pthread_mutex_lock(&mutexServidor);
 		paqueteNuevo = recibir(socketActivo);
+		pthread_mutex_unlock(&mutexServidor);
+
 		pcb_temporal = desserializarPCB(paqueteNuevo->data);
 		liberar_paquete(paqueteNuevo);
 		destruirPCB(procesoPideSem->pcb);
@@ -594,7 +606,7 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 		queue_push(cola_exec, procesoPideSem);
 		pthread_mutex_unlock(&mutex_exec);
 	}
-
+	free(procesoPideSem);
 	pthread_mutex_unlock(&mutex_config);
 }
 
@@ -646,7 +658,9 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 		//se manda al fs el path
 		enviar(fileSystem, SOLICITUD_APERTURA_ARCHIVO, sizeof(path), path);
 
-		t_paquete* paqueteResultado = recibir(memoria);
+		pthread_mutex_lock(&mutexServidor);
+		t_paquete* paqueteResultado = recibir(fileSystem);
+		pthread_mutex_unlock(&mutexServidor);
 
 		int resultado = paqueteResultado->codigo_operacion;
 
@@ -678,9 +692,9 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 	t_escribirArchivo* escritura = malloc(sizeof(t_escribirArchivo));
 
 	escritura = paqueteRecibido->data;
-
+	pthread_mutex_lock(&mutexServidor);
 	t_paquete* info = recibir(socketActivo);
-
+	pthread_mutex_unlock(&mutexServidor);
 
 	if(escritura->fd==1){
 		log_info(logger,"KERNEL: Proceso %d nos solicita imprimir texto por Consola", escritura->pid);
@@ -742,8 +756,9 @@ bool existeArchivo(char* path){
 	bool resultado = false;
 
 	enviar(fileSystem, VALIDAR_ARCHIVO, sizeof(path), path);
-
+	pthread_mutex_lock(&mutexServidor);
 	t_paquete* paqueteResultado = recibir(fileSystem);
+	pthread_mutex_unlock(&mutexServidor);
 
 	if(paqueteResultado->codigo_operacion == ARCHIVO_EXISTE)
 		resultado = true;
@@ -804,7 +819,10 @@ void accederArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 	}
 	if(strchr(permisos, 'r') != NULL){
 		enviar(fileSystem, codigoOperacion, sizeof(datos), datos);
+
+		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paquete = recibir(fileSystem);
+		pthread_mutex_unlock(&mutexServidor);
 
 		char* buffer = malloc(paquete->tamanio);
 		buffer = (char*)(paquete->data);
@@ -910,8 +928,9 @@ void escribirVariable(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 	char* nombre = malloc(paqueteRecibido->tamanio);
 	nombre = paqueteRecibido->data;
-
+	pthread_mutex_lock(&mutexServidor);
 	paq1 = recibir(socketActivo);
+	pthread_mutex_unlock(&mutexServidor);
 	int valor2 = *(int*)paq1->data;
 
 	char* aux = malloc(strlen(nombre)+2);
@@ -1054,7 +1073,10 @@ int conectarConLaMemoria(){
 	bool resultado = realizar_handshake(socketMemoria , HandshakeMemoriaKernel);
 	if (resultado){
 		log_debug(logger, "MEMORIA: Handshake exitoso! Conexion establecida");
+
+		pthread_mutex_lock(&mutexServidor);
 		paquete = recibir(socketMemoria);
+		pthread_mutex_unlock(&mutexServidor);
 		if(paquete->codigo_operacion == TAMANIO_PAGINA){
 			TAMPAG = *((int*)paquete->data);
 			//TAMPAG= 256;
@@ -1185,8 +1207,9 @@ int inicializarProcesoYAlmacenarEnMemoria(char* codigo, int tamanioCodigo, t_pro
 	paqueteProceso->pid = proceso->pcb->pid;
 
 	enviar(memoria, INICIALIZAR_PROCESO, sizeof(t_inicializar_proceso), paqueteProceso);
-
+	pthread_mutex_lock(&mutexServidor);
 	t_paquete * paquete = recibir(memoria);
+	pthread_mutex_unlock(&mutexServidor);
 
 	if(paquete->codigo_operacion == INICIALIZAR_PROCESO_FALLO) {
 		log_error(logger, "No se pudo inicializar proceso");
@@ -1991,7 +2014,10 @@ int reservarPaginaHeap(int pid,int pagina){
 	pedido->paginasAPedir = 1;
 
 	enviar(memoria,ASIGNAR_PAGINAS, sizeof(t_pedidoDePaginasKernel), pedido);
+
+	pthread_mutex_lock(&mutexServidor);
 	t_paquete* respuesta = recibir(memoria);
+	pthread_mutex_unlock(&mutexServidor);
 
 	resultado = respuesta->codigo_operacion;
 
