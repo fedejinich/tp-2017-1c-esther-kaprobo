@@ -31,17 +31,18 @@ typedef uint32_t t_num;
  * Variables
  */
 
+	unsigned char* mmapDeBitmap;
+
+
 	//Log
 	t_log* logger;
 
 	//Configuracion
 
 	char* ipFileSystem = "127.0.0.1";
-	int puerto;
-	char* puntoMontaje;
-	int tamanioBloques;
-	int cantidadBloques;
-	t_bitarray* bitMap;
+
+
+	t_bitarray* bitArray;
 
 	//Semaforo
 	pthread_mutex_t solicitud_mutex;
@@ -52,9 +53,7 @@ typedef uint32_t t_num;
 	un_socket fileSystemServer; //identificador del socket del file_system que recibe conexiones
 	un_socket socketKernel;
 
-	//Hilos
 
-	pthread_t servidorConexionesKernel;
 
 /**
  * Funciones
@@ -63,25 +62,22 @@ typedef uint32_t t_num;
 	//Configuracion
 
 	void cargarConfiguracion();
+	void iniciarMetadataMap();
 
 	//Log
 	void crearArchivoLog();
 
 	//Sockets
 
-	un_socket iniciarFileSystemServer(char* ip, char* port);
-	void prepararFileSystemServerParaEscuchar();
-	void atenderYCrearConexiones();
+	void crearServidor();
+	void atenderPedidos();
 
-	//Hilos
-	void* hiloServidorKernel(void* arg);
-	void* hiloConexionKernel(void* socket);
 
 	//Archivos
 	int existeArchivo(char* path);
 	void crearArchivo(void* path);
 	void borrarArchivo(void* path);
-	void leerMetadataArchivo();
+
 	void leerBitMap();
 	char* leerBloquesArchivo(void* path, int offset, int size);
 	void escribirBloquesArchivo(void* path, int offset, int size, char* buffer);

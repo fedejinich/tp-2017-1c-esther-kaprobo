@@ -1,138 +1,19 @@
 
 #include "file_system.h"
+int32_t PUERTO_KERNEL;
+char* PUERTO_MONTAJE;
+char* MAGIC_NUMBER;
+int32_t TAMANIO_BLOQUES;
+int32_t CANTIDAD_BLOQUES;
 
 int main() {
 
+
 	crearArchivoLog();
 	cargarConfiguracion();
-
-	fileSystemServer = socket_escucha(ipFileSystem,puerto);
-	listen(fileSystemServer, 1);
-	log_info(logger,"Socket %d creado y escuchando", socketKernel);
-	socketKernel = aceptar_conexion(fileSystemServer);
-
-	bool resultado = esperar_handshake(socketKernel,HandshakeFileSystemKernel);
-
-	if(resultado){
-		log_info(logger,"Conexión aceptada del KERNEL %d!!", socketKernel);
-		printf("Conexion aceptada del KERNEL %d \n",socketKernel);
-	}
-	else
-	{
-		log_info(logger,"Handshake fallo, se aborta conexion\n");
-		printf("Conexion abortada\n");
-		exit (EXIT_FAILURE);
-	}
-	while(1){
-		log_info(logger, "Esperando Pedido de Kernel");
-		//Recibimos pedidos de kernel y se hace switch dependiendo operacion
-		paquete = recibir(socketKernel);
-		log_info(logger, "Se recibio paquete desde Kernel");
-		void* buffer;
-		char* path;
-		int tmpsize = 0, tmpoffset = 0;
-		t_num offset, size;
-		t_num sizePath = 0;
-
-		//char * codigoDeOperacion = getCodigoDeOperacion(paquete->codigo_operacion);
-		pthread_mutex_lock(&solicitud_mutex);
-		//log_info(logger, "Codigo de operacion FileSystem-Kernel: %s", codigoDeOperacion);
-
-		switch (paquete->codigo_operacion)
-		{
-		case VALIDAR_ARCHIVO:
-			path = malloc(paquete->tamanio);
-			memcpy(path, paquete->data, paquete->tamanio);
-			path[paquete->tamanio] = '\0';
-			log_info(logger, "Path: %s", path);
-			bool existe = false;
-			int fd = open(path, O_RDONLY);
-
-			if(existeArchivo(path)){
-				existe = true;
-				log_info(logger, "El archivo existe");
-			}
-
-			else{
-				log_info(logger, "El archivo no existe");
-				}
-
-			enviar(socketKernel, VALIDAR_ARCHIVO, paquete->tamanio, &existe);
-			close(fd);
-			free(path);
-			break;
-		case CREAR_ARCHIVO:
-			path = malloc(paquete->tamanio);
-			memcpy(path, paquete->data, paquete->tamanio);
-			path[paquete->tamanio] = '\0';
-			log_info(logger, "Path: %s", path);
-
-			crearArchivo(path);
-			enviar(socketKernel, CREAR_ARCHIVO, 0, 0);
-			free(path);
-			break;
-		case BORRAR_ARCHIVO:
-			path = malloc(paquete->tamanio);
-			memcpy(path, paquete->data, paquete->tamanio);
-			path[paquete->tamanio] = '\0';
-			log_info(logger, "Path: %s", path);
-
-			borrarArchivo(path);
-			enviar(socketKernel, BORRAR_ARCHIVO, 0, 0);
-			free(path);
-			break;
-		case OBTENER_DATOS:
-			memcpy(&sizePath, paquete->data + tmpoffset, tmpsize = sizeof(t_num));
-			tmpoffset += tmpsize;
-			path = malloc(sizePath + 1);
-			memcpy(path, paquete->data + tmpoffset, tmpsize = sizePath);
-			path[sizePath] = '\0';
-			tmpoffset += tmpsize;
-			memcpy(&offset, paquete->data + tmpoffset, tmpsize = sizeof(t_valor_variable));
-			tmpoffset += tmpsize;
-			memcpy(&size, paquete->data + tmpoffset, tmpsize = sizeof(t_valor_variable));
-			tmpoffset += tmpsize;
-			log_info(logger, "Path: %s - offset: %d - size: %d", path, offset, size);
-			char* data = leerBloquesArchivo(path, offset, size);
-			enviar(socketKernel, OBTENER_DATOS, size, data);
-			free(data);
-			break;
-		case GUARDAR_DATOS:
-			tmpoffset = 0;
-			memcpy(&sizePath, paquete->data + tmpoffset, tmpsize = sizeof(t_num));
-			tmpoffset += tmpsize;
-			path = malloc(sizePath + 1);
-			memcpy(path, paquete->data + tmpoffset, tmpsize = sizePath);
-			path[sizePath] = '\0';
-			tmpoffset += tmpsize;
-			memcpy(&offset, paquete->data + tmpoffset, tmpsize = sizeof(t_valor_variable));
-			tmpoffset += tmpsize;
-			memcpy(&size, paquete->data + tmpoffset, tmpsize = sizeof(t_valor_variable));
-			tmpoffset += tmpsize;
-			buffer = malloc(size);
-			buffer = malloc(size);
-			memcpy(buffer, paquete->data + tmpoffset, size);
-
-			log_info(logger, "Path: %s - Offset: %d - Size: %d \n Buffer: %s", path, offset, size, buffer);
-
-			escribirBloquesArchivo(path, offset, size, buffer);
-			enviar(socketKernel, GUARDAR_DATOS, 0, 0);
-			free(data);
-			break;
-		default:
-				log_error(logger, "Se ha desconectado el Kernel");
-				pthread_mutex_unlock(&solicitud_mutex);
-		        exit(EXIT_FAILURE);
-			break;
-		}
-		log_info(logger, "Finalizo solicitud de %d", socketKernel);
-		pthread_mutex_unlock(&solicitud_mutex);
-
-	}
-	//Variante HILOS
-	//pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
-	//pthread_join(servidorConexionesKernel, NULL);
-	return 0;
+	crearBitArray();
+	crearServidor();
+	atenderPedidos();
 }
 
 void crearArchivoLog(){
@@ -144,74 +25,91 @@ void cargarConfiguracion() {
 
 	log_info(logger,"Cargando archivo de configuracion 'file_system.config'...\n");
 	t_config* config = config_create(getenv("archivo_configuracion_fs"));
-	puerto = config_get_int_value(config, "PUERTO");
-	puntoMontaje = config_get_string_value(config, "PUNTO_MONTAJE");
+	t_config* config2 = config_create(getenv("metadata"));
 
-	if(config_has_property(config,"PUERTO") && config_has_property(config,"PUNTO_MONTAJE"))
+	PUERTO_KERNEL = config_get_int_value(config, "PUERTO");
+	PUERTO_MONTAJE = config_get_string_value(config, "PUNTO_MONTAJE");
+
+	MAGIC_NUMBER = config_get_string_value(config2, "MAGIC_NUMBER");
+	CANTIDAD_BLOQUES = config_get_int_value(config2, "CANTIDAD_BLOQUES");
+	TAMANIO_BLOQUES = config_get_int_value(config2, "TAMANIO_BLOQUES");
+
+	printf("CANTIDAD:%d\n", CANTIDAD_BLOQUES);
+
+	if(config_has_property(config,"PUERTO") && config_has_property(config,"PUNTO_MONTAJE") && config_has_property(config2,"MAGIC_NUMBER") && config_has_property(config2,"CANTIDAD_BLOQUES") && config_has_property(config2,"TAMANIO_BLOQUES"))
 		log_info(logger,"Archivo de configuracion cargado correctamente\n");
 	else {
 		log_error(logger,"Error al cargar archivo de configuracion");
 		if(!config_has_property(config,"PUERTO"))
 			log_error(logger,"No esta setteado el PUERTO\n");
 		if(!config_has_property(config,"PUNTO_MONTAJE"))
-			log_error(logger,"Punto Montaje: %s \n",puntoMontaje);
-	}
-}
-
-/*
-void* hiloServidorKernel(void *arg) {
-
-	log_info(logger,"Hilo Servidor KERNEL\n");
-	int socketCliente;
-	int* socketClienteTemp;
-	socketKernel = socket_escucha("127.0.0.1", puerto);
-	log_info(logger,"Creacion socket servidor KERNEL exitosa\n");
-	listen(socketKernel, 1024);
-	while(1) {
-		socketCliente = aceptar_conexion(socketKernel);
-		log_info(logger,"Iniciando Handshake con KERNEL\n");
-		bool resultado_hand = esperar_handshake(socketCliente,KernelValidacion);
-		if(resultado_hand) {
-			log_info(logger,"Conexión aceptada del KERNEL %d!!", socketCliente);
-			printf("Conexion aceptada del KERNEL %d, esperando mensajes \n",socketCliente);
-		}
-		else {
-			log_info(logger,"Handshake fallo, se aborta conexion\n");
-			exit (EXIT_FAILURE);
-		}
-		socketClienteTemp = malloc(sizeof(int));
-		*socketClienteTemp = socketCliente;
-		pthread_t conexionKernel;
-		pthread_create(&conexionKernel, NULL, hiloConexionKernel, (void*)socketClienteTemp);
+			log_error(logger,"No esta setteado el Puerto Montaje: %s \n",PUERTO_MONTAJE);
+		if(!config_has_property(config2, "MAGIC_NUMBER"))
+			log_error(logger, "NO ESTA SETTEADO EL MAGIC NUMBER");
+		if(!config_has_property(config2, "CANTIDAD_BLOQUES"))
+			log_error(logger, "NO ESTA SETTEADO CANTIDAD_BLOQUES");
+		if(!config_has_property(config2, "TAMANIO_BLOQUES"))
+			log_error(logger, "NO ESTA SETTEADO TAMANIO_BLOQUES");
 	}
 
+	iniciarMetadataMap();
 }
 
-void* hiloConexionKernel(void* socket) {
 
-	//File system espera recibir mensajes de kernel
+void iniciarMetadataMap(){
+	int size;
 
-	while(1) {
-		char* buffer = malloc(1000);
-		int bytesRecibidos = recv(*(int*)socket, buffer, 1000, 0);
-		if (bytesRecibidos <= 0) {
-			log_error(logger,"El proceso se desconecto\n");
-			return 1;
-		}
-		buffer[bytesRecibidos] = '\0';
-		log_info(logger,"Me llegaron %d bytes con %s, del KERNEL %d\n", bytesRecibidos, buffer,*(int*)socket);
-		printf("Me llegaron %d bytes con %s, del KERNEL %d\n", bytesRecibidos, buffer,*(int*)socket);
-		free(buffer);
+	char* nombreArchivo = string_new();
+	string_append(&nombreArchivo, PUERTO_MONTAJE);
+	string_append(&nombreArchivo, "Metadata/Bitmap.bin");
+
+	int bitmap = open(nombreArchivo, O_RDWR);
+	struct stat mystat;
+
+	if(fstat(bitmap, &mystat)<0)
+		close(bitmap);
+
+	mmapDeBitmap = mmap(NULL, mystat.st_size, PROT_WRITE | PROT_READ, MAP_SHARED, bitmap, 0);
+	close(bitmap);
+
+}
+
+void crearBitArray(){
+	printf("Entre\n");
+
+	bitArray = bitarray_create_with_mode(mmapDeBitmap, (TAMANIO_BLOQUES * CANTIDAD_BLOQUES)/(8 * TAMANIO_BLOQUES), MSB_FIRST);
+
+	printf("1\n");
+
+	char* archi = string_new();
+	printf("2\n");
+	string_append(&archi, PUERTO_MONTAJE);
+	printf("3\n");
+	string_append(&archi, "Metadata/Bitmap.bin");
+	printf("4\n");
+	FILE *f;
+	printf("5\n");
+	f = open(archi, "wr+");
+	printf("6\n");
+	int32_t i;
+	printf("7\n");
+	printf("CANTIDAD: %d", CANTIDAD_BLOQUES);
+	for(i=0; i < CANTIDAD_BLOQUES; i++){
+		fputc(1,f);
 	}
+	printf("8\n");
+	fclose(f);
 
-	return 0;
+	log_info(logger, "El tamano del bitarray es : %d ", bitarray_get_max_bit(bitArray));
+	return;
 }
-*/
+
+
 
 int existeArchivo(char* path){
 
 	char* rutaMetadata = string_new();
-	string_append(&rutaMetadata, puntoMontaje);
+	string_append(&rutaMetadata, PUERTO_MONTAJE);
 	string_append(&rutaMetadata, "/Archivos");
 	string_append(&rutaMetadata, path);
 	log_info(logger, "rutaMetadata %s", rutaMetadata);
@@ -226,34 +124,12 @@ int existeArchivo(char* path){
 			return 0;
 	}
 }
-
-void leerMetadataArchivo(){
-
-	char* rutaMetadata = string_duplicate(puntoMontaje);
-	string_append(&rutaMetadata, "/Metadata/Metadata.bin"); //Como crear el Metadata.bin
-	log_info(logger, "rutaMetadata %s", rutaMetadata);
-
-	t_config* metadata = config_create(rutaMetadata);
-	if(metadata == NULL){
-		log_error(logger, "No se encuentra metadata");
-		fprintf(stderr, "No se encuentra metadata\n");
-		terminarFileSystem();
-	}
-	tamanioBloques = config_get_int_value(metadata, "TAMANIO_BLOQUES");
-	cantidadBloques = config_get_int_value(metadata, "CANTIDAD_BLOQUES");
-	if(!string_equals_ignore_case(config_get_string_value(metadata, "MAGIC_NUMBER") , "SADICA")){
-		log_error(logger, "No es un FS SADICA");
-		fprintf(stderr, "No es un FS SADICA\n");
-		terminarFileSystem();
-	}
-	config_destroy(metadata);
-}
-
+/*
 void leerBitMap(){
 	int fd;
 	char *data;
 	struct stat sbuf;
-	char* rutaBitMap = string_duplicate(puntoMontaje);
+	char* rutaBitMap = string_duplicate(PUERTO_MONTAJE);
 	string_append(&rutaBitMap, "/Metadata/Bitmap.bin"); //Como crear el Bitmap.bin
 	log_info(logger, "rutaBitMap %s", rutaBitMap);
 
@@ -277,19 +153,21 @@ void leerBitMap(){
 
 	close(fd);
 }
+*/
+
 
 void crearArchivo(void* path){
 	int nroBloque = -1;
 	int i;
 	char* rutaMetadata = string_new();
-	string_append(&rutaMetadata, puntoMontaje);
+	string_append(&rutaMetadata, PUERTO_MONTAJE);
 	string_append(&rutaMetadata, "/Archivos");
 	string_append(&rutaMetadata, path);
 	log_info(logger, "rutaMetadata %s", rutaMetadata);
 
-	for (i = 0; i < bitMap->size && nroBloque == -1; i++){
-		if(!bitarray_test_bit(bitMap, i)){
-			bitarray_set_bit(bitMap, i);
+	for (i = 0; i < bitArray->size && nroBloque == -1; i++){
+		if(!bitarray_test_bit(bitArray, i)){
+			bitarray_set_bit(bitArray, i);
 			nroBloque = i;
 		}
 	}
@@ -314,7 +192,7 @@ void crearArchivo(void* path){
 void borrarArchivo(void* path){
 	int i;
 	char* rutaMetadata = string_new();
-	string_append(&rutaMetadata, puntoMontaje);
+	string_append(&rutaMetadata, PUERTO_MONTAJE);
 	string_append(&rutaMetadata, "/Archivos");
 	string_append(&rutaMetadata, path);
 	log_info(logger, "rutaMetadata %s", rutaMetadata);
@@ -330,9 +208,9 @@ void borrarArchivo(void* path){
 	int tamanio = config_get_int_value(metadata, "TAMANIO");
 	char* bloques = config_get_array_value(metadata, "BLOQUES");
 
-	for(i = 0; i*tamanioBloques < tamanio; i++){
+	for(i = 0; i*TAMANIO_BLOQUES < tamanio; i++){
 		int nroBloque =  atoi(bloques[i]);
-		bitarray_clean_bit(bitMap, nroBloque);
+		bitarray_clean_bit(bitArray, nroBloque);
 	}
 
 	config_destroy(metadata);
@@ -345,7 +223,7 @@ char* leerBloquesArchivo(void* path, int offset, int size){
 	char* data = malloc(size+1), *tmpdata, *pathBloque;
 	int i, tmpoffset = 0;
 	char* rutaMedatada = string_new();
-	string_append(&rutaMedatada, puntoMontaje);
+	string_append(&rutaMedatada, PUERTO_MONTAJE);
 	string_append(&rutaMedatada, "/Archivos");
 	string_append(&rutaMedatada, path);
 
@@ -362,14 +240,14 @@ char* leerBloquesArchivo(void* path, int offset, int size){
 	int tamanio = config_get_int_value(metadata, "TAMANIO");
 	char** bloques = config_get_array_value(metadata, "BLOQUES");
 
-	for(i = offset / tamanioBloques; i * tamanioBloques < tamanio; i ++, tmpoffset += tamanioBloques){
+	for(i = offset / TAMANIO_BLOQUES; i * TAMANIO_BLOQUES < tamanio; i ++, tmpoffset += TAMANIO_BLOQUES){
 		pathBloque = string_new();
-		string_append(&pathBloque, puntoMontaje);
+		string_append(&pathBloque, PUERTO_MONTAJE);
 		string_append_with_format(&pathBloque, "/Bloques/%s.bin", bloques[i]);
 		tmpdata = leerArchivo(pathBloque);
 
-		if(size - tmpoffset > tamanioBloques){ //falta
-			memcpy(data + tmpoffset, tmpdata, tamanioBloques);
+		if(size - tmpoffset > TAMANIO_BLOQUES){ //falta
+			memcpy(data + tmpoffset, tmpdata, TAMANIO_BLOQUES);
 		}else{
 			memcpy(data + tmpoffset, tmpdata, size - tmpoffset);
 			break;
@@ -412,7 +290,7 @@ void escribirBloquesArchivo(void* path, int offset, int size, char* buffer){
 	char *tmpdata, *pathBloque;
 	int i, tmpoffset = 0;
 	char* rutaMetadata = string_new();
-	string_append(&rutaMetadata, puntoMontaje);
+	string_append(&rutaMetadata, PUERTO_MONTAJE);
 	string_append(&rutaMetadata, "/Archivos");
 	string_append(&rutaMetadata, path);
 	log_info(logger, "rutaMetadata %s", rutaMetadata);
@@ -428,14 +306,14 @@ void escribirBloquesArchivo(void* path, int offset, int size, char* buffer){
 	int tamanio = config_get_int_value(metadata, "TAMANIO");
 	char** bloques = config_get_array_value(metadata, "BLOQUES");
 
-	for(i = offset / tamanioBloques; i * tamanioBloques < tamanio; i ++, tmpoffset += tamanioBloques){
+	for(i = offset / TAMANIO_BLOQUES; i * TAMANIO_BLOQUES < tamanio; i ++, tmpoffset += TAMANIO_BLOQUES){
 		pathBloque = string_new();
-		string_append(&pathBloque, puntoMontaje);
+		string_append(&pathBloque, PUERTO_MONTAJE);
 		string_append_with_format(&pathBloque, "/Bloques/%s.bin", bloques[i]);
 		tmpdata = leerArchivo(pathBloque);
 
-		if(size - tmpoffset > tamanioBloques){//falta
-			memcpy(tmpdata, buffer + tmpoffset, tamanioBloques);
+		if(size - tmpoffset > TAMANIO_BLOQUES){//falta
+			memcpy(tmpdata, buffer + tmpoffset, TAMANIO_BLOQUES);
 		}else{
 			memcpy(tmpdata, buffer + tmpoffset, size-tmpoffset);
 		}
@@ -448,9 +326,147 @@ void escribirBloquesArchivo(void* path, int offset, int size, char* buffer){
 void terminarFileSystem(){
 	log_trace(logger, "Termino FileSystem");
 
-	if(bitMap != NULL){
-		bitarray_destroy(bitMap);
+	if(bitArray != NULL){
+		bitarray_destroy(bitArray);
 	}
 	exit(1);
 }
+
+
+void crearServidor(){
+	fileSystemServer = socket_escucha(ipFileSystem,PUERTO_KERNEL);
+	listen(fileSystemServer, 1);
+	log_info(logger,"Socket %d creado y escuchando", socketKernel);
+	socketKernel = aceptar_conexion(fileSystemServer);
+
+	bool resultado = esperar_handshake(socketKernel,HandshakeFileSystemKernel);
+
+	if(resultado){
+		log_info(logger,"Conexión aceptada del KERNEL %d!!", socketKernel);
+		printf("Conexion aceptada del KERNEL %d \n",socketKernel);
+	}
+	else
+	{
+		log_info(logger,"Handshake fallo, se aborta conexion\n");
+		printf("Conexion abortada\n");
+		exit (EXIT_FAILURE);
+	}
+
+}
+
+
+void atenderPedidos(){
+	while(1){
+			log_info(logger, "Esperando Pedido de Kernel");
+			//Recibimos pedidos de kernel y se hace switch dependiendo operacion
+			paquete = recibir(socketKernel);
+			log_info(logger, "Se recibio paquete desde Kernel");
+			void* buffer;
+			char* path;
+			int tmpsize = 0, tmpoffset = 0;
+			t_num offset, size;
+			t_num sizePath = 0;
+
+			//char * codigoDeOperacion = getCodigoDeOperacion(paquete->codigo_operacion);
+			pthread_mutex_lock(&solicitud_mutex);
+			//log_info(logger, "Codigo de operacion FileSystem-Kernel: %s", codigoDeOperacion);
+
+			switch (paquete->codigo_operacion)
+			{
+			case VALIDAR_ARCHIVO:
+				path = malloc(paquete->tamanio);
+				memcpy(path, paquete->data, paquete->tamanio);
+				path[paquete->tamanio] = '\0';
+				log_info(logger, "Path: %s", path);
+				bool existe = false;
+				int fd = open(path, O_RDONLY);
+
+				if(existeArchivo(path)){
+					existe = true;
+					log_info(logger, "El archivo existe");
+				}
+
+				else{
+					log_info(logger, "El archivo no existe");
+					}
+
+				enviar(socketKernel, VALIDAR_ARCHIVO, paquete->tamanio, &existe);
+				close(fd);
+				free(path);
+				break;
+			case CREAR_ARCHIVO:
+				path = malloc(paquete->tamanio);
+				memcpy(path, paquete->data, paquete->tamanio);
+				path[paquete->tamanio] = '\0';
+				log_info(logger, "Path: %s", path);
+
+				crearArchivo(path);
+				enviar(socketKernel, CREAR_ARCHIVO, 0, 0);
+				free(path);
+				break;
+			case BORRAR_ARCHIVO:
+				path = malloc(paquete->tamanio);
+				memcpy(path, paquete->data, paquete->tamanio);
+				path[paquete->tamanio] = '\0';
+				log_info(logger, "Path: %s", path);
+
+				borrarArchivo(path);
+				enviar(socketKernel, BORRAR_ARCHIVO, 0, 0);
+				free(path);
+				break;
+			case OBTENER_DATOS:
+				memcpy(&sizePath, paquete->data + tmpoffset, tmpsize = sizeof(t_num));
+				tmpoffset += tmpsize;
+				path = malloc(sizePath + 1);
+				memcpy(path, paquete->data + tmpoffset, tmpsize = sizePath);
+				path[sizePath] = '\0';
+				tmpoffset += tmpsize;
+				memcpy(&offset, paquete->data + tmpoffset, tmpsize = sizeof(t_valor_variable));
+				tmpoffset += tmpsize;
+				memcpy(&size, paquete->data + tmpoffset, tmpsize = sizeof(t_valor_variable));
+				tmpoffset += tmpsize;
+				log_info(logger, "Path: %s - offset: %d - size: %d", path, offset, size);
+				char* data = leerBloquesArchivo(path, offset, size);
+				enviar(socketKernel, OBTENER_DATOS, size, data);
+				free(data);
+				break;
+			case GUARDAR_DATOS:
+				tmpoffset = 0;
+				memcpy(&sizePath, paquete->data + tmpoffset, tmpsize = sizeof(t_num));
+				tmpoffset += tmpsize;
+				path = malloc(sizePath + 1);
+				memcpy(path, paquete->data + tmpoffset, tmpsize = sizePath);
+				path[sizePath] = '\0';
+				tmpoffset += tmpsize;
+				memcpy(&offset, paquete->data + tmpoffset, tmpsize = sizeof(t_valor_variable));
+				tmpoffset += tmpsize;
+				memcpy(&size, paquete->data + tmpoffset, tmpsize = sizeof(t_valor_variable));
+				tmpoffset += tmpsize;
+				buffer = malloc(size);
+				buffer = malloc(size);
+				memcpy(buffer, paquete->data + tmpoffset, size);
+
+				log_info(logger, "Path: %s - Offset: %d - Size: %d \n Buffer: %s", path, offset, size, buffer);
+
+				escribirBloquesArchivo(path, offset, size, buffer);
+				enviar(socketKernel, GUARDAR_DATOS, 0, 0);
+				free(data);
+				break;
+			default:
+					log_error(logger, "Se ha desconectado el Kernel");
+					pthread_mutex_unlock(&solicitud_mutex);
+			        exit(EXIT_FAILURE);
+				break;
+			}
+			log_info(logger, "Finalizo solicitud de %d", socketKernel);
+			pthread_mutex_unlock(&solicitud_mutex);
+
+		}
+		//Variante HILOS
+		//pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
+		//pthread_join(servidorConexionesKernel, NULL);
+		return ;
+
+}
+
 

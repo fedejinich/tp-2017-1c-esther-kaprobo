@@ -31,6 +31,7 @@ un_socket socket_escucha(char* IP, char* Port) {
 	struct sockaddr_in direccionServidor;
 	direccionServidor.sin_family = AF_INET;
 	direccionServidor.sin_addr.s_addr = inet_addr(IP);
+	//direccionServidor.sin_addr.s_addr = inet_addr(ip_local());
 	direccionServidor.sin_port = htons(Port);
 
 		int socketEscucha = socket(AF_INET, SOCK_STREAM, 0);
@@ -44,6 +45,18 @@ un_socket socket_escucha(char* IP, char* Port) {
 		}
 
 	return socketEscucha;
+}
+
+char* ip_local(){
+	struct sockaddr_in host;
+	char nombre[255], *ip;
+	gethostname(nombre,255);
+	host.sin_addr = *(struct in_addr*) gethostbyname(nombre)->h_addr;
+	ip = inet_ntoa(host.sin_addr);
+	printf("IP: %s\n\n", ip);
+
+	return ip;
+
 }
 
 void enviar(un_socket socket_para_enviar, int codigo_operacion, int tamanio, void * data) {

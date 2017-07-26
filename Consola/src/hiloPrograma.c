@@ -41,7 +41,7 @@ void hiloNuevoPrograma(){
 
 	char* scriptParaEnviar = malloc(strlen(script));
 	memcpy(scriptParaEnviar, script, strlen(script));
-	free(script);
+
 	log_debug(logger, "Se pudo armar el Script correctamente");
 
 	//Abro conexion con Kernel, realizo Handshake
@@ -96,7 +96,9 @@ void hiloNuevoPrograma(){
 
 	//libero paquete y script
 	liberar_paquete(newPid);
+
 	free(scriptParaEnviar);
+	free(script);
 	pthread_mutex_unlock(&mutexEjecuta);
 	//mientras el programa se ejecute, espero instrucciones de Kernel
 

@@ -169,7 +169,7 @@ bool realizar_handshake(un_socket socket_del_servidor, int codigo);
  */
 bool esperar_handshake(un_socket socket_del_cliente, int codigo);
 
-
+char* ip_local();
 
 //CODIGOS DE OPERACION MEMORIA-KERNEL
 
