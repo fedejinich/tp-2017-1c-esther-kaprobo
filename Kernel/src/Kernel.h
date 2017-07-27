@@ -34,17 +34,17 @@
 
 
 
-typedef struct __attribute__((packed))t_entradaTablaGlobalArchivos{
+typedef struct __attribute__((packed))t_entradaTablaGlobal{
 	char* path;
 	int open;
 }t_entradaTablaGlobal;
 
-typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
+typedef struct __attribute__((packed))t_tablaArchivosPorProceso{
 	int pid;
 	t_list* tablaDeUnProceso;
 }t_tablaArchivosPorProceso;
 
-typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
+typedef struct __attribute__((packed))t_entradaTablaProceso{
 	t_descriptor_archivo fd;
 	char* flags;
 	t_descriptor_archivo globalFD;

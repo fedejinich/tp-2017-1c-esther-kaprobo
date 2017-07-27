@@ -651,12 +651,16 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 	//en el paquete esta el path del archivo y los permisos de apertura
 	t_envioDeDatosKernelFSAbrir* datosProcesoArchivo = paquete->data;
 	int pid = datosProcesoArchivo->pid;
+
 	char* path = datosProcesoArchivo->path;
+	char* barra_cero = "\0";
+	memcpy(path, barra_cero, 1);
+
 	char* permisos = datosProcesoArchivo->permisos;
 
 	if(validarPermisoDeApertura(pid, path, permisos)){
 		//se manda al fs el path
-		enviar(fileSystem, SOLICITUD_APERTURA_ARCHIVO, sizeof(path), path);
+		enviar(fileSystem, SOLICITUD_APERTURA_ARCHIVO, strlen(path) + 1, path);
 
 		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paqueteResultado = recibir(fileSystem);
@@ -728,6 +732,7 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 	}
 	else{
 		//VER ESCRIBIR ARCHIVO
+
 	}
 
 
@@ -795,7 +800,33 @@ int buscarEntradaEnTablaGlobal(char* path){
 	return -1;
 }
 
-void accederArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
+void escribirArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
+	t_escribirArchivo* datos= paquete->data;
+	int pid = datos->pid;
+	int fd = datos->fd;
+
+	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
+	t_entradaTablaProceso* archivo = list_get(tablaDeUnProceso, fd);
+
+	char* permisos = archivo->flags;
+
+	if(strchr(permisos, 'r') != NULL){
+		enviar(fileSystem, SOLICITUD_GUARDADO_DATOS, sizeof(datos), datos);
+
+		pthread_mutex_lock(&mutexServidor);
+		t_paquete* paquete = recibir(fileSystem);
+		pthread_mutex_unlock(&mutexServidor);
+
+		char* buffer = malloc(paquete->tamanio);
+		buffer = (char*)(paquete->data);
+		enviar(socketActivo, OBTENER_DATOS, datos->size, buffer);
+	}
+	else{
+		finalizarProcesoPorPID(pid, IntentoDeEscrituraSinPermisos);
+	}
+}
+
+void leerArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
 	int pid = datos->pid;
 	int fd = datos->fd;
@@ -805,18 +836,8 @@ void accederArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 
 	char* permisos = archivo->flags;
 
-	int codigoOperacion;
-	int exitCode;
-	if(strchr(operacion, 'r') ){
-		codigoOperacion = SOLICITUD_OBTENCION_DATOS;
-		exitCode = IntentoDeLecturaSinPermisos;
-	}
-	else{
-		codigoOperacion = SOLICITUD_GUARDADO_DATOS;
-		exitCode = IntentoDeEscrituraSinPermisos;
-	}
 	if(strchr(permisos, 'r') != NULL){
-		enviar(fileSystem, codigoOperacion, sizeof(datos), datos);
+		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, sizeof(datos), datos);
 
 		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paquete = recibir(fileSystem);
@@ -827,7 +848,7 @@ void accederArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 		enviar(socketActivo, OBTENER_DATOS, datos->tamanio, buffer);
 	}
 	else{
-		finalizarProcesoPorPID(pid, exitCode);
+		finalizarProcesoPorPID(pid, IntentoDeLecturaSinPermisos);
 	}
 }
 
