@@ -799,7 +799,7 @@ bool validarPermisoDeApertura(int pid, char* path, char* permisos){
 bool existeArchivo(char* path){
 	bool resultado = false;
 
-	enviar(fileSystem, VALIDAR_ARCHIVO, sizeof(path), armarPathParaEnvio(path));
+	enviar(fileSystem, VALIDAR_ARCHIVO, sizeof(path) + 1, armarPathParaEnvio(path));
 
 	pthread_mutex_lock(&mutexServidor);
 	t_paquete* paqueteResultado = recibir(fileSystem);
@@ -863,7 +863,7 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 		obtencionDatos ->offset = archivo->puntero;
 		obtencionDatos ->size = datos->tamanio;
 
-		enviar(fileSystem, OBTENER_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos );
+		enviar(fileSystem, OBTENER_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos);
 		enviar(fileSystem, OBTENER_DATOS, strlen(path) + 1, armarPathParaEnvio(path));
 
 		pthread_mutex_lock(&mutexServidor);
@@ -923,7 +923,7 @@ void borrarArchivo(int* socketActivo, t_paquete* paquete){
 
 	if(entradaAEliminar->open == 0){
 
-		enviar(socketActivo, BORRAR_ARCHIVO, strlen(path), armarPathParaEnvio(path));
+		enviar(socketActivo, BORRAR_ARCHIVO, strlen(path) + 1, armarPathParaEnvio(path));
 
 		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paquete = recibir(fileSystem);
