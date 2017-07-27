@@ -63,8 +63,9 @@ void inicializar(){
 	mostrarConfiguracion();
 
 	//Sockets
-	fileSystem = conectarConFileSystem();
 	memoria = conectarConLaMemoria();
+	fileSystem = conectarConFileSystem();
+
 	prepararSocketsServidores();
 
 	//Colas
@@ -191,7 +192,7 @@ void mostrarConfiguracion(){
 	log_debug(logger,"IP Memoria: %s \n", ip_memoria);
 	log_debug(logger,"Puerto Memoria: %i \n", puerto_memoria);
 	log_debug(logger,"IP File System: %s \n", ip_fs);
-	log_debug(logger,"Puerto File System: %i \n", puerto_fs);
+	log_debug(logger,"Puerto File System: %d \n", puerto_fs);
 	log_debug(logger,"Quantum: %i \n", quantum);
 	log_debug(logger,"Quantum Sleep: %i \n", quantum_sleep);
 	log_debug(logger,"Algoritmo: %i \n", algoritmo);
@@ -1197,7 +1198,10 @@ int conectarConLaMemoria(){
 
 int conectarConFileSystem(){
 	log_info(logger, "FILESYSTEM: Inicio de conexion");
-	un_socket socketFileSystem = conectar_a(ip_fs, (char*)puerto_fs);
+
+	printf("IP:%s\n", ip_fs);
+	printf("PUERTO:%d\n", puerto_fs);
+	un_socket socketFileSystem = conectar_a(ip_fs, puerto_fs);
 
 	if (socketFileSystem < 0){
 		log_error(logger, "No se pudo conectar con FileSystem");

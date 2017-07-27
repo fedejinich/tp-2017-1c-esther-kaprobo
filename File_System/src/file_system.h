@@ -30,7 +30,7 @@ typedef uint32_t t_num;
 
 
 typedef struct{
-	char* PUERTO_KERNEL;
+	int PUERTO_KERNEL;
 	char* PUNTO_MONTAJE;
 	int TAMANIO_BLOQUES;
 	int CANTIDAD_BLOQUES;
@@ -53,7 +53,7 @@ typedef struct{
 
 
 	t_config_FS* config;
-	char* ipFileSystem = "127.0.0.1";
+	char* ipFileSystem = "127.0.0.3";
 
 
 	t_bitarray* bitArray;

@@ -34,8 +34,7 @@ t_config_FS* cargarConfiguracion() {
 	t_config_FS * conf = malloc(sizeof(t_config_FS));
 	t_config* config = config_create(getenv("archivo_configuracion_fs"));
 
-	conf->PUERTO_KERNEL = malloc(strlen(config_get_string_value(config, "PUERTO"))+1);
-	strcpy(conf->PUERTO_KERNEL, config_get_string_value(config, "PUERTO"));
+	conf->PUERTO_KERNEL = config_get_int_value(config,"PUERTO");
 
 	conf->PUNTO_MONTAJE = malloc(strlen(config_get_string_value(config,"PUNTO_MONTAJE"))+1);
 	strcpy(conf->PUNTO_MONTAJE, config_get_string_value(config,"PUNTO_MONTAJE"));
@@ -161,23 +160,29 @@ void iniciarMetadata(){
 
 void crearServidor(){
 	log_info(logger, "Creando el socket Servidor");
-	fileSystemServer = socket_escucha(ipFileSystem,config->PUERTO_KERNEL);
-	listen(fileSystemServer, 1);
-	log_debug(logger,"Socket %d creado y escuchando", socketKernel);
-	socketKernel = aceptar_conexion(fileSystemServer);
 
-	bool resultado = esperar_handshake(socketKernel,HandshakeFileSystemKernel);
+		printf("PUERTO: %d\n", config->PUERTO_KERNEL);
 
-	if(resultado){
-		log_debug(logger,"Conexión aceptada del KERNEL %d!!", socketKernel);
 
-	}
-	else
-	{
-		log_error(logger,"Handshake fallo, se aborta conexion\n");
+		fileSystemServer = socket_escucha(ipFileSystem,config->PUERTO_KERNEL);
+		listen(fileSystemServer, 1);
+		log_debug(logger,"Socket %d creado y escuchando", socketKernel);
 
-		exit (EXIT_FAILURE);
-	}
+		socketKernel = aceptar_conexion(fileSystemServer);
+
+		bool resultado = esperar_handshake(socketKernel,HandshakeFileSystemKernel);
+
+		if(resultado){
+			log_debug(logger,"Conexión aceptada del KERNEL %d!!", socketKernel);
+
+
+		}
+		else
+		{
+			log_error(logger,"Handshake fallo, se aborta conexion\n");
+
+			exit (EXIT_FAILURE);
+		}
 
 }
 

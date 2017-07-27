@@ -29,7 +29,8 @@ void hiloNuevoPrograma(){
 	archivo = fopen(nomArchi, "r");
 	if(archivo == NULL){
 		log_error(logger, "NO SE PUDO ABRIR EL ARCHIVO");
-		exit (EXIT_FAILURE);
+		pthread_mutex_unlock(&mutexEjecuta);
+		pthread_exit(PTHREAD_CANCELED);
 	}
 
 	else
