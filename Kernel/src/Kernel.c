@@ -653,41 +653,31 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 	int pid = datosProcesoArchivo->pid;
 
 	char* path = datosProcesoArchivo->path;
-	char* barra_cero = "\0";
-	memcpy(path, barra_cero, 1);
 
 	char* permisos = datosProcesoArchivo->permisos;
 
-	if(validarPermisoDeApertura(pid, path, permisos)){
-		//se manda al fs el path
-		enviar(fileSystem, SOLICITUD_APERTURA_ARCHIVO, strlen(path) + 1, path);
+	if(existeArchivo(path)){
+		t_entradaTablaProceso* entradaLocal = malloc(sizeof(t_entradaTablaProceso));
 
-		pthread_mutex_lock(&mutexServidor);
-		t_paquete* paqueteResultadoApertura = recibir(fileSystem);
-		pthread_mutex_unlock(&mutexServidor);
+		//Se fija si esta en la tabla global, si esta, agarra el fd
+		entradaLocal->flags = permisos;
+		entradaLocal->globalFD = chequearTablaGlobal(path);
 
-		//si esta ok, se genera un nuevo FD para el archivo y se lo ingresa en la tabla de archivos del proceso
-		if(paqueteResultadoApertura->codigo_operacion == ARCHIVO_ABIERTO){
-			t_entradaTablaProceso* entradaLocal = malloc(sizeof(t_entradaTablaProceso));
-
-			//Se fija si esta en la tabla global, si esta, agarra el fd
-			entradaLocal->flags = permisos;
-			entradaLocal->globalFD = chequearTablaGlobal(path);
-
-			//Agrego la entrada a la tabla en el indice = pid, que es la tabla correspondiente
-			list_add_in_index(tablaDeArchivosPorProceso, pid, entradaLocal);
-		}
-		else{
-			//Intento crear el archivo
-
-			enviar(fileSystem, SOLICITUD_CREACION_ARCHIVO, strlen(path) + 1, path);
+		//Agrego la entrada a la tabla en el indice = pid, que es la tabla correspondiente
+		list_add_in_index(tablaDeArchivosPorProceso, pid, entradaLocal);
+	}
+	else{
+		//Intento crear el archivo
+		if(strchr(permisos, 'c') != NULL){
+			enviar(fileSystem, CREAR_ARCHIVO, strlen(path) + 1, armarPathParaEnvio(path));
 
 			pthread_mutex_lock(&mutexServidor);
 			t_paquete* paqueteResultadoCreacion = recibir(fileSystem);
 			pthread_mutex_unlock(&mutexServidor);
 
-			if(paqueteResultadoCreacion->codigo_operacion == ARCHIVO_CREADO){
-
+			if(paqueteResultadoCreacion->codigo_operacion == CREAR_ARCHIVO_OK){
+				int basura;
+				enviar(fileSystem, CREAR_ARCHIVO_OK, sizeof(int), basura);
 			}
 			else{
 				finalizarProcesoPorPID(pid, ErrorSinDefinicion);
@@ -765,9 +755,9 @@ void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, i
 		guardadoDatos->size = size;
 
 		//Hago 3 envios en orden: Datos para guardado de info, path donde debe guardarse, informacion a guardar
-		enviar(fileSystem, SOLICITUD_GUARDADO_DATOS, sizeof(t_pedidoGuardadoDatos), guardadoDatos);
-		enviar(fileSystem, SOLICITUD_GUARDADO_DATOS, strlen(path) + 1, path);
-		enviar(fileSystem, SOLICITUD_GUARDADO_DATOS, strlen(buffer) + 1, buffer);
+		enviar(fileSystem, GUARDAR_DATOS, sizeof(t_pedidoGuardadoDatos), guardadoDatos);
+		enviar(fileSystem, GUARDAR_DATOS, strlen(path) + 1, armarPathParaEnvio(path));
+		enviar(fileSystem, GUARDAR_DATOS, strlen(buffer) + 1, buffer);
 
 		//Espero la respuesta del guardado de info
 		pthread_mutex_lock(&mutexServidor);
@@ -809,13 +799,13 @@ bool validarPermisoDeApertura(int pid, char* path, char* permisos){
 bool existeArchivo(char* path){
 	bool resultado = false;
 
-	enviar(fileSystem, VALIDAR_ARCHIVO, sizeof(path), path);
+	enviar(fileSystem, VALIDAR_ARCHIVO, sizeof(path), armarPathParaEnvio(path));
 
 	pthread_mutex_lock(&mutexServidor);
 	t_paquete* paqueteResultado = recibir(fileSystem);
 	pthread_mutex_unlock(&mutexServidor);
 
-	if(paqueteResultado->codigo_operacion == ARCHIVO_EXISTE)
+	if(paqueteResultado->codigo_operacion == VALIDAR_ARCHIVO_OK)
 		resultado = true;
 
 	return resultado;
@@ -862,16 +852,27 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 
 	char* permisos = archivo->flags;
 
-	if(strchr(permisos, 'r') != NULL){
-		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, sizeof(datos), datos);
+	//Path donde debe escribirse
+	t_entradaTablaGlobal* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(archivo);
+	char* path = entradaTablaGlobal->path;
+
+	if(strchr(permisos, 'r') != NULL && existeArchivo(path)){
+		t_pedidoGuardadoDatos* obtencionDatos = malloc(sizeof(t_pedidoGuardadoDatos));
+
+		//Datos Para la escritura
+		obtencionDatos ->offset = archivo->puntero;
+		obtencionDatos ->size = datos->tamanio;
+
+		enviar(fileSystem, OBTENER_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos );
+		enviar(fileSystem, OBTENER_DATOS, strlen(path) + 1, armarPathParaEnvio(path));
 
 		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paquete = recibir(fileSystem);
 		pthread_mutex_unlock(&mutexServidor);
 
-		char* buffer = malloc(paquete->tamanio);
-		buffer = (char*)(paquete->data);
-		enviar(socketActivo, OBTENER_DATOS, datos->tamanio, buffer);
+		char* datosLeidos = malloc(paquete->tamanio);
+		datosLeidos = (char*)(paquete->data);
+		enviar(socketActivo, OBTENER_DATOS, paquete->tamanio, datosLeidos);
 	}
 	else{
 		finalizarProcesoPorPID(pid, IntentoDeLecturaSinPermisos);
@@ -921,6 +922,12 @@ t_entradaTablaGlobal* obtenerEntradaTablaGlobalDeArchivos(t_entradaTablaProceso*
 void borrarArchivoDeTabla(int pid, int fd){
 	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
 	list_remove(tablaDeUnProceso, fd);
+}
+
+char* armarPathParaEnvio(char* path){
+	char* retorno;
+
+	return retorno;
 }
 
 
