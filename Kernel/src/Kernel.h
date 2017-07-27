@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/config.h>
-#include <Commons_Kaprobo/Commons_Kaprobo.h>
-
+//#include <Commons_Kaprobo/Commons_Kaprobo.h>
+#include "Commons_Kaprobo_Consola.h"
 
 #include <pthread.h>
 #include <commons/log.h>
