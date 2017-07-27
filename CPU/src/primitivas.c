@@ -614,37 +614,49 @@ void liberarEnHeap(t_puntero puntero) {
 * @return	El valor del descriptor de archivo abierto por el sistema
 */
 t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flags){
-	//Defino variables locales
-	t_descriptor_archivo decriptorArchivo;
-	t_envioDeDatosKernelFSAbrir* paquete;
+	log_info(logger, "Primitiva Abrir archivo %s", direccion);
+
+	char* nombreArchi = string_new();
+
+	string_append(&nombreArchi, direccion);
 	char* permisos = string_new();
 	int pid;
+
+
 	int resultado;
-	//Obtengo el pid
+
 	pid = pcb->pid;
-	//Genero la cadena de permisos
+
 	if(flags.creacion){
-		string_append(&permisos,'c');
+		printf("flag c\n");
+		string_append(&permisos,"c");
 	}
 	if(flags.escritura){
-		string_append(&permisos,'r');
+		string_append(&permisos,"w");
+		printf("flag r\n");
 	}
 	if(flags.lectura){
-		string_append(&permisos,'w');
+		string_append(&permisos,"r");
+		printf("flag w\n");
 	}
-	//Cargo los datos en el paquete
-	paquete->pid = pid;
-	paquete->path = direccion;
-	paquete->permisos = permisos;
-	//Envio los datos a kernel con el codigo
+
+	log_info(logger, "Permisos del archivo %s: %s",nombreArchi, permisos);
+	printf("Strlen: %d\n", strlen(nombreArchi));
 	log_info(logger, "Enviando datos al Kernel para abrir archivo con el PID %d.",pid);
-	enviar(kernel,ABRIR_ARCHIVO,sizeof(t_envioDeDatosKernelFSAbrir),paquete);
-	//recibo el resultado
+
+	enviar(kernel,ABRIR_ARCHIVO,strlen(nombreArchi)+1, nombreArchi);
+	enviar(kernel,pid, strlen(permisos)+1, permisos);
+
+
+
+
+
 	resultado = recibir(kernel);
 	//Analizo el resultado
-	if(resultado != ARCHIVO_ABIERTO){
+	if(resultado != ABRIR_ARCHIVO){
 		//Termina el proceso porque no se pudo abrir arhcivo
 		log_info(logger, "Hubo un problema intentando abrir archivo con el PID %d.",pid);
+		abortadoHeap =1;//cambiar despues nombre
 		return 0;
 	}
 	//Deberia recibir de kernel el arch.

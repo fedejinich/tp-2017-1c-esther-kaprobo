@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
 
 				}
 				if(abortadoHeap){
-					log_warning(logger, "El proceso se aborto por HEAP");
+					log_warning(logger, "El proceso se aborto ");
 					destruirPCB(pcb);
 				}
 

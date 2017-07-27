@@ -651,18 +651,36 @@ void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 
 
 void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
-	//en el paquete esta el path del archivo y los permisos de apertura
-	t_envioDeDatosKernelFSAbrir* datosProcesoArchivo = paquete->data;
-	int pid = datosProcesoArchivo->pid;
+	char* path = (char*)paquete->data;
 
-	char* path = datosProcesoArchivo->path;
+	t_paquete* paq2= malloc(sizeof(t_paquete));
 
-	char* permisos = datosProcesoArchivo->permisos;
+	pthread_mutex_lock(&mutexServidor);
+	paq2 = recibir(socketActivo);
+	pthread_mutex_unlock(&mutexServidor);
+
+	int pid = paq2->codigo_operacion;
+	char* permisos = (char*)paq2->data;
+
+	log_info(logger, "EL PID: %d, nos solicita abrir el archivo %s, con permisos %s", pid, path, permisos);
+
+
+	liberar_paquete(paq2);
+
+
 
 	if(existeArchivo(path)){
+
+		/*
+		 *
+		 *
+		 *
+		 *
+		 * VEEEEEER ACTUALIZAR TABLAS
+		 */
 		t_entradaTablaProceso* entradaLocal = malloc(sizeof(t_entradaTablaProceso));
 
-		//Se fija si esta en la tabla global, si esta, agarra el fd
+
 		entradaLocal->flags = permisos;
 		entradaLocal->globalFD = chequearTablaGlobal(path);
 
@@ -670,23 +688,39 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 		list_add_in_index(tablaDeArchivosPorProceso, pid, entradaLocal);
 	}
 	else{
-		//Intento crear el archivo
-		if(strchr(permisos, 'c') != NULL){
-			enviar(fileSystem, CREAR_ARCHIVO, strlen(path) + 1, armarPathParaEnvio(path));
+		log_info(logger, "Se intentara Crear el archivo");
+
+		if(string_contains(permisos, "c")){
+			enviar(fileSystem, CREAR_ARCHIVO, strlen(path) + 1, path);
 
 			pthread_mutex_lock(&mutexServidor);
 			t_paquete* paqueteResultadoCreacion = recibir(fileSystem);
 			pthread_mutex_unlock(&mutexServidor);
 
 			if(paqueteResultadoCreacion->codigo_operacion == CREAR_ARCHIVO_OK){
+				log_debug(logger, "Se creo el archivo correctamente");
+				/*
+				 *
+				 *
+				 * VEEEEEEER ACTUALIZAR TABLAS
+				 */
+
 				int basura;
-				enviar(fileSystem, CREAR_ARCHIVO_OK, sizeof(int), basura);
+				enviar(socketActivo, ABRIR_ARCHIVO, sizeof(int), basura);
 			}
 			else{
-				finalizarProcesoPorPID(pid, ErrorSinDefinicion);
-				enviar(socketActivo, ARCHIVO_NO_SE_PUDO_ABRIR, sizeof(int), paqueteResultadoCreacion->codigo_operacion);
+				log_warning(logger, "No se pudo crear el archivo");
+				finalizarProcesoPorPID(pid,ErrorSinDefinicion );
+				enviar(socketActivo, ARCHIVO_NO_SE_PUDO_ABRIR, sizeof(int), &pid);
 				return;
 			}
+		}
+		else{
+			log_info(logger, "El proceso no tiene permisos para crear archivo");
+			finalizarProcesoPorPID(pid, ArchivoInexistente);
+			enviar(socketActivo, ARCHIVO_NO_SE_PUDO_ABRIR, sizeof(int), &pid);
+			return;
+
 		}
 	}
 }
@@ -800,17 +834,22 @@ bool validarPermisoDeApertura(int pid, char* path, char* permisos){
 }
 
 bool existeArchivo(char* path){
+	log_info(logger, "Verifico que el archivo exista en FS");
 	bool resultado = false;
 
-	enviar(fileSystem, VALIDAR_ARCHIVO, sizeof(path) + 1, armarPathParaEnvio(path));
+	enviar(fileSystem, VALIDAR_ARCHIVO, strlen(path)+1, path);
 
 	pthread_mutex_lock(&mutexServidor);
 	t_paquete* paqueteResultado = recibir(fileSystem);
 	pthread_mutex_unlock(&mutexServidor);
 
-	if(paqueteResultado->codigo_operacion == VALIDAR_ARCHIVO_OK)
+	if(paqueteResultado->codigo_operacion == VALIDAR_ARCHIVO_OK){
 		resultado = true;
+		log_info(logger, "El archivo existe en FS");
+		return resultado;
+	}
 
+	log_info(logger, "El archivo no existe en FS");
 	return resultado;
 }
 
@@ -1716,32 +1755,34 @@ void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
 
 void finalizarProcesoPorPID(int pid, int exitCode){
 
-	printf("PID: %d \n\n", pid);
-	printf("EXIT: %d \n\n", exitCode);
+
 	t_proceso* proceso;
 	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
 	if(colaDelProceso == NULL){
-		printf("IF COLADELPROCESO==NULL\n");
+
 		proceso = verSiEstaBloqueado(pid);
 	}
 	else{
 		if((int)colaDelProceso ==1){
-			printf("IF COLAPROCESO ==1\n");
+
 			proceso = obtenerProcesoPorPID(cola_exec, pid);
 
 			if(exitCode == FinalizacionPorConsolaDeKernel){
-				printf("IF FINALIZACION CONSOLA KERNEL\n");
+
 				enviar(proceso->socketCPU, ABORTADO_CONSOLA_KERNEL, sizeof(int),&proceso->pcb->pid);
+				proceso = NULL;
 			}
 			else{
-				printf("FINALIZACION CONSOLA\n");
-				enviar(proceso->socketCPU, ABORTADO_CONSOLA, sizeof(int),&proceso->pcb->pid);
+				if(exitCode == DesconexionDeConsola){
+					enviar(proceso->socketCPU, ABORTADO_CONSOLA, sizeof(int),&proceso->pcb->pid);
+					proceso=NULL;
+				}
 			}
-			proceso = NULL;
+
 
 		}
 		else{
-			printf("ELIMINAR PROCESO DE COLA\n");
+
 			pthread_mutex_lock(&mutex_new);
 			pthread_mutex_lock(&mutex_ready);
 			proceso = eliminarProcesoDeCola(colaDelProceso, pid);
@@ -1751,12 +1792,12 @@ void finalizarProcesoPorPID(int pid, int exitCode){
 	}
 
 	if(proceso != NULL){
-		printf("PROCESO != NULL\n");
+
 		finalizarProceso(proceso, exitCode);
-		printf("El proceso %i se ha finalizado.\n", pid);
+
 	}
 	else{
-		printf("El proceso %d ya fue finalizado o no se encuentra.\n", pid);
+		log_warning(logger,"El proceso %d ya fue finalizado o no se encuentra.\n", pid);
 	}
 	return;
 
