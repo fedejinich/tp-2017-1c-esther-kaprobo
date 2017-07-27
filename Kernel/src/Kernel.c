@@ -879,7 +879,7 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 	}
 }
 
-void borrarArchivo(int* socketActivo, t_paquete* paquete){
+void cerrarArchivo(int* socketActivo, t_paquete* paquete){
 	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
 	int pid = datos->pid;
 	int fd = datos->fd;
@@ -902,9 +902,6 @@ void borrarArchivo(int* socketActivo, t_paquete* paquete){
 		//Borrar la entrada de la tabla global
 		list_remove(tablaGlobalDeArchivos, entradaTablaProceso->globalFD);
 		log_warning(logger, "Archivo %i eliminado de la tabla de archivos globales", entradaTablaProceso->globalFD);
-
-		//Avisar a FS que cierre el archivo
-		enviar(fileSystem, BORRAR_ARCHIVO, sizeof(entradaTablaGlobal->path), entradaTablaGlobal->path);
 	}
 }
 
