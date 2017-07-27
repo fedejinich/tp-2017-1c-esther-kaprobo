@@ -1,19 +1,20 @@
 
 #include "file_system.h"
-int32_t PUERTO_KERNEL;
-char* PUERTO_MONTAJE;
-char* MAGIC_NUMBER;
-int32_t TAMANIO_BLOQUES;
-int32_t CANTIDAD_BLOQUES;
+
 
 int main() {
 
 
 	crearArchivoLog();
-	cargarConfiguracion();
-	crearBitArray();
-	crearServidor();
-	atenderPedidos();
+	config = cargarConfiguracion();
+	iniciarMetadata();
+	//crearServidor();
+	//atenderPedidos();
+
+	free(config->PUERTO_KERNEL);
+	free(config->PUNTO_MONTAJE);
+	free(config);
+
 }
 
 void crearArchivoLog(){
@@ -21,107 +22,161 @@ void crearArchivoLog(){
 		log_info(logger, "Iniciando File_System. \n");
 	}
 
-void cargarConfiguracion() {
-
+t_config_FS* cargarConfiguracion() {
 	log_info(logger,"Cargando archivo de configuracion 'file_system.config'...\n");
+
+
+	t_config_FS * conf = malloc(sizeof(t_config_FS));
 	t_config* config = config_create(getenv("archivo_configuracion_fs"));
-	t_config* config2 = config_create(getenv("metadata"));
 
-	PUERTO_KERNEL = config_get_int_value(config, "PUERTO");
-	PUERTO_MONTAJE = config_get_string_value(config, "PUNTO_MONTAJE");
+	conf->PUERTO_KERNEL = malloc(strlen(config_get_string_value(config, "PUERTO"))+1);
+	strcpy(conf->PUERTO_KERNEL, config_get_string_value(config, "PUERTO"));
 
-	MAGIC_NUMBER = config_get_string_value(config2, "MAGIC_NUMBER");
-	CANTIDAD_BLOQUES = config_get_int_value(config2, "CANTIDAD_BLOQUES");
-	TAMANIO_BLOQUES = config_get_int_value(config2, "TAMANIO_BLOQUES");
+	conf->PUNTO_MONTAJE = malloc(strlen(config_get_string_value(config,"PUNTO_MONTAJE"))+1);
+	strcpy(conf->PUNTO_MONTAJE, config_get_string_value(config,"PUNTO_MONTAJE"));
+	if(!string_ends_with(conf->PUNTO_MONTAJE, "/")) string_append(&conf->PUNTO_MONTAJE, "/");
 
-	printf("CANTIDAD:%d\n", CANTIDAD_BLOQUES);
+	conf->TAMANIO_BLOQUES = config_get_int_value(config,"TAMANIO_BLOQUES");
+	conf->CANTIDAD_BLOQUES = config_get_int_value(config,"CANTIDAD_BLOQUES");
 
-	if(config_has_property(config,"PUERTO") && config_has_property(config,"PUNTO_MONTAJE") && config_has_property(config2,"MAGIC_NUMBER") && config_has_property(config2,"CANTIDAD_BLOQUES") && config_has_property(config2,"TAMANIO_BLOQUES"))
-		log_info(logger,"Archivo de configuracion cargado correctamente\n");
-	else {
-		log_error(logger,"Error al cargar archivo de configuracion");
-		if(!config_has_property(config,"PUERTO"))
-			log_error(logger,"No esta setteado el PUERTO\n");
-		if(!config_has_property(config,"PUNTO_MONTAJE"))
-			log_error(logger,"No esta setteado el Puerto Montaje: %s \n",PUERTO_MONTAJE);
-		if(!config_has_property(config2, "MAGIC_NUMBER"))
-			log_error(logger, "NO ESTA SETTEADO EL MAGIC NUMBER");
-		if(!config_has_property(config2, "CANTIDAD_BLOQUES"))
-			log_error(logger, "NO ESTA SETTEADO CANTIDAD_BLOQUES");
-		if(!config_has_property(config2, "TAMANIO_BLOQUES"))
-			log_error(logger, "NO ESTA SETTEADO TAMANIO_BLOQUES");
+	config_destroy(config);
+
+	return conf;
+
+}
+
+void iniciarMetadata(){
+	pathMetadata = string_new();
+	string_append(&pathMetadata, config->PUNTO_MONTAJE);
+	log_info(logger, "Path Metadata %s", pathMetadata);
+	string_append(&pathMetadata, "Metadata");
+	log_info(logger, "Path Metadata %s", pathMetadata);
+
+	pathBloques=string_new();
+	string_append(&pathBloques, config->PUNTO_MONTAJE);
+	string_append(&pathBloques, "Bloques");
+	log_info(logger, "Path Bloques %s", pathBloques);
+
+	pathArchivos = string_new();
+	string_append(&pathArchivos, config->PUNTO_MONTAJE);
+	string_append(&pathArchivos, "Archivos");
+
+	mkdirRecursivo(config->PUNTO_MONTAJE);
+	mkdir(pathMetadata, 0777);
+	mkdir(pathBloques, 0777);
+	mkdir(pathArchivos, 0777);
+
+	char *p = string_new();
+	string_append(&p, pathMetadata);
+	string_append(&p, "/Metadata.bin");
+
+	if(existeArchivo(p)){
+		t_config* configAux = config_create(p);
+		int bloques = config_get_int_value(configAux, "CANTIDAD_BLOQUES");
+		int size = config_get_int_value(configAux, "TAMANIO_BLOQUES");
+		if(bloques != config->CANTIDAD_BLOQUES || size != config->TAMANIO_BLOQUES){
+			log_error(logger, "Ya Existe un FS en ese punto de montaje con valores distintos");
+			exit(1);
+		}
+		config_destroy(configAux);
+	}
+	free(p);
+
+	pathMetadataArchivo = string_new();
+	string_append(&pathMetadataArchivo, pathMetadata);
+	string_append(&pathMetadataArchivo, "/Metadata.bin");
+
+	FILE * metadata = fopen(pathMetadataArchivo, "w");
+	fprintf(metadata, "TAMANIO_BLOQUES=%d\n", config->TAMANIO_BLOQUES);
+	fprintf(metadata, "CANTIDAD_BLOQUES=%d\n", config->CANTIDAD_BLOQUES);
+	fprintf(metadata, "MAGIC_NUMBER=SADICA\n");
+	fclose(metadata);
+
+	int sizeBitArray = config->CANTIDAD_BLOQUES / 8;
+	if((sizeBitArray %8) !=0)
+		sizeBitArray++;
+
+	pathMetadataBitarray = string_new();
+	string_append(&pathMetadataBitarray, pathMetadata);
+	string_append(&pathMetadataBitarray, "/Bitmap.bin");
+
+	if(existeArchivo(pathMetadataBitarray)){
+		FILE * bitmap = fopen(pathMetadataBitarray, "rb");
+
+		struct stat stats;
+		fstat(fileno(bitmap), &stats);
+
+		char* data = malloc(stats.st_size);
+		fread(data, stats.st_size, 1, bitmap);
+
+		fclose(bitmap);
+
+		bitArray = bitarray_create_with_mode(data, stats.st_size, LSB_FIRST);
+
+	}
+	else{
+		bitArray = bitarray_create_with_mode(string_repeat('\0', sizeBitArray), sizeBitArray, LSB_FIRST);
+
+		FILE * bitmap = fopen(pathMetadataBitarray, "w");
+		fwrite(bitArray->bitarray, sizeBitArray, 1, bitmap);
+		fclose(bitmap);
 	}
 
-	iniciarMetadataMap();
-}
+	int j;
+	FILE* bloque;
 
+	for(j=0; j<config->CANTIDAD_BLOQUES; j++){
+		char* pathBloque = string_new();
+		string_append(&pathBloque, pathBloques);
+		string_append(&pathBloque, "/");
+		string_append(&pathBloque, string_itoa(j));
+		string_append(&pathBloque, ".bin");
 
-void iniciarMetadataMap(){
-	int size;
-
-	char* nombreArchivo = string_new();
-	string_append(&nombreArchivo, PUERTO_MONTAJE);
-	string_append(&nombreArchivo, "Metadata/Bitmap.bin");
-
-	int bitmap = open(nombreArchivo, O_RDWR);
-	struct stat mystat;
-
-	if(fstat(bitmap, &mystat)<0)
-		close(bitmap);
-
-	mmapDeBitmap = mmap(NULL, mystat.st_size, PROT_WRITE | PROT_READ, MAP_SHARED, bitmap, 0);
-	close(bitmap);
-
-}
-
-void crearBitArray(){
-	printf("Entre\n");
-
-	bitArray = bitarray_create_with_mode(mmapDeBitmap, (TAMANIO_BLOQUES * CANTIDAD_BLOQUES)/(8 * TAMANIO_BLOQUES), MSB_FIRST);
-
-	printf("1\n");
-
-	char* archi = string_new();
-	printf("2\n");
-	string_append(&archi, PUERTO_MONTAJE);
-	printf("3\n");
-	string_append(&archi, "Metadata/Bitmap.bin");
-	printf("4\n");
-	FILE *f;
-	printf("5\n");
-	f = open(archi, "wr+");
-	printf("6\n");
-	int32_t i;
-	printf("7\n");
-	printf("CANTIDAD: %d", CANTIDAD_BLOQUES);
-	for(i=0; i < CANTIDAD_BLOQUES; i++){
-		fputc(1,f);
+		if(!existeArchivo(pathBloque)){
+			bloque = fopen(pathBloque, "w");
+			fwrite(string_repeat('\0', config->TAMANIO_BLOQUES), config->TAMANIO_BLOQUES, 1, bloque);
+			fclose(bloque);
+		}
+		free(pathBloque);
 	}
-	printf("8\n");
-	fclose(f);
 
-	log_info(logger, "El tamano del bitarray es : %d ", bitarray_get_max_bit(bitArray));
-	return;
+	log_debug(logger, "Se finalizo la creacion de Metadata");
+
+
+
+
+
+}
+
+void mkdirRecursivo(char* path){
+
+	char tmp[256];
+    char *p = NULL;
+    size_t len;
+
+    snprintf(tmp, sizeof(tmp),"%s",path);
+    len = strlen(tmp);
+    if(tmp[len - 1] == '/')
+        tmp[len - 1] = 0;
+    for(p = tmp + 1; *p; p++)
+        if(*p == '/') {
+        	*p = 0;
+            mkdir(tmp, 0777);
+            *p = '/';
+        }
+    mkdir(tmp, 0777);
 }
 
 
+bool existeArchivo(char* path){
 
-int existeArchivo(char* path){
-
-	char* rutaMetadata = string_new();
-	string_append(&rutaMetadata, PUERTO_MONTAJE);
-	string_append(&rutaMetadata, "/Archivos");
-	string_append(&rutaMetadata, path);
-	log_info(logger, "rutaMetadata %s", rutaMetadata);
-
-	int fd = open(rutaMetadata, O_RDWR);
-
-	if(fd > 0){
-			close(fd);
-			return 1;
-		}else{
-			close(fd);
-			return 0;
+	FILE * archi = fopen(path, "r");
+	if(archi != NULL){
+		fclose(archi);
+		return true;
+	}
+	else{
+		return false;
 	}
 }
 /*
@@ -129,7 +184,7 @@ void leerBitMap(){
 	int fd;
 	char *data;
 	struct stat sbuf;
-	char* rutaBitMap = string_duplicate(PUERTO_MONTAJE);
+	char* rutaBitMap = string_duplicate(PUNTO_MONTAJE);
 	string_append(&rutaBitMap, "/Metadata/Bitmap.bin"); //Como crear el Bitmap.bin
 	log_info(logger, "rutaBitMap %s", rutaBitMap);
 
@@ -156,11 +211,23 @@ void leerBitMap(){
 */
 
 
+
+/*
+ *
+ *
+ *
+ *
+ */
+
+
+
+/*
+
 void crearArchivo(void* path){
 	int nroBloque = -1;
 	int i;
 	char* rutaMetadata = string_new();
-	string_append(&rutaMetadata, PUERTO_MONTAJE);
+	string_append(&rutaMetadata, PUNTO_MONTAJE);
 	string_append(&rutaMetadata, "/Archivos");
 	string_append(&rutaMetadata, path);
 	log_info(logger, "rutaMetadata %s", rutaMetadata);
@@ -192,7 +259,7 @@ void crearArchivo(void* path){
 void borrarArchivo(void* path){
 	int i;
 	char* rutaMetadata = string_new();
-	string_append(&rutaMetadata, PUERTO_MONTAJE);
+	string_append(&rutaMetadata, PUNTO_MONTAJE);
 	string_append(&rutaMetadata, "/Archivos");
 	string_append(&rutaMetadata, path);
 	log_info(logger, "rutaMetadata %s", rutaMetadata);
@@ -223,7 +290,7 @@ char* leerBloquesArchivo(void* path, int offset, int size){
 	char* data = malloc(size+1), *tmpdata, *pathBloque;
 	int i, tmpoffset = 0;
 	char* rutaMedatada = string_new();
-	string_append(&rutaMedatada, PUERTO_MONTAJE);
+	string_append(&rutaMedatada, PUNTO_MONTAJE);
 	string_append(&rutaMedatada, "/Archivos");
 	string_append(&rutaMedatada, path);
 
@@ -242,7 +309,7 @@ char* leerBloquesArchivo(void* path, int offset, int size){
 
 	for(i = offset / TAMANIO_BLOQUES; i * TAMANIO_BLOQUES < tamanio; i ++, tmpoffset += TAMANIO_BLOQUES){
 		pathBloque = string_new();
-		string_append(&pathBloque, PUERTO_MONTAJE);
+		string_append(&pathBloque, PUNTO_MONTAJE);
 		string_append_with_format(&pathBloque, "/Bloques/%s.bin", bloques[i]);
 		tmpdata = leerArchivo(pathBloque);
 
@@ -290,7 +357,7 @@ void escribirBloquesArchivo(void* path, int offset, int size, char* buffer){
 	char *tmpdata, *pathBloque;
 	int i, tmpoffset = 0;
 	char* rutaMetadata = string_new();
-	string_append(&rutaMetadata, PUERTO_MONTAJE);
+	string_append(&rutaMetadata, PUNTO_MONTAJE);
 	string_append(&rutaMetadata, "/Archivos");
 	string_append(&rutaMetadata, path);
 	log_info(logger, "rutaMetadata %s", rutaMetadata);
@@ -308,7 +375,7 @@ void escribirBloquesArchivo(void* path, int offset, int size, char* buffer){
 
 	for(i = offset / TAMANIO_BLOQUES; i * TAMANIO_BLOQUES < tamanio; i ++, tmpoffset += TAMANIO_BLOQUES){
 		pathBloque = string_new();
-		string_append(&pathBloque, PUERTO_MONTAJE);
+		string_append(&pathBloque, PUNTO_MONTAJE);
 		string_append_with_format(&pathBloque, "/Bloques/%s.bin", bloques[i]);
 		tmpdata = leerArchivo(pathBloque);
 
@@ -469,4 +536,4 @@ void atenderPedidos(){
 
 }
 
-
+*/

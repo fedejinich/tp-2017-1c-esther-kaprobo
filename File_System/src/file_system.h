@@ -27,11 +27,23 @@
 
 typedef uint32_t t_num;
 
+
+
+typedef struct{
+	char* PUERTO_KERNEL;
+	char* PUNTO_MONTAJE;
+	int TAMANIO_BLOQUES;
+	int CANTIDAD_BLOQUES;
+
+}t_config_FS;
+
+
+
 /**
  * Variables
  */
 
-	unsigned char* mmapDeBitmap;
+	char* pathBloques, *pathArchivos, *pathMetadata, *pathMetadataArchivo, *pathMetadataBitarray;
 
 
 	//Log
@@ -39,6 +51,8 @@ typedef uint32_t t_num;
 
 	//Configuracion
 
+
+	t_config_FS* config;
 	char* ipFileSystem = "127.0.0.1";
 
 
@@ -61,8 +75,9 @@ typedef uint32_t t_num;
 
 	//Configuracion
 
-	void cargarConfiguracion();
-	void iniciarMetadataMap();
+	t_config_FS* cargarConfiguracion();
+	void iniciarMetadata();
+	void mkdirRecursivo(char* path);
 
 	//Log
 	void crearArchivoLog();
@@ -74,7 +89,7 @@ typedef uint32_t t_num;
 
 
 	//Archivos
-	int existeArchivo(char* path);
+	bool existeArchivo(char* path);
 	void crearArchivo(void* path);
 	void borrarArchivo(void* path);
 
