@@ -37,20 +37,26 @@
 typedef struct __attribute__((packed))t_entradaTablaGlobalArchivos{
 	char* path;
 	int open;
-}t_entradaTablaGlobalArchivos;
+}t_entradaTablaGlobal;
 
 typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
 	int pid;
-	t_list* tablaDeUnProceso; //Listado de t_archivos, conformando la tabla de procesos
-}t_entradaTablaDeArchivosPorProceso;
+	t_list* tablaDeUnProceso;
+}t_tablaArchivosPorProceso;
 
 typedef struct __attribute__((packed))t_entradaTablaDeArchivosPorProceso{
 	t_descriptor_archivo fd;
 	char* flags;
 	t_descriptor_archivo globalFD;
 	int puntero;
-}t_archivo;
+}t_entradaTablaProceso;
 
+/*
+typedef struct __attribute__((packed))t_tablaDeArchivosDeUnProceso{
+	char* flags;
+	int globalFD;
+}t_tablaDeArchivosDeUnProceso;
+*/
 //VARIABLES
 
 //Globales

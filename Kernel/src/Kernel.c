@@ -666,7 +666,7 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 
 		//si esta ok, se genera un nuevo FD para el archivo y se lo ingresa en la tabla de archivos del proceso
 		if(resultado == ARCHIVO_ABIERTO){
-			t_tablaDeArchivosDeUnProceso* entradaLocal = malloc(sizeof(t_tablaDeArchivosDeUnProceso));
+			t_entradaTablaProceso* entradaLocal = malloc(sizeof(t_entradaTablaProceso));
 
 			//Se fija si esta en la tabla global, si esta, agarra el fd
 			entradaLocal->flags = permisos;
@@ -773,7 +773,7 @@ int chequearTablaGlobal(char* path){
 		fd = indiceEntrada;
 	}
 	else{
-		t_entradaTablaGlobalArchivos* entrada = malloc(sizeof(t_entradaTablaGlobalArchivos));
+		t_entradaTablaGlobal* entrada = malloc(sizeof(t_entradaTablaGlobal));
 		entrada->path = path;
 		entrada->open = 1;
 		list_add(tablaGlobalDeArchivos, entrada);
@@ -784,8 +784,8 @@ int chequearTablaGlobal(char* path){
 
 int buscarEntradaEnTablaGlobal(char* path){
 	int a;
-	t_entradaTablaGlobalArchivos* entrada;
-	while(entrada = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, a)){
+	t_entradaTablaGlobal* entrada;
+	while(entrada = (t_entradaTablaGlobal*)list_get(tablaGlobalDeArchivos, a)){
 		if (entrada->path == path){
 			entrada->open++;
 			return a;
@@ -800,12 +800,10 @@ void accederArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 	int pid = datos->pid;
 	int fd = datos->fd;
 
-	t_tablaDeArchivosDeUnProceso* tablaDeUnProceso = malloc(sizeof(t_tablaDeArchivosDeUnProceso));
+	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
+	t_entradaTablaProceso* archivo = list_get(tablaDeUnProceso, fd);
 
-	tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
-	t_tablaDeArchivosDeUnProceso* entrada = list_get(tablaDeUnProceso, fd);
-
-	char* permisos = entrada->flags;
+	char* permisos = archivo->flags;
 
 	int codigoOperacion;
 	int exitCode;
@@ -831,10 +829,6 @@ void accederArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 	else{
 		finalizarProcesoPorPID(pid, exitCode);
 	}
-	//hay que traducir ese FD a un path
-	//realizar peticion de lectura al fs con valores de path, offset y tamaño de lo que se desea leer
-	//recibir lo que se queria leer
-	//luego, enviar a cpu lo leido, o informar de error
 }
 
 void cerrarArchivo(int* socketActivo, t_paquete* paquete){
@@ -842,8 +836,8 @@ void cerrarArchivo(int* socketActivo, t_paquete* paquete){
 	int pid = datos->pid;
 	int fd = datos->fd;
 
-	t_tablaDeArchivosDeUnProceso* entradaTablaProceso = obtenerEntradaTablaArchivosDelProceso(pid, fd);
-	t_entradaTablaGlobalArchivos* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(entradaTablaProceso);
+	t_entradaTablaProceso* entradaTablaProceso = obtenerEntradaTablaArchivosDelProceso(pid, fd);
+	t_entradaTablaGlobal* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(entradaTablaProceso);
 
 	if(entradaTablaGlobal->open > 1){
 		//Borrar la entrada de la tabla del proceso
@@ -866,21 +860,19 @@ void cerrarArchivo(int* socketActivo, t_paquete* paquete){
 	}
 }
 
-t_tablaDeArchivosDeUnProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd){
-	t_tablaDeArchivosDeUnProceso* tablaDeUnProceso = malloc(sizeof(t_tablaDeArchivosDeUnProceso));
-	tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
-	t_tablaDeArchivosDeUnProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso, fd);
+t_entradaTablaProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd){
+	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
+	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso, fd);
 
 	return entradaTablaDelProceso;
 }
 
-t_entradaTablaGlobalArchivos* obtenerEntradaTablaGlobalDeArchivos(t_tablaDeArchivosDeUnProceso* entradaTablaDelProceso){
+t_entradaTablaGlobal* obtenerEntradaTablaGlobalDeArchivos(t_entradaTablaProceso* entradaTablaDelProceso){
 	return list_get(tablaGlobalDeArchivos, entradaTablaDelProceso->globalFD);
 }
 
 void borrarArchivoDeTabla(int pid, int fd){
-	t_tablaDeArchivosDeUnProceso* tablaDeUnProceso = malloc(sizeof(t_tablaDeArchivosDeUnProceso));
-	tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
+	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
 	list_remove(tablaDeUnProceso, fd);
 }
 
