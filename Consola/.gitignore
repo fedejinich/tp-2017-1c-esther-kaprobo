@@ -1,7 +1,11 @@
 .project
 .cproject
 
-/Debug/
-!/Debug/makefile
+
+
+/Debug/src/
+
+/Debug/Consola
+
 *.log
 /.settings

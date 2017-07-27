@@ -1,0 +1,5 @@
+begin
+    !pasadas=!pasadas + 1
+    prints n !pasadas
+    wait mutexArch
+end
