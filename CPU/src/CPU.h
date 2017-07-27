@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/config.h>
-#include <Commons_Kaprobo/Commons_Kaprobo.h>
+//#include <Commons_Kaprobo/Commons_Kaprobo.h>
 #include "primitivas.h"
-#include <Commons_Kaprobo/Estructuras.h>
+//#include <Commons_Kaprobo/Estructuras.h>
 #include "auxiliaresPrimitivas.h"
 #include <pthread.h>
 #include <parser/parser.h>
@@ -15,6 +15,8 @@
 #include <commons/log.h>
 #include <math.h>
 #include <sys/ioctl.h>
+
+#include "Commons_Kaprobo_Consola.h"
 
 #define ARCHIVOLOG "CPU.log"
 

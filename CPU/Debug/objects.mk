@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lCommons_Kaprobo -lcommons -lparser-ansisop
+LIBS := -lcommons -lparser-ansisop
 

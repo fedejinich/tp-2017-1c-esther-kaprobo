@@ -26,7 +26,7 @@ endif
 all: CPU
 
 dependents:
-	-cd /home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) all
+	-cd /home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) clean all
 
 # Tool invocations
 CPU: $(OBJS) $(USER_OBJS) /home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so
