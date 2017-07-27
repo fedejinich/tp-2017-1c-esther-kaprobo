@@ -61,8 +61,7 @@ typedef struct{
 	//Semaforo
 	pthread_mutex_t solicitud_mutex;
 
-	//Sockets
-	t_paquete* paquete;
+
 
 	un_socket fileSystemServer; //identificador del socket del file_system que recibe conexiones
 	un_socket socketKernel;
@@ -87,15 +86,31 @@ typedef struct{
 	void crearServidor();
 	void atenderPedidos();
 
+	//Pedidos
+
+	void validarArchivo(t_paquete* paquete);
+	void crearArchivo(t_paquete* paquete);
+	void borrarArchivo(t_paquete* paquete);
+	void obtenerDatos(t_paquete* paquete);
+
+
+
+
+
+
+
+
 
 	//Archivos
 	bool existeArchivo(char* path);
-	void crearArchivo(void* path);
-	void borrarArchivo(void* path);
 
-	void leerBitMap();
-	char* leerBloquesArchivo(void* path, int offset, int size);
-	void escribirBloquesArchivo(void* path, int offset, int size, char* buffer);
-	char* leerArchivo(void* path);
+	int buscarBloqueLibre();
+	void escribirValorBitarray(bool valor, int pos);
+	char* generarPathArchivo(char* path);
+
+
+	int string_pos_char(char* string, char caracter);
+
+
 
 #endif

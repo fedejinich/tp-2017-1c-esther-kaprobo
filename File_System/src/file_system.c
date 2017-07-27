@@ -4,16 +4,20 @@
 
 int main() {
 
+	pthread_mutex_init(&solicitud_mutex,NULL);
+
+
 
 	crearArchivoLog();
 	config = cargarConfiguracion();
 	iniciarMetadata();
-	//crearServidor();
-	//atenderPedidos();
+	crearServidor();
+	atenderPedidos();
 
 	free(config->PUERTO_KERNEL);
 	free(config->PUNTO_MONTAJE);
 	free(config);
+
 
 }
 
@@ -148,6 +152,176 @@ void iniciarMetadata(){
 
 }
 
+
+
+void crearServidor(){
+	log_info(logger, "Creando el socket Servidor");
+	fileSystemServer = socket_escucha(ipFileSystem,config->PUERTO_KERNEL);
+	listen(fileSystemServer, 1);
+	log_debug(logger,"Socket %d creado y escuchando", socketKernel);
+	socketKernel = aceptar_conexion(fileSystemServer);
+
+	bool resultado = esperar_handshake(socketKernel,HandshakeFileSystemKernel);
+
+	if(resultado){
+		log_debug(logger,"Conexión aceptada del KERNEL %d!!", socketKernel);
+
+	}
+	else
+	{
+		log_error(logger,"Handshake fallo, se aborta conexion\n");
+
+		exit (EXIT_FAILURE);
+	}
+
+}
+
+
+void atenderPedidos(){
+	while(1){
+			t_paquete* paquete = malloc(sizeof(t_paquete));
+
+			log_info(logger, "Esperando Pedido de Kernel");
+
+			paquete = recibir(socketKernel);
+
+			log_info(logger, "Se recibio paquete desde Kernel");
+
+			void* buffer;
+			char* path;
+			int tmpsize = 0, tmpoffset = 0;
+			t_num offset, size;
+			t_num sizePath = 0;
+
+
+			pthread_mutex_lock(&solicitud_mutex);
+
+
+			switch (paquete->codigo_operacion){
+
+			case -1:
+				log_error(logger, "Se desconecto KERNEL");
+				close(socketKernel);
+				liberar_paquete(paquete);
+				exit(1);
+				break;
+
+			case VALIDAR_ARCHIVO:
+				validarArchivo(paquete);
+				pthread_mutex_unlock(&solicitud_mutex);
+				break;
+
+			case CREAR_ARCHIVO:
+				crearArchivo(paquete);
+				pthread_mutex_unlock(&solicitud_mutex);
+				break;
+
+			case BORRAR_ARCHIVO:
+				borrarArchivo(paquete);
+				pthread_mutex_unlock(&solicitud_mutex);
+				break;
+
+			case OBTENER_DATOS:
+				obtenerDatos(paquete);
+				pthread_mutex_unlock(&solicitud_mutex);
+				break;
+
+			}
+	}
+
+
+}
+
+
+
+void validarArchivo(t_paquete* paquete){
+	log_info(logger, "Validar Archivo");
+	char* pathAbsoluto = generarPathArchivo((char*)paquete->data);
+
+	bool existe = existeArchivo(pathAbsoluto);
+
+	free(pathAbsoluto);
+	int mandar = 1;
+
+	if(existe){
+		log_debug(logger, "El archivo existe");
+		enviar(socketKernel,VALIDAR_ARCHIVO_OK, sizeof(int), &mandar );
+
+	}
+	else{
+		log_warning(logger, "El archivo no existe");
+		enviar(socketKernel, VALIDAR_ARCHIVO_FALLO, sizeof(int), &mandar);
+	}
+
+	return;
+}
+
+void crearArchivo(t_paquete* paquete){
+
+
+	log_info(logger, "Creando Archivo");
+	char* pathAbsoluto = generarPathArchivo((char*)paquete->data);
+	bool existe = existeArchivo(pathAbsoluto);
+
+	if(!existe){
+		int bloqueLibre = buscarBloqueLibre();
+
+		if(bloqueLibre == -1){
+			log_error(logger, "SIN ESPACIO EN FS");
+			enviar(socketKernel, SIN_ESPACIO_FS, sizeof(int), &bloqueLibre);
+			return;
+		}
+
+		escribirValorBitarray(1, bloqueLibre);
+
+		char* subCarpetas = string_substring_until(pathAbsoluto, string_pos_char(pathAbsoluto, '/'));
+		log_debug(logger, "Subcarpetas: %s", subCarpetas);
+		mkdirRecursivo(subCarpetas);
+		free(subCarpetas);
+
+		FILE* archivo = fopen(pathAbsoluto, "a");
+
+		fprintf(archivo, "TAMANIO=0\n");
+		fprintf(archivo,"BLOQUES=[%d]\n", bloqueLibre);
+
+		fclose(archivo);
+
+		log_debug(logger, "Se creo el archivo %s,", pathAbsoluto);
+	}
+	free(pathAbsoluto);
+	int a=1;
+	enviar(socketKernel, CREAR_ARCHIVO_OK, sizeof(int), &a);
+
+	return;
+}
+
+void borrarArchivo(t_paquete* paquete){
+	return;
+}
+
+void obtenerDatos(t_paquete* paquete){
+	return;
+}
+
+
+char* generarPathArchivo(char* path){
+
+	log_info(logger, "Se genererara el Path Absoluto del archivo");
+	char* pathAbs = string_new();
+	string_append(&pathAbs, config->PUNTO_MONTAJE);
+	string_append(&pathAbs, "Archivos");
+
+	if(!string_starts_with(path, "/")) string_append(&pathAbs, "/");
+
+	string_append(&pathAbs, path);
+
+
+	return pathAbs;
+
+
+}
+
+
 void mkdirRecursivo(char* path){
 
 	char tmp[256];
@@ -168,6 +342,8 @@ void mkdirRecursivo(char* path){
 }
 
 
+
+
 bool existeArchivo(char* path){
 
 	FILE * archi = fopen(path, "r");
@@ -179,7 +355,61 @@ bool existeArchivo(char* path){
 		return false;
 	}
 }
+
+
+int buscarBloqueLibre(){
+	int bloqueLibre;
+
+	for(bloqueLibre = 0; bitarray_test_bit(bitArray, bloqueLibre)&& bloqueLibre < config->CANTIDAD_BLOQUES; bloqueLibre++){
+
+	}
+	if(bloqueLibre >= config->CANTIDAD_BLOQUES)
+		return -1;
+
+	return bloqueLibre;
+
+}
+
+void escribirValorBitarray(bool valor, int pos){
+	if(valor)
+		bitarray_set_bit(bitArray, pos);
+	else
+		bitarray_clean_bit(bitArray, pos);
+
+	FILE *bitmap = fopen(pathMetadataBitarray, "w");
+
+	fwrite(bitArray->bitarray, bitArray->size, 1, bitmap);
+	fclose(bitmap);
+	return;
+}
+
+int string_pos_char(char* string, char caracter){
+	int len = strlen(string), j;
+
+	for(j=0;*(string+len-j) != caracter; j++){
+
+	}
+	return len - j ;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
+
+
+
+
+
 void leerBitMap(){
 	int fd;
 	char *data;
@@ -400,47 +630,12 @@ void terminarFileSystem(){
 }
 
 
-void crearServidor(){
-	fileSystemServer = socket_escucha(ipFileSystem,PUERTO_KERNEL);
-	listen(fileSystemServer, 1);
-	log_info(logger,"Socket %d creado y escuchando", socketKernel);
-	socketKernel = aceptar_conexion(fileSystemServer);
-
-	bool resultado = esperar_handshake(socketKernel,HandshakeFileSystemKernel);
-
-	if(resultado){
-		log_info(logger,"Conexión aceptada del KERNEL %d!!", socketKernel);
-		printf("Conexion aceptada del KERNEL %d \n",socketKernel);
-	}
-	else
-	{
-		log_info(logger,"Handshake fallo, se aborta conexion\n");
-		printf("Conexion abortada\n");
-		exit (EXIT_FAILURE);
-	}
-
-}
 
 
-void atenderPedidos(){
-	while(1){
-			log_info(logger, "Esperando Pedido de Kernel");
-			//Recibimos pedidos de kernel y se hace switch dependiendo operacion
-			paquete = recibir(socketKernel);
-			log_info(logger, "Se recibio paquete desde Kernel");
-			void* buffer;
-			char* path;
-			int tmpsize = 0, tmpoffset = 0;
-			t_num offset, size;
-			t_num sizePath = 0;
 
-			//char * codigoDeOperacion = getCodigoDeOperacion(paquete->codigo_operacion);
-			pthread_mutex_lock(&solicitud_mutex);
-			//log_info(logger, "Codigo de operacion FileSystem-Kernel: %s", codigoDeOperacion);
 
-			switch (paquete->codigo_operacion)
-			{
-			case VALIDAR_ARCHIVO:
+
+/*
 				path = malloc(paquete->tamanio);
 				memcpy(path, paquete->data, paquete->tamanio);
 				path[paquete->tamanio] = '\0';
@@ -467,20 +662,25 @@ void atenderPedidos(){
 				path[paquete->tamanio] = '\0';
 				log_info(logger, "Path: %s", path);
 
-				crearArchivo(path);
+				//crearArchivo(path);
 				enviar(socketKernel, CREAR_ARCHIVO, 0, 0);
 				free(path);
 				break;
+
+
+
 			case BORRAR_ARCHIVO:
 				path = malloc(paquete->tamanio);
 				memcpy(path, paquete->data, paquete->tamanio);
 				path[paquete->tamanio] = '\0';
 				log_info(logger, "Path: %s", path);
 
-				borrarArchivo(path);
+				//borrarArchivo(path);
 				enviar(socketKernel, BORRAR_ARCHIVO, 0, 0);
 				free(path);
 				break;
+
+
 			case OBTENER_DATOS:
 				memcpy(&sizePath, paquete->data + tmpoffset, tmpsize = sizeof(t_num));
 				tmpoffset += tmpsize;
@@ -493,9 +693,9 @@ void atenderPedidos(){
 				memcpy(&size, paquete->data + tmpoffset, tmpsize = sizeof(t_valor_variable));
 				tmpoffset += tmpsize;
 				log_info(logger, "Path: %s - offset: %d - size: %d", path, offset, size);
-				char* data = leerBloquesArchivo(path, offset, size);
-				enviar(socketKernel, OBTENER_DATOS, size, data);
-				free(data);
+				//char* data = leerBloquesArchivo(path, offset, size);
+				//enviar(socketKernel, OBTENER_DATOS, size, data);
+				//free(data);
 				break;
 			case GUARDAR_DATOS:
 				tmpoffset = 0;
@@ -515,9 +715,9 @@ void atenderPedidos(){
 
 				log_info(logger, "Path: %s - Offset: %d - Size: %d \n Buffer: %s", path, offset, size, buffer);
 
-				escribirBloquesArchivo(path, offset, size, buffer);
+				//escribirBloquesArchivo(path, offset, size, buffer);
 				enviar(socketKernel, GUARDAR_DATOS, 0, 0);
-				free(data);
+				//free(data);
 				break;
 			default:
 					log_error(logger, "Se ha desconectado el Kernel");
@@ -533,7 +733,7 @@ void atenderPedidos(){
 		//pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
 		//pthread_join(servidorConexionesKernel, NULL);
 		return ;
+		*/
 
-}
 
-*/
+
