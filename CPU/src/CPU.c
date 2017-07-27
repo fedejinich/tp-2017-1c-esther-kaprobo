@@ -47,6 +47,7 @@ AnSISOP_kernel primitivas_kernel = {
 int main(int argc, char **argv) {
 	flagStackOverflow = 0;
 	int yaEnvieCierre = 0;
+	crearArchivoLog();
 	iniciarCPU();
 	sigusr1_desactivado=1;
 
@@ -54,7 +55,7 @@ int main(int argc, char **argv) {
 	signal(SIGUSR1, sig_handler);
 	signal(SIGINT, sig_handler2);
 
-	crearArchivoLog();
+
 
 	char* serializado;
 	pthread_mutex_init(&mutex_pcb, NULL);
@@ -218,17 +219,17 @@ int main(int argc, char **argv) {
 				}
 
 
-				printf("ANTES DEL QUILOMBO\n\n\n");
+
 				int modo = 1;
 				if(ioctl(kernel, FIONBIO, &modo )==0){
-					printf("ENTRE ACA SE PUDRE TODO\n");
+
 					t_paquete* paq = malloc(sizeof(t_paquete));
-					paq->codigo_operacion=5555;
-					printf("CODIGO: %d\n", paq->codigo_operacion);
+
+
 					paq= recibir(kernel);
-					printf("CODIGO: %d\n", paq->codigo_operacion);
+
 					if((paq->codigo_operacion ==ABORTADO_CONSOLA)||(paq->codigo_operacion ==ABORTADO_CONSOLA_KERNEL)){
-						printf("YA RECIBI\n");
+
 						serializado= serializarPCB(pcb);
 
 						if((paq->codigo_operacion)== ABORTADO_CONSOLA){
@@ -245,14 +246,13 @@ int main(int argc, char **argv) {
 					}
 					else
 					{
-						printf("NO RECIBI NADA CHE ): \n\n");
+
 					}
 					liberar_paquete(paq);
 				}
-				printf("DESPUES DEL QUILOMBO\n\n\n");
-				printf("abortado:%d\n\n", abortadoProcesoConsola);
+
 				modo = 0;
-				if(ioctl(kernel, FIONBIO, &modo )==0) printf("CAMBIE MODO A BLOQUEANTE\n");
+				if(ioctl(kernel, FIONBIO, &modo )==0) log_info(logger,"CAMBIE MODO A BLOQUEANTE\n");
 			}
 
 		}
@@ -273,14 +273,14 @@ int main(int argc, char **argv) {
 }
 
 void iniciarCPU(){
-	printf("%s", "\n\n====== INICIO CPU ======\n\n");
+	log_info(logger, "====== INICIO CPU ======");
 
 }
 
 
 void crearArchivoLog(){
 	logger = iniciarLog(ARCHIVOLOG,"CPU");
-	log_info(logger, "Iniciando CPU. \n");
+
 }
 
 
@@ -304,11 +304,11 @@ void cargarConfiguracion(){
 	puerto_memoria = config_get_int_value(config, "PUERTO_MEMORIA");
 	ip_memoria = config_get_string_value(config, "IP_MEMORIA");
 	log_info(logger, "Cargando configuraciones. \n");
-	printf("IP KERNEL: %s \n", ip_kernel);
-	printf("PUERTO_KERNEL: %i \n", puerto_kernel);
-	printf("IP MEMORIA: %s \n", ip_memoria);
-	printf("PUERTO_MEMORIA: %i \n", puerto_memoria);
-	printf("El archivo de configuracion fue cargado con exito\n");
+	log_info(logger,"IP KERNEL: %s \n", ip_kernel);
+	log_info(logger,"PUERTO_KERNEL: %i \n", puerto_kernel);
+	log_info(logger,"IP MEMORIA: %s \n", ip_memoria);
+	log_info(logger,"PUERTO_MEMORIA: %i \n", puerto_memoria);
+	log_info(logger,"El archivo de configuracion fue cargado con exito\n");
 }
 
 void sig_handler(int signo) {
@@ -339,27 +339,27 @@ void sig_handler2(int signo) {
 
 //funcion que conecta CPU con Kernel utilizando sockets
 int conectarConElKernel(){
-	printf("Inicio de conexion con Kernel\n");
+
 	log_info(logger, "Conectando con Kernel. \n");
 	// funcion deSockets
 	kernel = conectar_a(ip_kernel,(char*)puerto_kernel);
 
 	if (kernel<0){
-		printf("CPU: No se pudo conectar con el Kernel\n");
+
 		log_info(logger, "Conexion fallida con Kernel. \n");
 		exit (EXIT_FAILURE);
 	}
-	printf("CPU: Kernel recibio nuestro pedido de conexion\n");
+	log_info(logger,"CPU: Kernel recibio nuestro pedido de conexion\n");
 
-	printf("CPU: Iniciando Handshake\n");
+	log_info(logger,"CPU: Iniciando Handshake\n");
 	bool resultado = realizar_handshake(kernel,12);
 	if (resultado){
-		printf("Handshake exitoso! Conexion establecida\n");
+
 		log_info(logger, "Conectado con exito al Kernel. \n");
 		return kernel;
 	}
 	else{
-		printf("Fallo en el handshake, se aborta conexion\n");
+
 		log_info(logger, "Conexion fallida con Kernel. \n");
 		exit (EXIT_FAILURE);
 	}
@@ -367,27 +367,27 @@ int conectarConElKernel(){
 
 //funcion que conecta CPU con Memoria utilizando sockets
 int conectarConMemoria(){
-	printf("Inicio de conexion con Memoria\n");
+
 	log_info(logger, "Conectando con Memoria. \n");
 	// funcion deSockets
 	memoria = conectar_a(ip_memoria,(char*)puerto_memoria);
 
 	if (memoria<0){
-		printf("CPU: No se pudo conectar con la Memoria\n");
+
 		log_info(logger, "Conexion fallida con Memoria. \n");
 		exit (EXIT_FAILURE);
 	}
-	printf("CPU: Memoria recibio nuestro pedido de conexion\n");
+	log_info(logger,"CPU: Memoria recibio nuestro pedido de conexion\n");
 
-	printf("CPU: Iniciando Handshake\n");
+	log_info(logger,"CPU: Iniciando Handshake\n");
 	bool resultado = realizar_handshake(memoria,15);
 	if (resultado){
-		printf("Handshake exitoso! Conexion establecida\n");
+
 		log_info(logger, "Conectado con exito a Memoria. \n");
 		return memoria;
 	}
 	else{
-		printf("Fallo en el handshake, se aborta conexion\n");
+
 		log_info(logger, "Conexion fallida con Memoria. \n");
 		exit (EXIT_FAILURE);
 	}
