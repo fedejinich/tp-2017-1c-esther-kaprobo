@@ -382,7 +382,6 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 		case ESCRIBIR_ARCHIVO: //Proceso CPU nos pide escribir texto, a traves de print. Se envia tb a Consola
 			solicitudDeEscrituraArchivo(socketActivo, paqueteRecibido);
 
-
 			break;
 
 		case ABRIR_ARCHIVO: //Proceso CPU nos pide abrir un archivo para un proceso dado
@@ -390,11 +389,10 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			break;
 
 		case OBTENER_DATOS: //Proceso CPU nos pide leer un archivo para un proceso dado
-			accederArchivo(socketActivo, paqueteRecibido, 'r');
+			leerArchivo(socketActivo, paqueteRecibido);
 			break;
 
 		case GUARDAR_DATOS: //Proceso CPU nos pide escribir un archivo para un proceso dado
-			accederArchivo(socketActivo, paqueteRecibido, 'w');
 			break;
 
 		case CERRAR_ARCHIVO: //Proceso CPU nos pide cerrar un archivo para un proceso dado
@@ -472,6 +470,10 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			deserializarYFinalizar(socketActivo, paqueteRecibido, FinalizacionPorConsolaDeKernel);
 			break;
 
+		case MOVER_CURSOR_ARCHIVO:
+			log_info(logger, "CPU nos pide mover el cursor de un archivo de un proceso");
+			moverCursor(socketActivo, paqueteRecibido);
+			break;
 
 		default:
 			break;
@@ -842,7 +844,7 @@ int buscarEntradaEnTablaGlobal(char* path){
 
 
 
-void leerArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
+void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
 	int pid = datos->pid;
 	int fd = datos->fd;
@@ -863,16 +865,26 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 		obtencionDatos ->offset = archivo->puntero;
 		obtencionDatos ->size = datos->tamanio;
 
-		enviar(fileSystem, OBTENER_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos);
-		enviar(fileSystem, OBTENER_DATOS, strlen(path) + 1, armarPathParaEnvio(path));
+		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos);
+		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, strlen(path) + 1, armarPathParaEnvio(path));
 
 		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paquete = recibir(fileSystem);
 		pthread_mutex_unlock(&mutexServidor);
 
-		char* datosLeidos = malloc(paquete->tamanio);
-		datosLeidos = (char*)(paquete->data);
-		enviar(socketActivo, OBTENER_DATOS, paquete->tamanio, datosLeidos);
+		//Aviso a CPU del resultado del guardado de info
+		int basura = malloc(sizeof(int));
+		if(paquete->codigo_operacion == SOLICITUD_OBTENCION_DATOS_OK){
+			char* datosLeidos = malloc(paquete->tamanio);
+			datosLeidos = (char*)(paquete->data);
+			enviar(socketActivo, SOLICITUD_OBTENCION_DATOS_OK, paquete->tamanio, datosLeidos);
+		}
+		else{
+			//DEBERIA ABORTAR? O HACER ESTO DE AVISARLE A CPU
+			//PARA MI DEBERIA ABORTAR
+			int basura;
+			enviar(socketActivo, SOLICITUD_OBTENCION_DATOS_FALLO, sizeof(int), basura);
+		}
 	}
 	else{
 		finalizarProcesoPorPID(pid, IntentoDeLecturaSinPermisos);
@@ -959,6 +971,16 @@ char* armarPathParaEnvio(char* path){
 	return retorno;
 }
 
+void moverCursor(un_socket socketActivo, t_paquete* paqueteRecibido){
+	t_moverCursor* mover = paqueteRecibido->data;
+	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, mover.pid);
+	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso, mover.fd);
+
+	entradaTablaDelProceso->puntero = mover->posicion;
+
+	int basura;
+	enviar(socketActivo, MOVER_CURSOR_ARCHIVO_OK, sizeof(int), basura);
+}
 
 void solicitaVariable(un_socket socketActivo, t_paquete* paqueteRecibido){
 	int* valor;
@@ -2284,9 +2306,6 @@ void cpuCerrada(un_socket socketCPU, t_paquete* paqueteRec){
 	}
 
 }
-
-
-
 
 
 void sacarCPUDeListas(un_socket cpu){
