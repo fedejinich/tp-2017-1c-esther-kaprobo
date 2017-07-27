@@ -296,6 +296,36 @@ void crearArchivo(t_paquete* paquete){
 }
 
 void borrarArchivo(t_paquete* paquete){
+	log_info(logger, "Borrando Archivo");
+
+	char* pathAbsoluto = generarPathArchivo((char*)paquete->data);
+
+	if(!existeArchivo(pathAbsoluto)){
+		log_error(logger, "NO EXISTE EL ARCHIVO");
+		int b=1;
+		enviar(socketKernel, BORRAR_ARCHIVO_FALLO, sizeof(int), &b);
+	}
+	else{
+		t_config * data = config_create(pathAbsoluto);
+		char** bloques = config_get_array_value(data, "BLOQUES");
+
+		int j = 0;
+
+		while(bloques[j] != NULL){
+			log_info(logger, "Bloque a liberar: %d", atoi(bloques[j]));
+			escribirValorBitarray(0, atoi(bloques[j]));
+			j++;
+		}
+
+		unlink(pathAbsoluto);
+		log_debug(logger, "ARCHIVO BORRADO CON EXITO");
+
+		enviar(socketKernel, BORRAR_ARCHIVO_OK, sizeof(int), &j);
+
+		config_destroy(data);
+		free(pathAbsoluto);
+
+	}
 	return;
 }
 
