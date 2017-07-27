@@ -53,6 +53,11 @@ typedef struct __attribute__ ((packed))t_envioDeDatosKernelFSLecturaYEscritura{
 	char* contenido;
 }t_envioDeDatosKernelFSLecturaYEscritura;
 
+typedef struct __attribute__ ((packed))t_pedidoGuardadoDatos{
+	int offset;
+	int size;
+}t_pedidoGuardadoDatos;
+
 typedef struct __attribute__((packed))t_contexto{
 	int pos;
 	t_list* args;
