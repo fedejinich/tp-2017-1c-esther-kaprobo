@@ -753,16 +753,16 @@ void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, i
 
 	char* permisos = archivo->flags;
 
-	if(strchr(permisos, 'w') != NULL){
+	//Path donde debe escribirse
+	t_entradaTablaGlobal* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(archivo);
+	char* path = entradaTablaGlobal->path;
+
+	if(strchr(permisos, 'w') != NULL && existeArchivo(path)){
 		t_pedidoGuardadoDatos* guardadoDatos = malloc(sizeof(t_pedidoGuardadoDatos));
 
 		//Datos Para la escritura
 		guardadoDatos->offset = archivo->puntero;
 		guardadoDatos->size = size;
-
-		//Path donde debe escribirse
-		t_entradaTablaGlobal* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(archivo);
-		char* path = entradaTablaGlobal->path;
 
 		//Hago 3 envios en orden: Datos para guardado de info, path donde debe guardarse, informacion a guardar
 		enviar(fileSystem, SOLICITUD_GUARDADO_DATOS, sizeof(t_pedidoGuardadoDatos), guardadoDatos);
@@ -810,6 +810,7 @@ bool existeArchivo(char* path){
 	bool resultado = false;
 
 	enviar(fileSystem, VALIDAR_ARCHIVO, sizeof(path), path);
+
 	pthread_mutex_lock(&mutexServidor);
 	t_paquete* paqueteResultado = recibir(fileSystem);
 	pthread_mutex_unlock(&mutexServidor);
