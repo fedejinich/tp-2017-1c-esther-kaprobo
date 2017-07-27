@@ -972,14 +972,16 @@ char* armarPathParaEnvio(char* path){
 }
 
 void moverCursor(un_socket socketActivo, t_paquete* paqueteRecibido){
-	t_moverCursor* mover = paqueteRecibido->data;
-	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, mover.pid);
-	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso, mover.fd);
+	t_moverCursor* mover = malloc(sizeof(t_moverCursor));
+	mover = (t_moverCursor*)paqueteRecibido->data;
+	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, mover->pid);
+	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso, mover->fd);
 
 	entradaTablaDelProceso->puntero = mover->posicion;
 
-	int basura;
-	enviar(socketActivo, MOVER_CURSOR_ARCHIVO_OK, sizeof(int), basura);
+	int basura = 1;
+	enviar(socketActivo, MOVER_CURSOR_ARCHIVO_OK, sizeof(int), &basura);
+	free(mover);
 }
 
 void solicitaVariable(un_socket socketActivo, t_paquete* paqueteRecibido){

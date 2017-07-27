@@ -287,6 +287,8 @@ t_entradaTablaProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd);
 t_entradaTablaGlobal* obtenerEntradaTablaGlobalDeArchivos(t_entradaTablaProceso* entradaTablaDelProceso);
 void borrarArchivoDeTabla(int pid, int fd);
 
-void escribirArchivo(int* socketActivo, t_paquete* paquete);
-void leerArchivo(int* socketActivo, t_paquete* paquete);
+char* armarPathParaEnvio(char* path);
+
+void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, int size, char* buffer);
+void leerArchivo(un_socket socketActivo, t_paquete* paquete);
 void cerrarArchivo(int* socketActivo, t_paquete* paquete);
