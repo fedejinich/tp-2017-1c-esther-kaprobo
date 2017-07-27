@@ -79,7 +79,7 @@ void inicializar(){
 
 	listaAdminHeap = list_create();
 	tablaGlobalDeArchivos = list_create();
-	tablaDeArchivosPorProceso = list_create();;
+	tablasArchivosPorProceso = list_create();;
 }
 
 void cargarConfiguracion() {
@@ -670,22 +670,7 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 
 
 	if(existeArchivo(path)){
-
-		/*
-		 *
-		 *
-		 *
-		 *
-		 * VEEEEEER ACTUALIZAR TABLAS
-		 */
-		t_entradaTablaProceso* entradaLocal = malloc(sizeof(t_entradaTablaProceso));
-
-
-		entradaLocal->flags = permisos;
-		entradaLocal->globalFD = chequearTablaGlobal(path);
-
-		//Agrego la entrada a la tabla en el indice = pid, que es la tabla correspondiente
-		list_add_in_index(tablaDeArchivosPorProceso, pid, entradaLocal);
+		agregarNuevoArchivoATablas(pid, path, permisos);
 	}
 	else{
 		log_info(logger, "Se intentara Crear el archivo");
@@ -699,18 +684,15 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 
 			if(paqueteResultadoCreacion->codigo_operacion == CREAR_ARCHIVO_OK){
 				log_debug(logger, "Se creo el archivo correctamente");
-				/*
-				 *
-				 *
-				 * VEEEEEEER ACTUALIZAR TABLAS
-				 */
+
+				agregarNuevoArchivoATablas(pid, path, permisos);
 
 				int basura;
 				enviar(socketActivo, ABRIR_ARCHIVO, sizeof(int), basura);
 			}
 			else{
 				log_warning(logger, "No se pudo crear el archivo");
-				finalizarProcesoPorPID(pid,ErrorSinDefinicion );
+				finalizarProcesoPorPID(pid, ErrorSinDefinicion );
 				enviar(socketActivo, ARCHIVO_NO_SE_PUDO_ABRIR, sizeof(int), &pid);
 				return;
 			}
@@ -725,6 +707,32 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 	}
 }
 
+void agregarNuevoArchivoATablas(int pid, char* path, char* permisos){
+	t_entradaTablaProceso* entradaLocal = malloc(sizeof(t_entradaTablaProceso));
+
+	entradaLocal->flags = permisos;
+	entradaLocal->globalFD = chequearTablaGlobal(path);
+	entradaLocal->puntero = 0;
+
+	//Agrego la entrada a la tabla en el indice = pid, que es la tabla correspondiente
+	t_entradaTablasArchivosPorProceso* entradaTablaDelProceso = list_get(tablasArchivosPorProceso, pid);
+	if(entradaTablaDelProceso == NULL){
+		entradaTablaDelProceso = crearTablaDeArchivosDeUnProceso(pid);
+	}
+
+	//Busco el indice, porque el FD va a tener que coincidir con el indice en la tabla de archivos del proceso
+	int indice = entradaTablaDelProceso->tablaDeUnProceso->elements_count;
+	entradaLocal->fd = indice;
+	list_add_in_index(entradaTablaDelProceso->tablaDeUnProceso, indice, entradaLocal);
+}
+
+t_entradaTablasArchivosPorProceso* crearTablaDeArchivosDeUnProceso(int pid){
+	t_entradaTablasArchivosPorProceso* nuevaTabla = malloc(sizeof(t_entradaTablasArchivosPorProceso));
+	nuevaTabla->pid = pid;
+	nuevaTabla->tablaDeUnProceso = list_create();
+	list_add_in_index(tablasArchivosPorProceso, pid, nuevaTabla);
+	return nuevaTabla;
+}
 
 void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
@@ -775,16 +783,54 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 }
 
 void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, int size, char* buffer){
-	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
-	t_entradaTablaProceso* archivo = list_get(tablaDeUnProceso, fd);
 
+	log_error(logger, "ESTOY ACA 0");
+
+	/*t_entradaTablaProceso* prueba;
+	int b;
+	while(prueba = (t_entradaTablaProceso*)list_get(tablaDeUnProceso, b)){
+		log_error(logger, "GLOBAL FD: %i", prueba->globalFD);
+		b++;
+	}*/
+
+	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = list_get(tablasArchivosPorProceso, pid);
+
+	log_error(logger, "ESTOY ACA JEJEJEJE");
+
+	log_error(logger, "PID %i", pid);
+	log_error(logger, "FD %i", fd);
+
+	log_error(logger, "ASERE9");
+	int esNull;
+	//esNull = list_is_empty(tablaDeUnProceso->tablaDeUnProceso);
+	esNull = tablaDeUnProceso == NULL;
+	log_error(logger, "JE");
+	log_error(logger, "TABLA PROCESO NULL? %i", esNull);
+
+	log_error(logger, "LIST COUNT %i", tablaDeUnProceso->tablaDeUnProceso->elements_count);
+
+	/*t_entradaTablaProceso* prueba;
+	int a;
+	while(prueba = (t_entradaTablaProceso*)list_get(tablaDeUnProceso, a)){
+		log_error(logger, "GLOBAL FD: %i", prueba->globalFD);
+		a++;
+	}*/
+	log_error(logger, "ESTOY ACA 0.1");
+	log_error(logger, "FD %i", fd);
+	t_entradaTablaProceso* archivo = list_get(tablaDeUnProceso, fd);
+	log_error(logger, "ESTOY ACA 0.2");
 	char* permisos = archivo->flags;
+
+
+
+	log_error(logger, "ESTOY ACA 1");
 
 	//Path donde debe escribirse
 	t_entradaTablaGlobal* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(archivo);
 	char* path = entradaTablaGlobal->path;
 
 	if(strchr(permisos, 'w') != NULL && existeArchivo(path)){
+
 		t_pedidoGuardadoDatos* guardadoDatos = malloc(sizeof(t_pedidoGuardadoDatos));
 
 		//Datos Para la escritura
@@ -889,8 +935,8 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 	int pid = datos->pid;
 	int fd = datos->fd;
 
-	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
-	t_entradaTablaProceso* archivo = list_get(tablaDeUnProceso, fd);
+	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = list_get(tablasArchivosPorProceso, pid);
+	t_entradaTablaProceso* archivo = list_get(tablaDeUnProceso->tablaDeUnProceso, fd);
 
 	char* permisos = archivo->flags;
 
@@ -990,8 +1036,8 @@ void borrarArchivo(int* socketActivo, t_paquete* paquete){
 }
 
 t_entradaTablaProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd){
-	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
-	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso, fd);
+	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = list_get(tablasArchivosPorProceso, pid);
+	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso->tablaDeUnProceso, fd);
 
 	return entradaTablaDelProceso;
 }
@@ -1001,7 +1047,7 @@ t_entradaTablaGlobal* obtenerEntradaTablaGlobalDeArchivos(t_entradaTablaProceso*
 }
 
 void borrarArchivoDeTabla(int pid, int fd){
-	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
+	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = list_get(tablasArchivosPorProceso, pid);
 	list_remove(tablaDeUnProceso, fd);
 }
 
@@ -1014,8 +1060,8 @@ char* armarPathParaEnvio(char* path){
 void moverCursor(un_socket socketActivo, t_paquete* paqueteRecibido){
 	t_moverCursor* mover = malloc(sizeof(t_moverCursor));
 	mover = (t_moverCursor*)paqueteRecibido->data;
-	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, mover->pid);
-	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso, mover->fd);
+	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = list_get(tablasArchivosPorProceso, mover->pid);
+	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso->tablaDeUnProceso, mover->fd);
 
 	entradaTablaDelProceso->puntero = mover->posicion;
 
