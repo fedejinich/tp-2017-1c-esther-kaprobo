@@ -26,13 +26,13 @@ endif
 all: CPU
 
 dependents:
-	-cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) all
+	-cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) clean all
 
 # Tool invocations
 CPU: $(OBJS) $(USER_OBJS) /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug" -o "CPU" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc  -o "CPU" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
