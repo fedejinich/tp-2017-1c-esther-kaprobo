@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/config.h>
-#include "src/Commons_Kaprobo.h"
+#include <Commons_Kaprobo/Commons_Kaprobo.h>
 
 
 #include <pthread.h>

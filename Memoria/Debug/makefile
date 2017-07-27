@@ -36,7 +36,7 @@ dependents:
 Memoria: $(OBJS) $(USER_OBJS) /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug" -o "Memoria" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc  -o "Memoria" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
