@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/config.h>
-#include "src/Commons_Kaprobo.h"
+#include <Commons_Kaprobo/Commons_Kaprobo.h>
 
 
 #include <pthread.h>
@@ -39,10 +39,10 @@ typedef struct __attribute__((packed))t_entradaTablaGlobal{
 	int open;
 }t_entradaTablaGlobal;
 
-typedef struct __attribute__((packed))t_tablaArchivosPorProceso{
+typedef struct __attribute__((packed))t_entradaTablasArchivosPorProceso{
 	int pid;
 	t_list* tablaDeUnProceso;
-}t_tablaArchivosPorProceso;
+}t_entradaTablasArchivosPorProceso;
 
 typedef struct __attribute__((packed))t_entradaTablaProceso{
 	t_descriptor_archivo fd;
@@ -145,7 +145,7 @@ t_queue ** cola_semaforos;
 
 //CAPA FILESYSTEM
 t_list* tablaGlobalDeArchivos;
-t_list* tablaDeArchivosPorProceso;
+t_list* tablasArchivosPorProceso;
 
 /*
  *
@@ -286,6 +286,8 @@ int buscarEntradaEnTablaGlobal(char* path);
 t_entradaTablaProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd);
 t_entradaTablaGlobal* obtenerEntradaTablaGlobalDeArchivos(t_entradaTablaProceso* entradaTablaDelProceso);
 void borrarArchivoDeTabla(int pid, int fd);
+
+t_entradaTablasArchivosPorProceso* crearTablaDeArchivosDeUnProceso(int pid);
 
 char* armarPathParaEnvio(char* path);
 

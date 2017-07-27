@@ -1,5 +1,9 @@
-.project
-.cproject
-/Debug/
+
+
+/Debug/src/
+
+/Debug/Consola
+
 *.log
 /.settings
+/Debug/

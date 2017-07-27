@@ -1,7 +1,7 @@
 #ifndef CONSOLA_H_
 #define CONSOLA_H_
 
-#include "src/Commons_Kaprobo.h"
+#include <Commons_Kaprobo/Commons_Kaprobo.h>
 #include <pthread.h>
 #include <time.h>
 #include <ctype.h>

@@ -1,5 +1,7 @@
-.project
-.cproject
-/Debug/
+
+/Debug/src/
+/Debug/Kernel
+
 *.log
 /.settings/
+/Debug/

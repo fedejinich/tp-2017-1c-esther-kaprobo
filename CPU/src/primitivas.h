@@ -1,7 +1,7 @@
 #ifndef PRIMITIVAS_H_
 #define PRIMITIVAS_H_
 
-#include "src/Estructuras.h"
+#include <Commons_Kaprobo/Estructuras.h>
 #include <parser/parser.h>
 #include "CPU.h"
 
