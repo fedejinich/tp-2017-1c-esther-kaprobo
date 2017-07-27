@@ -1,5 +1,6 @@
 .project
 .cproject
-/Debug/
+/Debug/src/
+/Debug/File_System
 *.log
 /.settings
