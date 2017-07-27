@@ -140,6 +140,8 @@ int inicializarProceso(int pid, int paginasRequeridas) {
 int finalizarProceso(int pid) {
 	retardo();
 
+	dumpPID(string_itoa(pid));
+
 	log_warning(logger, "Finalizando proceso. PID %i ...", pid);
 
 	log_info(logger, "Finalizando proceso de cache. PID %i ...", pid);
