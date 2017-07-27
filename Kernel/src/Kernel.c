@@ -905,6 +905,38 @@ void cerrarArchivo(int* socketActivo, t_paquete* paquete){
 	}
 }
 
+void borrarArchivo(int* socketActivo, t_paquete* paquete){
+	char* path = paquete->data;
+
+	int i;
+	int indiceAEliminar;
+	t_entradaTablaGlobal* entradaDeLaTablaGlobal = malloc(sizeof(t_entradaTablaGlobal));
+	t_entradaTablaGlobal* entradaAEliminar= malloc(sizeof(t_entradaTablaGlobal));
+
+	while(entradaDeLaTablaGlobal = (t_entradaTablaGlobal*)list_get(tablaGlobalDeArchivos, i)){
+		if(entradaDeLaTablaGlobal->path == path){
+			entradaAEliminar = entradaDeLaTablaGlobal;
+			indiceAEliminar = i;
+		}
+		i++;
+	}
+
+	if(entradaAEliminar->open == 0){
+
+		enviar(socketActivo, BORRAR_ARCHIVO, strlen(path), armarPathParaEnvio(path));
+
+		pthread_mutex_lock(&mutexServidor);
+		t_paquete* paquete = recibir(fileSystem);
+		pthread_mutex_unlock(&mutexServidor);
+
+		int basura;
+		if(paquete->codigo_operacion == BORRAR_ARCHIVO_OK){
+			list_remove(tablaGlobalDeArchivos, indiceAEliminar);
+		}
+		enviar(socketActivo, paquete->codigo_operacion, sizeof(int), basura);
+	}
+}
+
 t_entradaTablaProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd){
 	t_list* tablaDeUnProceso = list_get(tablaDeArchivosPorProceso, pid);
 	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso, fd);
