@@ -1,3 +1,7 @@
-.project
-.cproject
-/Debug/
+
+
+
+/Debug/src/
+
+/Debug/libCommons_Kaprobo.so
+
