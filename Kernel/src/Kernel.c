@@ -799,7 +799,7 @@ bool validarPermisoDeApertura(int pid, char* path, char* permisos){
 bool existeArchivo(char* path){
 	bool resultado = false;
 
-	enviar(fileSystem, VALIDAR_ARCHIVO, sizeof(path), armarPathParaEnvio(path));
+	enviar(fileSystem, VALIDAR_ARCHIVO, sizeof(path) + 1, armarPathParaEnvio(path));
 
 	pthread_mutex_lock(&mutexServidor);
 	t_paquete* paqueteResultado = recibir(fileSystem);
@@ -863,7 +863,7 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete, char operacion){
 		obtencionDatos ->offset = archivo->puntero;
 		obtencionDatos ->size = datos->tamanio;
 
-		enviar(fileSystem, OBTENER_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos );
+		enviar(fileSystem, OBTENER_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos);
 		enviar(fileSystem, OBTENER_DATOS, strlen(path) + 1, armarPathParaEnvio(path));
 
 		pthread_mutex_lock(&mutexServidor);
@@ -902,6 +902,38 @@ void cerrarArchivo(int* socketActivo, t_paquete* paquete){
 		//Borrar la entrada de la tabla global
 		list_remove(tablaGlobalDeArchivos, entradaTablaProceso->globalFD);
 		log_warning(logger, "Archivo %i eliminado de la tabla de archivos globales", entradaTablaProceso->globalFD);
+	}
+}
+
+void borrarArchivo(int* socketActivo, t_paquete* paquete){
+	char* path = paquete->data;
+
+	int i;
+	int indiceAEliminar;
+	t_entradaTablaGlobal* entradaDeLaTablaGlobal = malloc(sizeof(t_entradaTablaGlobal));
+	t_entradaTablaGlobal* entradaAEliminar= malloc(sizeof(t_entradaTablaGlobal));
+
+	while(entradaDeLaTablaGlobal = (t_entradaTablaGlobal*)list_get(tablaGlobalDeArchivos, i)){
+		if(entradaDeLaTablaGlobal->path == path){
+			entradaAEliminar = entradaDeLaTablaGlobal;
+			indiceAEliminar = i;
+		}
+		i++;
+	}
+
+	if(entradaAEliminar->open == 0){
+
+		enviar(socketActivo, BORRAR_ARCHIVO, strlen(path) + 1, armarPathParaEnvio(path));
+
+		pthread_mutex_lock(&mutexServidor);
+		t_paquete* paquete = recibir(fileSystem);
+		pthread_mutex_unlock(&mutexServidor);
+
+		int basura;
+		if(paquete->codigo_operacion == BORRAR_ARCHIVO_OK){
+			list_remove(tablaGlobalDeArchivos, indiceAEliminar);
+		}
+		enviar(socketActivo, paquete->codigo_operacion, sizeof(int), basura);
 	}
 }
 

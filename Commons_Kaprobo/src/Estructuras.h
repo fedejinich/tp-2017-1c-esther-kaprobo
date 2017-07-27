@@ -50,7 +50,6 @@ typedef struct __attribute__ ((packed))t_envioDeDatosKernelFSLecturaYEscritura{
 	int fd;
 	int offset;
 	int tamanio;
-	char* contenido;
 }t_envioDeDatosKernelFSLecturaYEscritura;
 
 typedef struct __attribute__ ((packed))t_pedidoGuardadoDatos{
