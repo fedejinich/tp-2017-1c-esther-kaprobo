@@ -7,7 +7,6 @@ int main() {
 	pthread_mutex_init(&solicitud_mutex,NULL);
 
 
-
 	crearArchivoLog();
 	config = cargarConfiguracion();
 	iniciarMetadata();
@@ -187,11 +186,6 @@ void atenderPedidos(){
 
 			log_info(logger, "Se recibio paquete desde Kernel");
 
-			void* buffer;
-			char* path;
-			int tmpsize = 0, tmpoffset = 0;
-			t_num offset, size;
-			t_num sizePath = 0;
 
 
 			pthread_mutex_lock(&solicitud_mutex);
@@ -221,8 +215,13 @@ void atenderPedidos(){
 				pthread_mutex_unlock(&solicitud_mutex);
 				break;
 
-			case OBTENER_DATOS:
+			case SOLICITUD_OBTENCION_DATOS:
 				obtenerDatos(paquete);
+				pthread_mutex_unlock(&solicitud_mutex);
+				break;
+
+			case GUARDAR_DATOS:
+				guardarDatos(paquete);
 				pthread_mutex_unlock(&solicitud_mutex);
 				break;
 
@@ -330,7 +329,71 @@ void borrarArchivo(t_paquete* paquete){
 }
 
 void obtenerDatos(t_paquete* paquete){
+	log_info(logger, "OBTENER DATOS");
+
+	t_paquete* paq = malloc(sizeof(t_paquete));
+	paq = recibir(socketKernel);
+
+	t_pedidoGuardadoDatos* pedido = malloc(sizeof(t_pedidoGuardadoDatos));
+
+	pedido = (t_pedidoGuardadoDatos*)paq->data;
+
+
+
+
+
+	char* path = generarPathArchivo((char*)paq->data);
+
+	if(!existeArchivo(path)){
+		int a=1;
+		log_error(logger, "NO EXISTE EL ARCHIVO");
+		enviar(socketKernel, SOLICITUD_OBTENCION_DATOS_FALLO, sizeof(int), &a);
+		return;
+	}
+
+	char* buffer = malloc(sizeof(pedido->size));
+
+	t_config* c = config_create(path);
+	char** bloques = config_get_array_value(c, "BLOQUES");
+
+	int offsetBloque, bytesLeidos = 0, restoBloque;
+
+	offsetBloque = (pedido->offset % config->TAMANIO_BLOQUES);
+	int numBloque = (pedido->offset / config->TAMANIO_BLOQUES);
+	int j = numBloque;
+
+	int bloque = atoi(bloques[numBloque]);
+
+	while(bytesLeidos != pedido->size){
+		restoBloque = pedido->size - bytesLeidos;
+
+		if(restoBloque > config->TAMANIO_BLOQUES)
+			restoBloque = config->TAMANIO_BLOQUES;
+
+		log_info(logger, "Accedo al bloque %d", bloque);
+
+		leerArchivo(bloque, buffer + bytesLeidos, restoBloque, offsetBloque);
+		bytesLeidos += restoBloque;
+
+		j++;
+
+		if(bloques[j]!= NULL)
+			bloque = atoi(bloques[j]);
+
+		offsetBloque = 0;
+	}
+
+
+	enviar(socketKernel, SOLICITUD_OBTENCION_DATOS_OK, strlen(buffer)+1, buffer);
+
+	free(path);
+	free(pedido);
+	liberar_paquete(paq);
 	return;
+}
+
+void guardarDatos(t_paquete* paquete){
+
 }
 
 
@@ -422,8 +485,26 @@ int string_pos_char(char* string, char caracter){
 	return len - j ;
 }
 
+void leerArchivo(int bloque, char* buffer, int size, int offset){
+	FILE* archivo = fopen(generarPathBloque(bloque), "r+");
+
+	fseek(archivo, offset, SEEK_SET);
+	fread(buffer, size, 1, archivo);
+
+	fclose(archivo);
+
+}
 
 
+char* generarPathBloque(int num_bloque){
+	char* path_bloque = string_new();
+	string_append(&path_bloque, config->PUNTO_MONTAJE);
+	string_append(&path_bloque, "Bloques/");
+	string_append(&path_bloque, string_itoa(num_bloque));
+	string_append(&path_bloque, ".bin");
+
+	return path_bloque;
+}
 
 
 

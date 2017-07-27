@@ -92,6 +92,7 @@ typedef struct{
 	void crearArchivo(t_paquete* paquete);
 	void borrarArchivo(t_paquete* paquete);
 	void obtenerDatos(t_paquete* paquete);
+	void guardarDatos(t_paquete* paquete);
 
 
 
@@ -110,6 +111,8 @@ typedef struct{
 
 
 	int string_pos_char(char* string, char caracter);
+	void leerArchivo(int bloque, char* buffer, int size, int offset);
+	char* generarPathBloque(int num_bloque);
 
 
 
