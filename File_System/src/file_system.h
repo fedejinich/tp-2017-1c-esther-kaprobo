@@ -113,7 +113,15 @@ typedef struct{
 	int string_pos_char(char* string, char caracter);
 	void leerArchivo(int bloque, char* buffer, int size, int offset);
 	char* generarPathBloque(int num_bloque);
+	int cantidadBloques(char** bloques);
+	void aumentarTamanioArchivo(int offset, int size, char* path);
+	void escribirEnArchivo(int bloque, char* buffer, int size, int offset);
+	int reservarNuevoBloque(char* pathArchivo);
 
+	//AUX
 
+	void config_set_value(t_config* self, char* key, char*value);
+	int config_save(t_config* self);
+	int config_save_in_file(t_config* self, char* path);
 
 #endif
