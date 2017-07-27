@@ -1485,11 +1485,11 @@ void mostrarTablaGlobalDeArchivos(){
 	printf("Tabla Global de Archivos\n");
 	if(list_size(tablaGlobalDeArchivos) > 0){
 		int i = 0;
-		t_entradaTablaGlobalArchivos* entradaDeLaTablaGlobal;
+		t_entradaTablaGlobal* entradaDeLaTablaGlobal;
 		printf("Index | Open | Path\n");
-		entradaDeLaTablaGlobal = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, i);
+		entradaDeLaTablaGlobal = (t_entradaTablaGlobal*)list_get(tablaGlobalDeArchivos, i);
 		printf("path %s\n", entradaDeLaTablaGlobal->path);
-		while(entradaDeLaTablaGlobal = (t_entradaTablaGlobalArchivos*)list_get(tablaGlobalDeArchivos, i)){
+		while(entradaDeLaTablaGlobal = (t_entradaTablaGlobal*)list_get(tablaGlobalDeArchivos, i)){
 			printf("     %i |   %i   | %s\n", i, entradaDeLaTablaGlobal->open, entradaDeLaTablaGlobal->path);
 			i++;
 		}

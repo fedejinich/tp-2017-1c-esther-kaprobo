@@ -283,8 +283,8 @@ bool validarPermisoDeApertura(int pid, char* path, char* permisos);
 bool existeArchivo(char* path);
 int chequearTablaGlobal(char* path);
 int buscarEntradaEnTablaGlobal(char* path);
-t_tablaDeArchivosDeUnProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd);
-t_entradaTablaGlobalArchivos* obtenerEntradaTablaGlobalDeArchivos(t_tablaDeArchivosDeUnProceso* entradaTablaDelProceso);
+t_entradaTablaProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd);
+t_entradaTablaGlobal* obtenerEntradaTablaGlobalDeArchivos(t_entradaTablaProceso* entradaTablaDelProceso);
 void borrarArchivoDeTabla(int pid, int fd);
 
 void escribirArchivo(int* socketActivo, t_paquete* paquete);
