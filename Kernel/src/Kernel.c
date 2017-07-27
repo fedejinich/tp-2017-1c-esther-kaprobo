@@ -1766,6 +1766,7 @@ void finalizarProcesoPorPID(int pid, int exitCode){
 		if((int)colaDelProceso ==1){
 
 			proceso = obtenerProcesoPorPID(cola_exec, pid);
+			eliminarProcesoDeCola(cola_exec, pid);
 
 			if(exitCode == FinalizacionPorConsolaDeKernel){
 
