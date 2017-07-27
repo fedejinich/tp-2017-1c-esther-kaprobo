@@ -3,9 +3,9 @@
 #include <string.h>
 #include <commons/config.h>
 #include <commons/log.h>
+#include <commons/collections/list.h>
 #include <pthread.h>
 #include <signal.h>
-#include <commons/collections/list.h>
 
 #include "src/Commons_Kaprobo.h"
 #include "estructuras.h"
