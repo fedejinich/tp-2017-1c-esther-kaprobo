@@ -26,7 +26,7 @@ endif
 all: File_System
 
 dependents:
-	-cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) all
+	-cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) clean all
 
 # Tool invocations
 File_System: $(OBJS) $(USER_OBJS) /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so
