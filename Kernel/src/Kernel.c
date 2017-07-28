@@ -592,7 +592,7 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 		if(procesoPideSem->abortado == false){
 
-			printf("PID a BLOQUEAR:%d\n ", procesoPideSem->pcb->pid);
+
 
 			bloqueoSemaforo(procesoPideSem, paqueteRecibido->data);
 			queue_push(cola_block, procesoPideSem);
@@ -609,12 +609,14 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 	else{
 		escribeSemaforo(paqueteRecibido->data,*buscarSemaforo(paqueteRecibido->data)-1);
 		mandar = 0;
-		enviar(socketActivo, PEDIDO_SEMAFORO_OK, sizeof(int), &mandar);
 		pthread_mutex_lock(&mutex_exec);
 		queue_push(cola_exec, procesoPideSem);
 		pthread_mutex_unlock(&mutex_exec);
+
+		enviar(socketActivo, PEDIDO_SEMAFORO_OK, sizeof(int), &mandar);
+
 	}
-	free(procesoPideSem);
+
 	pthread_mutex_unlock(&mutex_config);
 }
 
@@ -623,6 +625,7 @@ void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 	char* semaforo = paqueteRecibido->data;
 	t_proceso* proceso;
 	t_proceso* p1;
+
 
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
@@ -639,20 +642,14 @@ void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 
 				p1 = queue_pop(cola_semaforos[i]);
-				printf("LO ENCONTRE en i:%d\n",i);
-				printf("PID proceso: %d\n", proceso->pcb->pid);
-
-				printf("PID P1 : %d \n", p1->pcb->pid);
 
 				pthread_mutex_lock(&mutex_ready);
 				queue_push(cola_ready, p1);
 				pthread_mutex_unlock(&mutex_ready);
 
-				printf("PASE\n");
+				int b=0;
 
-
-
-
+				eliminarProcesoDeCola(cola_block, p1->pcb->pid);
 
 				sem_post(&sem_ready);
 
@@ -673,12 +670,12 @@ void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 }
 void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
  	int i;
- 	printf("BloqueoSem\n");
+
  	for(i=0; i < strlen((char*)sem_ids)/sizeof(char*);i++){
  		if(strcmp((char*)sem_ids[i], semaforo) == 0){
- 			printf("SEMAFORO CULPABLE: %s\n", (char*)sem_ids[i]);
+
  			queue_push(cola_semaforos[i], proceso);
- 			printf("PID:%d, I:%d\n", proceso->pcb->pid,i);
+
  			return;
  		}
  	}
@@ -1133,7 +1130,7 @@ void solicitaVariable(un_socket socketActivo, t_paquete* paqueteRecibido){
 	pthread_mutex_unlock(&mutex_exec);
 	pthread_mutex_lock(&mutex_config);
 	valor = valorVariable(paqueteRecibido->data);
-	printf("VALOR VARIABLE: %d\n", valor);
+
 
 	enviar((un_socket)socketActivo,SOLICITAR_VARIABLE_OK, sizeof(int), &valor);
 	pthread_mutex_unlock(&mutex_config);
@@ -1338,8 +1335,7 @@ int conectarConLaMemoria(){
 int conectarConFileSystem(){
 	log_info(logger, "FILESYSTEM: Inicio de conexion");
 
-	printf("IP:%s\n", ip_fs);
-	printf("PUERTO:%d\n", puerto_fs);
+
 	un_socket socketFileSystem = conectar_a(ip_fs, puerto_fs);
 
 	if (socketFileSystem < 0){
@@ -1583,11 +1579,20 @@ t_proceso* obtenerProcesoSocketCPU(t_queue *cola, un_socket socketBuscado){
 
 	int a = 0;
 	t_proceso*proceso;
-	while(proceso = (t_proceso*)list_get(cola->elements, a)){
-		if (proceso->socketCPU == socketBuscado) return (t_proceso*)list_remove(cola->elements, a);
+
+
+
+	while(a< list_size(cola->elements)){
+		proceso = list_get(cola->elements, a);
+
+		if(proceso->socketCPU == socketBuscado){
+
+			return (t_proceso*)list_remove(cola->elements, a);
+		}
+
 		a++;
 	}
-	int i;
+
 
 
 	log_error(logger, "No hay proceso para retirar");
@@ -1639,9 +1644,9 @@ void hiloConKer(){
 			printf("Ingrese PID del proceso a finalizar\n");
 			scanf("%i",&opcionPID);
 			finalizarProcesoPorPID(opcionPID, FinalizacionPorConsolaDeKernel);
-			printf("SALI CHE\n");
+
 			pthread_mutex_unlock(&mutexEjecuta);
-			printf("SALI DE UNLOCK\n");
+
 			break;
 		case 6:
 			//Detiene la planificacion
@@ -1760,17 +1765,19 @@ void abortar(t_proceso* proceso){
 }
 
 void finalizarProgramaKernel(un_socket socket, t_paquete* paquete, ExitCodes exitCode){
-
+/*
 	bool esMiCPU(void* entrada){
 		t_proceso* proc = (t_proceso*) entrada;
-		return proc->socketCPU = socket;
-	}
+		return proc->socketCPU == socket;
+	}*/
  	t_proceso* proceso;
 
  	pthread_mutex_lock(&mutex_exec);
  	proceso= obtenerProcesoSocketCPU(cola_exec, socket);
  	pthread_mutex_unlock(&mutex_exec);
 
+
+ 	/*
  	if(proceso==NULL){
 		int i;
 		for (i=0; i < strlen((char*)sem_ids)/sizeof(char*); i++){
@@ -1781,7 +1788,7 @@ void finalizarProgramaKernel(un_socket socket, t_paquete* paquete, ExitCodes exi
 				}
 			}
 
- 	}
+ 	}*/
 
  	finalizarProceso(proceso, exitCode);
 
@@ -1910,6 +1917,8 @@ t_proceso* verSiEstaBloqueado(int pid){
 			if((proc->pcb->pid) == pid){
 				log_debug(logger, "El proceso se encontraba bloqueado por Semaforo");
 				proc = (t_proceso*)list_remove(cola_semaforos[i]->elements,i);
+				eliminarProcesoDeCola(cola_block, pid);
+
 				return proc;
 			}
 		}
@@ -1923,7 +1932,7 @@ t_queue* buscarProcesoEnLasColas(int pid){
 	pthread_mutex_lock(&mutex_new);
 	proceso = obtenerProcesoPorPID(cola_new, pid);
 	if(proceso != NULL){
-		printf("ESTA EN NEW\n");
+
 		pthread_mutex_unlock(&mutex_new);
 		return cola_new;
 	}
@@ -1932,7 +1941,7 @@ t_queue* buscarProcesoEnLasColas(int pid){
 	pthread_mutex_lock(&mutex_ready);
 	proceso = obtenerProcesoPorPID(cola_ready, pid);
 	if(proceso != NULL){
-		printf("ESTA EN READY\n");
+
 		pthread_mutex_unlock(&mutex_ready);
 		return cola_ready;
 	}
@@ -1944,7 +1953,7 @@ t_queue* buscarProcesoEnLasColas(int pid){
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoPorPID(cola_exec, pid);
 	if(proceso!= NULL){
-		printf("ESTA EN EXEC\n");
+
 		pthread_mutex_unlock(&mutex_exec);
 
 
@@ -1959,7 +1968,7 @@ t_queue* buscarProcesoEnLasColas(int pid){
 t_proceso* eliminarProcesoDeCola(t_queue* cola, int pid){
 	int a = 0;
 	t_proceso* proceso;
-	printf("LIST SIZE: %d\n", list_size(cola->elements));
+
 	while(a<list_size(cola->elements)){
 		proceso = list_get(cola->elements, a);
 		if (proceso->pcb->pid == pid){
@@ -1976,7 +1985,7 @@ t_proceso* eliminarProcesoDeCola(t_queue* cola, int pid){
 t_proceso* obtenerProcesoPorPID(t_queue *cola, int pid){
 	int a = 0;
 	t_proceso* proceso;
-	printf("LIST SIZE: %d\n", list_size(cola->elements));
+
 	while(a<list_size(cola->elements)){
 		proceso = list_get(cola->elements, a);
 		if (proceso->pcb->pid == pid)
@@ -2015,13 +2024,13 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	tamanio = pedido->tamanio;
 	pid = pedido->pid;
 
-	printf("PROCESO %d nos pide HEAP\n\n", pid);
+	log_info(logger,"PROCESO %d nos pide HEAP\n\n", pid);
 	if(tamanio > TAMPAG - sizeof(t_heapMetadata)*2){
 			log_error(logger, "ERROR, Se intento Reservar mas memoria que el tamanio de una pagina ");
-			printf("voy a enviar\n");
+
 
 			enviar(socketCPU, SOLICITAR_HEAP_FALLO, sizeof(int), algo);
-			printf("envie\n");
+
 			//finalizarProceso(proceso, IntentoDeReservaDeMemoriaErroneo);
 
 			return;
@@ -2088,8 +2097,7 @@ codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
 
 	bloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata));
 
-	printf("LIBERAR HEAP, BLOQUE TRAJE uso: %d\n", bloque->uso);
-	printf("LIBERAR HEAP, BLOQUE TRAJE size:%d\n", bloque->size);
+
 
 	bloque->uso = 0;
 
@@ -2097,8 +2105,7 @@ codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
 
 	bloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata));
 
-	printf("LIBERAR HEAP, DESPUES ACTUALIZAR TRAJE uso: %d\n", bloque->uso);
-	printf("LIBERAR HEAP, DESPUES ACTUALIZAR TRAJE size:%d\n", bloque->size);
+
 
 	if (resul == EXIT_FAILURE_CUSTOM){
 		return LIBERAR_HEAP_FALLO;
@@ -2110,9 +2117,7 @@ codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
 			aux->disponible = aux->disponible + bloque->size;
 			list_replace(listaAdminHeap, i, aux);
 			aux2=list_get(listaAdminHeap, i);
-			printf("aux2 PID: %d\n", aux2->pid);
-			printf("aux2 pagina: %d\n", aux2->pagina);
-			printf("aux2 dispo: %d\n", aux2->disponible);
+
 			break;
 		}
 		i++;
@@ -2129,8 +2134,7 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 	t_adminHeap * aux = malloc(sizeof(t_adminHeap));
 	int offsetAux = puntero->offset;
 
-	printf("PUNTERO RESERVAR BLOQUE PAGINA: %d\n", puntero->pagina);
-	printf("PUNTERO RESERVAR BLOQUE OFFSET: %d\n", puntero->offset);
+
 	int i=0;
 	int sizeLibreViejo;
 
@@ -2156,8 +2160,7 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 
 	auxBloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, puntero->pagina, offsetAux, sizeof(t_heapMetadata));
 
-	printf("AUX BLOQUE PEDIR ASIGNAR BLOQUE USO: %d\n",auxBloque->uso );
-	printf("AUX BLOQUE PEDIR ASIGNAR BLOQUE SIZE: %d\n",auxBloque->size );
+
 
 
 	//memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
@@ -2169,7 +2172,7 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 
 	//memcpy(buffer, &auxBloque, sizeof(t_heapMetadata));
 
-	printf("VOY A GUARDAR PRIMERO uso:%d, size:%d \n", auxBloque->uso, auxBloque->size);
+
 
 	int respuesta1 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina, offsetAux, sizeof(t_heapMetadata), auxBloque);
 
@@ -2188,7 +2191,7 @@ int reservarBloqueHeap(int pid, int size, t_datosHeap* puntero){
 
 	int nuevoOffset = offsetAux + sizeof(t_heapMetadata)+size;
 
-	printf("VOY A GUARDAR SEGUNDO uso:%d, size:%d \n", auxBloque2->uso, auxBloque2->size);
+
 
 	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, puntero->pagina,nuevoOffset, sizeof(t_heapMetadata), auxBloque2 );
 
@@ -2215,9 +2218,6 @@ t_datosHeap* verificarEspacioLibreHeap( int pid, int tamanio){
 
 	while(i<list_size(listaAdminHeap)){
 		aux=  list_get(listaAdminHeap, i);
-		printf("VERIFICAR, AUX PID: %d\n", aux->pid);
-		printf("VERIFICAR, AUX pagina: %d\n", aux->pagina);
-		printf("VERIFICAR, AUX disponible: %d\n", aux->disponible);
 
 		if((aux->disponible >= tamanio + sizeof(t_datosHeap)) && (aux->pid==pid)){
 
@@ -2357,13 +2357,12 @@ int paginaHeapConBloqueSuficiente(int posicionPaginaHeap, int pagina, int pid, i
 		auxBloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, i, sizeof(t_heapMetadata));
 		//memcpy(&auxBloque, buffer, sizeof(t_heapMetadata));
 
-		printf("AUX.SIZE: %d\n", auxBloque->size);
-		printf("AUX.USO: %d\n", auxBloque->uso);
+
 
 		if(auxBloque->size >= tamanio + sizeof(t_heapMetadata) && auxBloque->uso == 0){
 			log_info(logger,"Pagina %d del heap del pid %d suficiente", pagina, pid);
 
-			printf("I:%d\n",i);
+
 			return i;
 		}
 		else{
@@ -2405,24 +2404,24 @@ void finQuantum(un_socket socketCPU, t_paquete* paqueteRec){
 
 
 void deserializarYFinalizar(un_socket socketActivo, t_paquete* paqueteRecibido, ExitCodes code){
-	printf("ENTRE A DESERIALIZAR Y FINALIZAR\n");
+
 	t_proceso* proceso;
-	printf("1\n");
+
 	t_pcb* temporal;
-	printf("2\n");
+
 	pthread_mutex_lock(&mutex_exec);
-	printf("3\n");
+
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
-	printf("4\n");
+
 	pthread_mutex_unlock(&mutex_exec);
-	printf("PASE OBTENERPROCESO CPU\n");
+
 	temporal = desserializarPCB(paqueteRecibido->data);
-	printf("DESSERIALICE\n");
+
 	destruirPCB(proceso->pcb);
 	proceso->pcb = temporal;
-	printf("TEMPORAL\n");
+
 	finalizarProceso(proceso,code);
-	printf("FINALIZAR\n");
+
 	queue_push(cola_CPU_libres, (void*)socketActivo);
 	sem_post(&sem_cpu);
 }
