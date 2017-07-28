@@ -10,7 +10,7 @@
 
 #include "../Memoria.h"
 
-void* hiloServidorKernel(void* arg);
+void* hiloServidorKernel();
 void* hiloConexionKernel(void* socketKernel);
 
 

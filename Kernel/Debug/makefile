@@ -26,10 +26,10 @@ endif
 all: Kernel
 
 dependents:
-	-cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) all
+	-cd /home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) all
 
 # Tool invocations
-Kernel: $(OBJS) $(USER_OBJS) /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so
+Kernel: $(OBJS) $(USER_OBJS) /home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
 	gcc  -o "Kernel" $(OBJS) $(USER_OBJS) $(LIBS)
@@ -38,11 +38,11 @@ Kernel: $(OBJS) $(USER_OBJS) /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_K
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) Kernel
+	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) Kernel
 	-@echo ' '
 
 .PHONY: all clean dependents
 .SECONDARY:
-/home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so:
+/home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so:
 
 -include ../makefile.targets

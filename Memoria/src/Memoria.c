@@ -77,13 +77,53 @@ void grandMalloc() { //aca voy a reservar el bloque de memoria contiuna y crear 
 void iniciarHilos() {
 	log_info(logger, "Inicializando hilos...");
 
-	pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
-	pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
+	//pthread_create(&servidorConexionesCPU, NULL, hiloServidorCPU, NULL);
+	//pthread_create(&servidorConexionesKernel, NULL, hiloServidorKernel, NULL);
 	pthread_create(&consolaMemoria, NULL, hiloConsolaMemoria, NULL);
 
-	pthread_join(servidorConexionesCPU, NULL);
-	pthread_join(servidorConexionesKernel, NULL);
+
+
+	//pthread_join(servidorConexionesCPU, NULL);
+	//pthread_join(servidorConexionesKernel, NULL);
+
+
+
+	hiloServidor();
 	pthread_join(consolaMemoria, NULL);
+}
+
+void* hiloServidor() {
+	log_info(logger,"Inicio del SERVER");
+	socketServidor = socket_escucha("127.0.0.2", puerto);
+	log_debug(logger,"Creacion socket servidor exitosa");
+	listen(socketServidor, 1024);
+	bool conectoConKernel = false;
+
+	while(1) {
+		if(!conectoConKernel) {
+			printf("anda\n");
+			socketCliente = aceptar_conexion(socketServidor);
+			log_info(logger,"Iniciando Handshake con Kernel\n");
+			bool resultado_hand = esperar_handshake(socketCliente,13);
+			if(resultado_hand) {
+				log_debug(logger,"Conexión aceptada del Kernel %d!!", socketCliente);
+				enviar(socketCliente,TAMANIO_PAGINA,sizeof(int),&frame_size);
+				conectoConKernel = true;
+				pthread_t conexionKernel;
+				pthread_create(&conexionKernel, NULL, hiloServidorKernel, socketCliente);
+			}
+		} else {
+			printf("anda2\n");
+			socketCliente2 = aceptar_conexion(socketServidor);
+			log_info(logger, "Iniciando Hanshake con CPU");
+			bool resultado_hand2 = esperar_handshake(socketCliente2, 15);
+
+			if(resultado_hand2) {
+				pthread_t conexionCPU;
+				pthread_create(&conexionCPU, NULL, hiloConexionCPU, (void*)socketCliente2);
+			}
+		}
+	}
 }
 
 

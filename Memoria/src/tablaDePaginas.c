@@ -139,7 +139,7 @@ int getFrameDisponibleHash(int pid, int pagina) {
 		for(i = posibleFrame + 1; i <= tablaDePaginasSize(); i++) {
 			entrada = getEntradaTablaDePaginas(i);
 			if(entrada->pid == -1) {
-				return i;
+				return entrada->frame;
 			}
 		}
 	}
@@ -148,15 +148,16 @@ int getFrameDisponibleHash(int pid, int pagina) {
 	for(j = posibleFrame - 1; j >= 0; j--) {
 		entrada = getEntradaTablaDePaginas(j);
 		if(entrada->pid == -1) {
-			return j;
+			return entrada->frame;
 		}
 	}
 
+	log_error(logger, "MEMORIA LLENA");
 	log_error(logger, "No hay frames disponibles");
 	return EXIT_FAILURE_CUSTOM;
 }
 
-bool paginasDisponibles(int pid, int paginasRequeridas) {
+int paginasDisponibles(int pid, int paginasRequeridas) {
 	int cantidadFramesDisponibles = getCantidadFramesDisponibles();
 
 	if(cantidadFramesDisponibles == EXIT_FAILURE_CUSTOM) {
@@ -165,11 +166,11 @@ bool paginasDisponibles(int pid, int paginasRequeridas) {
 	}
 
 	if(cantidadFramesDisponibles >= paginasRequeridas)
-		return true;
+		return EXIT_SUCCESS_CUSTOM;
 
 	log_error(logger, "No hay mas espacio disponible en memoria para PID %i, Paginas requeridas %i", pid, paginasRequeridas);
 
-	return false;
+	return EXIT_FAILURE_CUSTOM;
 }
 
 int getCantidadFramesDisponibles() {
@@ -227,50 +228,73 @@ int reservarPaginas(int pid, int paginasAReservar) { // LA PRIMERA PAGINA SIEMPR
 
 int asignarMasPaginasAProceso(int pid, int paginasAsignar) {
 	int ultimaPagina = getUltimaPagina(pid);
+
 	if(ultimaPagina == EXIT_FAILURE_CUSTOM) {
 		log_error(logger, "No se pueden asignar %i paginas al PID %i",paginasAsignar, pid);
 		return EXIT_FAILURE_CUSTOM;
 	}
+
 	int i;
 	for(i = 0; i < paginasAsignar; i++) {
 		ultimaPagina++;
 		int pagina = ultimaPagina;
 		int frameDisponible = getFrameDisponibleHash(pid, pagina);
-		if(frameDisponible != EXIT_FAILURE_CUSTOM) {
-			int exito = escribirTablaDePaginas(frameDisponible, pid, pagina);
-			if(exito == EXIT_SUCCESS_CUSTOM) {
-				log_info(logger, "Se asigno una pagina mas para el PID %i. PID: %i, ultima pagina asignada: %i", pid, pid, pagina);
-			} else {
-				log_error(logger, "No se  pudo asignar una pagina mas para el PID %i. PID: %i, ultima pagina que quizo ser asignada: %i", pid, pid, pagina);
-				return EXIT_FAILURE_CUSTOM;
-			}
-		} else {
+
+		if(frameDisponible == EXIT_FAILURE_CUSTOM) {
 			log_error(logger, "No hay mas espacio para asignar la pagina %i del PID %i", pid, pagina);
 			log_error(logger, "No se puedieron asignar todas las pagnas requeridas");
 			return EXIT_FAILURE_CUSTOM;
 		}
+
+		int exito = escribirTablaDePaginas(frameDisponible, pid, pagina);
+
+		if(exito == EXIT_FAILURE_CUSTOM) {
+			log_error(logger, "No se  pudo asignar una pagina mas para el PID %i. PID: %i, ultima pagina que quizo ser asignada: %i", pid, pid, pagina);
+			return EXIT_FAILURE_CUSTOM;
+		}
+
+		log_info(logger, "Se asigno una pagina mas para el PID %i. PID: %i, ultima pagina asignada: %i", pid, pid, pagina);
 	}
 
+	int exito = remplazarUltimaPagina(pid, ultimaPagina);
+
+	if(exito == EXIT_FAILURE_CUSTOM) {
+		log_error(logger, "No se pudo completar el proceso de ASIGNAR MAS PAGINAS A PROCESO");
+		return EXIT_FAILURE_CUSTOM;
+	}
+
+	log_info(logger, "Ultima pagina asignada de PID %i: %i", pid, ultimaPagina);
 	log_debug(logger, "Se asignaron %i paginas mas para el PID %i", paginasAsignar, pid);
 	return EXIT_SUCCESS_CUSTOM;
 }
 
-int getUltimaPagina(int pid) {
-	int ultimaPagina = -1;
-	t_list* entradasPID = getEntradasDePID(pid);
+int remplazarUltimaPagina(int pid, int ultimaPagina) {
 	int i;
-	for(i = 0; i < entradasPID->elements_count; i++) {
-		t_entradaTablaDePaginas* entrada = list_get(entradasPID, i);
-		if(entrada->pagina > ultimaPagina)
-			ultimaPagina = entrada->pagina;
+	for(i = 0; i < list_size(ultimasPaginasDePIDs); i++) {
+		t_ultimaPaginaPID* entrada = list_get(ultimasPaginasDePIDs, i);
+		if(entrada->pid == pid) {
+			log_info(logger, "Remplazando en lista de ultimas paginas. Antes %i, ahora %i", entrada->ultimaPagina, ultimaPagina);
+			entrada->ultimaPagina = ultimaPagina;
+			return EXIT_SUCCESS_CUSTOM;
+		}
 	}
 
-	if(ultimaPagina == -1) {
-		log_error(logger, "No pudo encontrar la ultima pagina del PID %i", pid);
-		return EXIT_FAILURE_CUSTOM;
+	return EXIT_FAILURE_CUSTOM;
+}
+
+int getUltimaPagina(int pid) {
+	int ultimaPagina = EXIT_FAILURE_CUSTOM;
+
+	int i;
+	for(i = 0; i < list_size(ultimasPaginasDePIDs); i++) {
+		log_warning(logger, " %i < %i ", i, list_size(ultimasPaginasDePIDs));
+
+		t_ultimaPaginaPID* entrada = list_get(ultimasPaginasDePIDs, i);
+		if(pid == entrada->pid) {
+			return entrada->ultimaPagina;
+		}
 	}
 
-	log_debug(logger, "Ultima pagina PID %i: %i", pid, ultimaPagina);
 	return ultimaPagina;
 }
 
@@ -366,6 +390,35 @@ void* getPaginaByPID(int pid, int pagina) {
 	leerFrame(frame, 0, frame_size, buffer);
 
 	return buffer;
+}
+
+t_list* getAllPIDsEnMemoria() {
+	t_list* pidsEnMemoria = list_create();
+	int i;
+	for(i = 0; i < list_size(tablaDePaginas); i++) {
+		t_entradaTablaDePaginas* entrada = list_get(tablaDePaginas, i);
+		if(list_size(pidsEnMemoria) <= 0) {
+			list_add(pidsEnMemoria, entrada->pid);
+		} else {
+			int j = 0;
+			int esta = false;
+			int tengoQueAgregarlo = true;
+			while(!esta) {
+				int pidAAnalizar = list_get(pidsEnMemoria, j);
+				if(pidAAnalizar == entrada->pid) {
+					esta = true;
+					tengoQueAgregarlo = false;
+				}
+				j++;
+			}
+
+			if(tengoQueAgregarlo) {
+				list_add(pidsEnMemoria, entrada->pid);
+			}
+		}
+	}
+
+	return pidsEnMemoria;
 }
 
 void bloquearTablaDePaginas() {

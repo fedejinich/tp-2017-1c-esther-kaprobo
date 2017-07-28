@@ -362,7 +362,7 @@ int nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 
 
 void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo){
-
+	log_warning(logger, "CODIGO OP: %i", paqueteRecibido->codigo_operacion);
 	switch(paqueteRecibido->codigo_operacion){
 
 		case ENVIAR_SCRIPT: //Consola nos envia Script
@@ -784,7 +784,7 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 
 	t_escribirArchivo* escritura = malloc(sizeof(t_escribirArchivo));
 
-	escritura = paqueteRecibido->data;
+	memcpy(escritura, paqueteRecibido->data, sizeof(t_escribirArchivo));
 	pthread_mutex_lock(&mutexServidor);
 	t_paquete* info = recibir(socketActivo);
 	pthread_mutex_unlock(&mutexServidor);
@@ -857,6 +857,7 @@ void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, i
 		log_error(logger, "DATOS GUARDADO - OFFSET: %i", guardadoDatos->offset);
 		log_error(logger, "DATOS GUARDADO - SIZE: %i", guardadoDatos->size);
 		log_error(logger, "PATH: %s", path);
+		log_error(logger, "INFO LEN: %i", strlen(buffer));
 		log_error(logger, "INFO: %s", buffer);
 		enviar(fileSystem, GUARDAR_DATOS, sizeof(t_pedidoGuardadoDatos), guardadoDatos);
 		enviar(fileSystem, GUARDAR_DATOS, strlen(path) + 1, path);
@@ -868,18 +869,20 @@ void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, i
 		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paquete = recibir(fileSystem);
 		pthread_mutex_unlock(&mutexServidor);
-
+		log_error(logger, "ACA 1");
 		//Aviso a CPU del resultado del guardado de info
-		int basura = malloc(sizeof(int));
+		int* basura = 1;
 		if(paquete->codigo_operacion == SOLICITUD_GUARDADO_DATOS_OK){
+			log_error(logger, "ACA 2");
 			log_warning(logger, "ESCRITURA OK");
-			enviar(socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), basura);
+			enviar(socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), &basura);
 		}
 		else{
+			log_error(logger, "ACA 3");
 			log_warning(logger, "ESCRITURA FALLO");
 			//???
 		}
-
+		log_error(logger, "ACA 4");
 	}
 	else{
 		log_error(logger, "SIN PERMISO");
@@ -960,8 +963,19 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 	int pid = datos->pid;
 	int fd = datos->fd;
 
-	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
-	t_entradaTablaProceso* archivo = list_get(tablaDeUnProceso->tablaDeUnProceso, fd);
+	//Obtengo la tabla del proceso PID
+	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = malloc(sizeof(t_entradaTablasArchivosPorProceso));
+	tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
+
+	if(tablaDeUnProceso == NULL){
+		//FINALIZAR POR ERROR DESCONOCIDO, NO EXISTE/ENCONTRO LA TABLA
+	}
+
+	log_warning(logger, "YA TENGO LA TABLA DEL PROCESO %i", tablaDeUnProceso->pid);
+
+	//Busco el archivo en la tabla del proceso
+	log_warning(logger, "CANTIDAD DE ARCHIVOS EN LA TABLA DEL PROCESO: %i", tablaDeUnProceso->tablaDeUnProceso->elements_count);
+	t_entradaTablaProceso* archivo = obtenerArchivoDeLaTablaDeUnProcesoPorFD(tablaDeUnProceso, fd);
 
 	char* permisos = archivo->flags;
 
@@ -1839,7 +1853,9 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 				free(aux2);
 
 			}
-			else i++;
+
+			else
+				i++;
 		}
 
 	}

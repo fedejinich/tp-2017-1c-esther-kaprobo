@@ -25,8 +25,12 @@ void* hiloConsolaMemoria() {
 			dumpCache();
 		else if(esDumpPID(comando))
 			dumpPID(comando);
+		else if(esDumpAll(comando))
+			dumpAll();
 		else if(esSizeMemory(comando))
 			sizeMemory();
+		else if(esSizePID(comando))
+			sizePID(comando);
 		else if(esFlush(comando))
 			flush();
 	}
@@ -36,8 +40,8 @@ void* hiloConsolaMemoria() {
 void inicializarVariables() {
 	retardoCommand = malloc(sizeof(string_length("retardo ")));
 	retardoCommand = "retardo ";
-	sizePIDCommand = malloc(sizeof(string_length("size ")));
-	sizePIDCommand = "size ";
+	sizePIDCommand = malloc(sizeof(string_length("size pid ")));
+	sizePIDCommand = "size pid ";
 	dumpPIDCommand = malloc(sizeof(string_length("dump pid ")));
 	dumpPIDCommand = "dump pid ";
 }
@@ -61,7 +65,8 @@ bool esDumpCache(char* comando) {
 }
 
 bool esDumpPID(char* comando) {
-	return false;
+	char* posibleDumpPid = string_substring(comando, 0, string_length(dumpPIDCommand));
+	return string_equals_ignore_case(posibleDumpPid, dumpPIDCommand);
 }
 
 bool esSizeMemory(char* comando) {
@@ -75,6 +80,10 @@ bool esSizePID(char* comando) {
 
 bool esFlush(char* comando) {
 	return string_equals_ignore_case(comando,"flush\n");
+}
+
+bool esDumpAll(char* comando) {
+	return string_equals_ignore_case(comando, "dump\n");
 }
 
 void retardoUpdate(char* comando) {
@@ -155,6 +164,25 @@ void dumpPID(char* comando) {
 	log_debug(logger, "Dump PID %s realizado correctamente",  pidADumpearString);
 }
 
+void dumpAll() {
+	remove("dumpAll.log");
+	t_log* logDumpAll = log_create("dumpAll.log", "Memoria", false, LOG_LEVEL_TRACE);
+
+	int i;
+	for(i = 0; i < list_size(tablaDePaginas); i++) {
+		t_entradaTablaDePaginas* entrada = list_get(tablaDePaginas, i);
+		log_info(logDumpAll, " PID = %i", entrada->pid);
+		if(entrada->pid != -1) {
+			void* buffer = malloc(frame_size);
+			leerFrame(entrada->frame, 0, frame_size, buffer);
+			log_info(logDumpAll, "Frame %i, PID %i, Pagina %i, Contenido:\n %s", entrada->frame, entrada->pid, entrada->pagina, buffer);
+
+		}
+	}
+
+
+}
+
 int sizeMemory() {
 	framesLibres = getCantidadFramesDisponibles();
 	framesOcupados = getCantidadFramesOcupados();
@@ -165,6 +193,21 @@ int sizeMemory() {
 	}
 
 	log_warning(logger, "Cantidad de frames: %i, frames libres: %i, frames ocupados: %i", frames, framesLibres, framesOcupados);
+}
+
+void sizePID(char* comando) {
+	char* PIDString = string_substring(comando, string_length(sizePIDCommand), string_length(comando));
+	if(isNumber(PIDString)) {
+		int pid = atoi(PIDString);
+		t_list* entradasPID = getEntradasDePID(pid);
+		int cantidadDePaginas = entradasPID->elements_count;
+
+		log_warning(logger, "PID %i tiene un tamanio de %i paginas en memoria", cantidadDePaginas);
+
+		list_destroy(entradasPID);
+	} else {
+		log_error(logger, "Escriba el comando nuevamente.");
+	}
 }
 
 
