@@ -155,17 +155,23 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 
 
 	t_direccion* direccion = convertirPunteroADireccion(direccion_variable);
-	int valor;
+	t_valor_variable valor;
 
-	memcpy(&valor, (solicitarBytesAMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size)), 4);
+	//void* data = solicitarBytesAMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size);
 
+	//memcpy(&valor, data, 4);
 
+	valor = *(t_valor_variable*)solicitarBytesAMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size);
+
+	//valor = (int)solicitarBytesAMemoria(memoria, logger, pcb->pid, direccion->pagina, direccion->offset, direccion->size);
+	//valor =3;
 
 	log_info(logger,"Valor dereferenciado: %d", valor);
 
-
+	printf("PASE ACA\n");
 	free(direccion);
-
+	printf("PASE FREE\n");
+	log_info(logger,"Valor dereferenciado: %d", valor);
 	return valor;
 }
 
@@ -442,8 +448,8 @@ void finalizar(){
 
 	programaFinalizado = true;
 
-	void* ok = malloc(sizeof(int));
-	enviar(kernel, PROGRAMA_FINALIZADO, sizeof(int), ok);
+
+	enviar(kernel, PROGRAMA_FINALIZADO, sizeof(int), &pcb->pid);
 	destruirPCB(pcb);
 
 }
@@ -511,6 +517,8 @@ void signal_kernel(t_nombre_semaforo identificador_semaforo){
 	log_debug(logger, "Realizando signal de semaforo %s", semaforo);
 	enviar(kernel, LIBERAR_SEMAFORO, strlen(semaforo)+1, semaforo);
 	free(semaforo);
+
+	t_paquete* paq = recibir(kernel);
 
 	log_debug(logger, "Finalizo Signal_Kernel");
 	return;
@@ -698,17 +706,33 @@ void borrarArchivo(t_descriptor_archivo descriptor_archivo){
 */
 void cerrarArchivo(t_descriptor_archivo descriptor_archivo){
 	//Defino variables locales
-	t_envioDeDatosKernelFSLecturaYEscritura* paquete;
+	t_pedidoGuardadoDatos * pedido = malloc(sizeof(t_pedidoGuardadoDatos));
+
 	int pid;
-	int resultado;
+
+
+
 	//Obtengo el pid
 	pid = pcb->pid;
+
+
 	//Cargo los datos en el paquete
-	paquete->pid = pid;
-	paquete->fd = descriptor_archivo;
+
+
+
+	pedido->offset = pcb->pid;
+	pedido->size = descriptor_archivo;
+
+	printf("PID: %d\n", pedido->offset);
+	printf("fd: %d\n", pedido->size);
+
+
+
 	//Envio los datos a kernel con el codigo
 	log_info(logger, "Enviando datos al Kernel para cerrar archivo con el PID %d.",pid);
-	enviar(kernel,CERRAR_ARCHIVO,sizeof(t_envioDeDatosKernelFSLecturaYEscritura),paquete);
+	enviar(kernel,CERRAR_ARCHIVO,sizeof(t_pedidoGuardadoDatos),pedido);
+	t_paquete* paq = recibir(kernel);
+	log_debug(logger ,"Se cerro el archivo ");
 	//Corto aca o espero el resultado?
 }
 
@@ -801,28 +825,36 @@ void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion,
 */
 void leerArchivo(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio){
 	//Defino variables locales
-	t_envioDeDatosKernelFSLecturaYEscritura* paquete;
-	int pid;
-	int resultado;
-	//Obtengo el pid
-	pid = pcb->pid;
-	//Cargo los datos en el paquete
-	paquete->pid = pid;
+	t_envioDeDatosKernelFSLecturaYEscritura* paquete = malloc(sizeof(t_envioDeDatosKernelFSLecturaYEscritura));
+
+	t_paquete* rta;
+
+	paquete->pid = pcb->pid;
 	paquete->fd = descriptor_archivo;
 	paquete->tamanio = tamanio;
 	paquete->offset = informacion;
-	//Envio los datos a kernel con el codigo
-	log_info(logger, "Enviando datos al Kernel para leer datos de archivo con el PID %d.",pid);
+
+
+
+	log_info(logger, "Enviando datos al Kernel para leer datos de archivo con el PID %d.",paquete->pid);
+
+
 	enviar(kernel,OBTENER_DATOS,sizeof(t_envioDeDatosKernelFSLecturaYEscritura),paquete);
-	//Recibo resultado de la operacion de lectura.
-	resultado = recibir(kernel);
+
+
+
+	rta = recibir(kernel);
 	//Ver que resultado espera desde kernel.
-	if(resultado != 1){
-		//Termina el proceso porque no se pudo leer el arhcivo.
-		log_info(logger, "Hubo un problema intentando leer archivo con el PID %d.",pid);
+	if(rta->codigo_operacion ==SOLICITUD_OBTENCION_DATOS_FALLO){
+
+		log_info(logger, "Hubo un problema intentando leer archivo con el PID %d.",pcb->pid);
+
+		abortadoHeap =1;
+
+
 	}
-	//Recibo lo leido.
-	char* datosLeidos = recibir(kernel);
+
+	char* datosLeidos = (char*)rta->data;
 	log_info(logger, "La informacion leida es: %s.",datosLeidos);
 }
 

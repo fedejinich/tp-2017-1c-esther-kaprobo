@@ -173,9 +173,9 @@ int main(int argc, char **argv) {
 					serializado = serializarPCB(pcb);
 					if(!sigusr1_desactivado){
 						log_info(logger, "CPU, Bloqueado y sigusr1 activada");
-						void* algo = malloc(sizeof(int));
-						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), algo);
-						free(algo);
+						int a = 1;
+						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), &a);
+
 						//VER ESTO DEL LADO KERNEL
 					}
 					enviar(kernel, PROGRAMA_BLOQUEADO_SEMAFORO, ((t_pcb*)serializado)->sizeTotal, serializado);
@@ -210,9 +210,9 @@ int main(int argc, char **argv) {
 					serializado = serializarPCB(pcb);
 					if(!sigusr1_desactivado){
 						log_info(logger, "CPU, Bloqueado y sigusr1 activada");
-						void* algo = malloc(sizeof(int));
-						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), algo);
-						free(algo);
+						int a = 1;
+						enviar(kernel,PROGRAMA_BLOQUEADO_SIGUSR1, sizeof(int), &a);
+
 						//VER ESTO DEL LADO KERNEL
 					}
 					enviar(kernel,FIN_QUANTUM, ((t_pcb*)serializado)->sizeTotal, serializado);
@@ -325,9 +325,9 @@ void sig_handler2(int signo) {
 
 	if(flag==1){
 		log_info(logger,"Se detecto señal sig int CRT C, no se encontraba ejecutando\n");
-		void* algo = malloc(sizeof(int));
-		enviar(kernel, DESCONEXION_CPU, sizeof(int),algo);
-		free(algo);
+		int a = 1;
+		enviar(kernel, DESCONEXION_CPU, sizeof(int),&a);
+
 		exit(0);
 
 	}
