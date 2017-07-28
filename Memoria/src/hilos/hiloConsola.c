@@ -165,7 +165,22 @@ void dumpPID(char* comando) {
 }
 
 void dumpAll() {
-	t_list* pidsEnMemoria;
+	remove("dumpAll.log");
+	t_log* logDumpAll = log_create("dumpAll.log", "Memoria", false, LOG_LEVEL_TRACE);
+
+	int i;
+	for(i = 0; i < list_size(tablaDePaginas); i++) {
+		t_entradaTablaDePaginas* entrada = list_get(tablaDePaginas, i);
+		log_info(logDumpAll, " PID = %i", entrada->pid);
+		if(entrada->pid != -1) {
+			void* buffer = malloc(frame_size);
+			leerFrame(entrada->frame, 0, frame_size, buffer);
+			log_info(logDumpAll, "Frame %i, PID %i, Pagina %i, Contenido:\n %s", entrada->frame, entrada->pid, entrada->pagina, buffer);
+
+		}
+	}
+
+
 }
 
 int sizeMemory() {
