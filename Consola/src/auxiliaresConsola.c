@@ -43,7 +43,7 @@ void crearArchivologgerConsola(){
 }
 void cargarConfiguracion(){
 
-	t_config* config = config_create(getenv("archivo_configuracion_consola"));
+	t_config* config = config_create("consola.config");
 	puerto_kernel = config_get_int_value(config, "PUERTO_KERNEL");
 	ip_kernel = config_get_string_value(config, "IP_KERNEL");
 	log_info(logger,"IP KERNEL: %s", ip_kernel);

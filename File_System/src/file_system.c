@@ -32,8 +32,8 @@ t_config_FS* cargarConfiguracion() {
 
 
 	t_config_FS * conf = malloc(sizeof(t_config_FS));
-	t_config* config = config_create(getenv("archivo_configuracion_fs"));
-
+	//t_config* config = config_create(getenv("archivo_configuracion_fs"));
+	t_config* config = config_create("file_system.config");
 	conf->PUERTO_KERNEL = config_get_int_value(config,"PUERTO");
 
 	conf->PUNTO_MONTAJE = malloc(strlen(config_get_string_value(config,"PUNTO_MONTAJE"))+1);

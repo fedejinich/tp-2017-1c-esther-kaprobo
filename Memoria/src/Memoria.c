@@ -35,7 +35,8 @@ int main(int argc, char **argv) {
 void cargarConfiguracion(){
 	log_info(logger,"Cargando configuracion");
 
-	t_config* config = config_create(getenv("archivo_configuracion_memoria"));
+	//t_config* config = config_create(getenv("archivo_configuracion_memoria"));
+	t_config* config = config_create("memoria.config");
 	puerto = config_get_int_value(config, "PUERTO");
 	log_info(logger,"PUERTO: %i ", puerto);
 
