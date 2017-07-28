@@ -235,7 +235,7 @@ int ** desseralizarInstrucciones(t_size instrucciones, t_intructions* instruccio
 
 t_proceso* obtenerProcesoSocketCPU(t_queue *cola, int socketBuscado);
 void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido);
-void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido);
+void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido);
 t_pcb* desserializarPCB(char* serializado);
 void destruirPCB(t_pcb* pcb);
 int* buscarSemaforo(char*semaforo);

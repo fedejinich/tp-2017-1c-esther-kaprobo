@@ -583,6 +583,7 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 		paqueteNuevo = recibir(socketActivo);
 		pthread_mutex_unlock(&mutexServidor);
 
+
 		pcb_temporal = desserializarPCB(paqueteNuevo->data);
 		liberar_paquete(paqueteNuevo);
 		destruirPCB(procesoPideSem->pcb);
@@ -590,7 +591,11 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 
 		if(procesoPideSem->abortado == false){
+
+			printf("PID a BLOQUEAR:%d\n ", procesoPideSem->pcb->pid);
+
 			bloqueoSemaforo(procesoPideSem, paqueteRecibido->data);
+			queue_push(cola_block, procesoPideSem);
 
 			queue_push(cola_CPU_libres, (void*)socketActivo);
 			sem_post(&sem_cpu);
@@ -602,7 +607,7 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 	}
 	else{
-		escribeSemaforo(paqueteNuevo->data,*buscarSemaforo(paqueteRecibido)-1);
+		escribeSemaforo(paqueteRecibido->data,*buscarSemaforo(paqueteRecibido->data)-1);
 		mandar = 0;
 		enviar(socketActivo, PEDIDO_SEMAFORO_OK, sizeof(int), &mandar);
 		pthread_mutex_lock(&mutex_exec);
@@ -613,10 +618,12 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 	pthread_mutex_unlock(&mutex_config);
 }
 
-void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
+void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 	char* semaforo = paqueteRecibido->data;
 	t_proceso* proceso;
+	t_proceso* p1;
+
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
 	queue_push(cola_exec, proceso);
@@ -629,15 +636,32 @@ void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 	for(i=0; i< strlen((char*)sem_ids)/sizeof(char*);i++){
 		if(strcmp((char*)sem_ids[i],semaforo)==0){
 			if(list_size(cola_semaforos[i]->elements)){
-				proceso = queue_pop(cola_semaforos[i]);
+
+
+				p1 = queue_pop(cola_semaforos[i]);
+				printf("LO ENCONTRE en i:%d\n",i);
+				printf("PID proceso: %d\n", proceso->pcb->pid);
+
+				printf("PID P1 : %d \n", p1->pcb->pid);
+
 				pthread_mutex_lock(&mutex_ready);
-				queue_push(cola_ready, proceso);
+				queue_push(cola_ready, p1);
 				pthread_mutex_unlock(&mutex_ready);
+
+				printf("PASE\n");
+
+
+
+
+
 				sem_post(&sem_ready);
+
 			}
 			else{
 				valor_semaforos[i]++;
 			}
+			pthread_mutex_unlock(&mutex_config);
+			return;
 		}
 	}
 	log_error(logger, "No encontre el semaforo");
@@ -645,6 +669,20 @@ void liberarSemaforo(int* socketActivo, t_paquete* paqueteRecibido){
 	pthread_mutex_unlock(&mutex_config);
 	return;
 
+
+}
+void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
+ 	int i;
+ 	printf("BloqueoSem\n");
+ 	for(i=0; i < strlen((char*)sem_ids)/sizeof(char*);i++){
+ 		if(strcmp((char*)sem_ids[i], semaforo) == 0){
+ 			printf("SEMAFORO CULPABLE: %s\n", (char*)sem_ids[i]);
+ 			queue_push(cola_semaforos[i], proceso);
+ 			printf("PID:%d, I:%d\n", proceso->pcb->pid,i);
+ 			return;
+ 		}
+ 	}
+ 	log_error(logger,"No encontre el semaforo");
 
 }
 
@@ -1525,10 +1563,7 @@ void mandarAEjecutar(t_proceso* proceso, int socket){
 
 t_proceso* obtenerProcesoSocketCPU(t_queue *cola, un_socket socketBuscado){
 
-	bool esMiCPU(void* entrada){
-		t_proceso* proc = (t_proceso*) entrada;
-		return proc->socketCPU = socketBuscado;
-	}
+
 
 	int a = 0;
 	t_proceso*proceso;
@@ -1538,15 +1573,9 @@ t_proceso* obtenerProcesoSocketCPU(t_queue *cola, un_socket socketBuscado){
 	}
 	int i;
 
-	for (i=0; i < strlen((char*)sem_ids)/sizeof(char*); i++){
-		proceso = (t_proceso*)list_remove_by_condition(cola_semaforos[i]->elements, esMiCPU);
-		if(proceso!=NULL){
-			log_debug(logger, "El proceso se encontraba bloqueado por Semaforo");
-			return proceso;
-		}
-	}
+
 	log_error(logger, "No hay proceso para retirar");
-	exit(0);
+
 	return NULL;
 }
 
@@ -1715,12 +1744,28 @@ void abortar(t_proceso* proceso){
 }
 
 void finalizarProgramaKernel(un_socket socket, t_paquete* paquete, ExitCodes exitCode){
+
+	bool esMiCPU(void* entrada){
+		t_proceso* proc = (t_proceso*) entrada;
+		return proc->socketCPU = socket;
+	}
  	t_proceso* proceso;
 
  	pthread_mutex_lock(&mutex_exec);
  	proceso= obtenerProcesoSocketCPU(cola_exec, socket);
  	pthread_mutex_unlock(&mutex_exec);
 
+ 	if(proceso==NULL){
+		int i;
+		for (i=0; i < strlen((char*)sem_ids)/sizeof(char*); i++){
+				proceso = (t_proceso*)list_remove_by_condition(cola_semaforos[i]->elements, esMiCPU);
+				if(proceso!=NULL){
+					log_debug(logger, "El proceso se encontraba bloqueado por Semaforo");
+
+				}
+			}
+
+ 	}
 
  	finalizarProceso(proceso, exitCode);
 
@@ -1786,18 +1831,7 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 }
 
 
-void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
- 	int i;
 
- 	for(i=0; i < strlen((char*)sem_ids)/sizeof(char*);i++){
- 		if(strcmp((char*)sem_ids[i], semaforo) == 0){
- 			queue_push(cola_semaforos[i], proceso);
- 			return;
- 		}
- 	}
- 	log_error(logger,"No encontre el semaforo");
- 	exit(0);
-}
 
 void finalizarProcesoPorPID(int pid, int exitCode){
 
