@@ -485,7 +485,7 @@ void guardarDatos(t_paquete* paquete){
 
 	aumentarTamanioArchivo(pedido->offset, pedido->size, path);
 
-	free(pedido);
+	//free(pedido);
 	free(path);
 
 	enviar(socketKernel, SOLICITUD_GUARDADO_DATOS_OK, sizeof(int), &j);
@@ -621,6 +621,7 @@ void aumentarTamanioArchivo(int offset, int size, char* path){
 	t_config* c = config_create(path);
 
 	int tamanio = config_get_int_value(c, "TAMANIO");
+	char* bloques = config_get_string_value(c, "BLOQUES");
 
 	int bytesEscritos = offset + size - tamanio;
 
@@ -629,6 +630,7 @@ void aumentarTamanioArchivo(int offset, int size, char* path){
 	if(bytesEscritos >0 ){
 
 		config_set_value(c, "TAMANIO", string_itoa(tamanio));
+		config_set_value(c, "BLOQUES", bloques);
 		config_save(c);
 	}
 
@@ -700,7 +702,7 @@ int config_save_in_file(t_config* self, char* path){
 
 	char* lines = string_new();
 	void add_line(char* key, void* value){
-		string_append_with_format(&lines, "%s=%s", key, value);
+		string_append_with_format(&lines, "%s=%s\n", key, value);
 	}
 
 	dictionary_iterator(self->properties, add_line);

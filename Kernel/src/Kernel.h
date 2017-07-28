@@ -296,8 +296,6 @@ t_entradaTablasArchivosPorProceso* crearTablaDeArchivosDeUnProceso(int pid);
 t_entradaTablasArchivosPorProceso* obtenerTablaDeArchivosDeUnProcesoPorPID(int pid);
 t_entradaTablaProceso* obtenerArchivoDeLaTablaDeUnProcesoPorFD(t_entradaTablasArchivosPorProceso* tabla, t_descriptor_archivo fd);
 
-char* armarPathParaEnvio(char* path);
-
 void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, int size, char* buffer);
 void leerArchivo(un_socket socketActivo, t_paquete* paquete);
 void cerrarArchivo(int* socketActivo, t_paquete* paquete);

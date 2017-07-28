@@ -658,7 +658,6 @@ t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flag
 	t_descriptor_archivo fd = a;
 	//Deberia recibir de kernel el arch.'
 	log_warning(logger, "Archivo abierto con el FD %i.", a);
-	sleep(5);
 	return a;
 }
 

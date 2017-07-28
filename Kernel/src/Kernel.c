@@ -811,9 +811,15 @@ void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, i
 
 		log_warning(logger, "ENVIO DATOS PARA ESCRITURA");
 		//Hago 3 envios en orden: Datos para guardado de info, path donde debe guardarse, informacion a guardar
+		log_error(logger, "DATOS GUARDADO - OFFSET: %i", guardadoDatos->offset);
+		log_error(logger, "DATOS GUARDADO - SIZE: %i", guardadoDatos->size);
+		log_error(logger, "PATH: %s", path);
+		log_error(logger, "INFO: %s", buffer);
 		enviar(fileSystem, GUARDAR_DATOS, sizeof(t_pedidoGuardadoDatos), guardadoDatos);
-		enviar(fileSystem, GUARDAR_DATOS, strlen(path) + 1, armarPathParaEnvio(path));
+		enviar(fileSystem, GUARDAR_DATOS, strlen(path) + 1, path);
 		enviar(fileSystem, GUARDAR_DATOS, strlen(buffer) + 1, buffer);
+
+
 
 		//Espero la respuesta del guardado de info
 		pthread_mutex_lock(&mutexServidor);
@@ -822,7 +828,7 @@ void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, i
 
 		//Aviso a CPU del resultado del guardado de info
 		int basura = malloc(sizeof(int));
-		if(paquete->codigo_operacion == ESCRIBIR_ARCHIVO_OK){
+		if(paquete->codigo_operacion == SOLICITUD_GUARDADO_DATOS_OK){
 			log_warning(logger, "ESCRITURA OK");
 			enviar(socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), basura);
 		}
@@ -928,7 +934,7 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 		obtencionDatos ->size = datos->tamanio;
 
 		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos);
-		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, strlen(path) + 1, armarPathParaEnvio(path));
+		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, strlen(path) + 1, path);
 
 		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paquete = recibir(fileSystem);
@@ -997,7 +1003,7 @@ void borrarArchivo(int* socketActivo, t_paquete* paquete){
 
 	if(entradaAEliminar->open == 0){
 
-		enviar(socketActivo, BORRAR_ARCHIVO, strlen(path) + 1, armarPathParaEnvio(path));
+		enviar(socketActivo, BORRAR_ARCHIVO, strlen(path) + 1, path);
 
 		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paquete = recibir(fileSystem);
@@ -1025,12 +1031,6 @@ t_entradaTablaGlobal* obtenerEntradaTablaGlobalDeArchivos(t_entradaTablaProceso*
 void borrarArchivoDeTabla(int pid, int fd){
 	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
 	list_remove(tablaDeUnProceso, fd);
-}
-
-char* armarPathParaEnvio(char* path){
-	char* retorno;
-
-	return retorno;
 }
 
 t_entradaTablasArchivosPorProceso* obtenerTablaDeArchivosDeUnProcesoPorPID(int pid){
