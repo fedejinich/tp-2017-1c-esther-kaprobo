@@ -1837,7 +1837,7 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 				t_adminHeap* aux2 = malloc(sizeof(t_adminHeap));
 				aux2 = list_remove(listaAdminHeap, i);
 				free(aux2);
-
+				i++;
 			}
 			else i++;
 		}
