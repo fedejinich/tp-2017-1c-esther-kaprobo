@@ -7,10 +7,8 @@
 
 #include "hiloKernel.h"
 
-void* hiloServidorKernel(void* arg) {
-    log_info(logger,"Inicio del hilo Kernel");
-    int servidorSocket ;
-    int *socketClienteTemp;
+void* hiloServidorKernel(un_socket socketTemp) {
+    /*log_info(logger,"Inicio del hilo Kernel");
     socketKernel = socket_escucha("127.0.0.1", puerto);
     log_debug(logger,"Creacion socket servidor Kernel exitosa");
     listen(socketKernel, 1024);
@@ -25,12 +23,12 @@ void* hiloServidorKernel(void* arg) {
     } else {
         log_error(logger,"Handshake fallo, se aborta conexion");
         exit (EXIT_FAILURE_CUSTOM);
-    }
+    }*/
 
     t_paquete * paqueteRecibido;
     void* buffer;
     int pid, paginasRequeridas, pagina, tamanio, offset, tamanioCodigo, paginasCodigo;
-
+    socketClienteKernel = socketTemp;
     while (1) {
     	paqueteRecibido = recibir(socketClienteKernel);
 

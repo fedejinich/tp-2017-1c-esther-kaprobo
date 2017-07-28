@@ -392,6 +392,35 @@ void* getPaginaByPID(int pid, int pagina) {
 	return buffer;
 }
 
+t_list* getAllPIDsEnMemoria() {
+	t_list* pidsEnMemoria = list_create();
+	int i;
+	for(i = 0; i < list_size(tablaDePaginas); i++) {
+		t_entradaTablaDePaginas* entrada = list_get(tablaDePaginas, i);
+		if(list_size(pidsEnMemoria) <= 0) {
+			list_add(pidsEnMemoria, entrada->pid);
+		} else {
+			int j = 0;
+			int esta = false;
+			int tengoQueAgregarlo = true;
+			while(!esta) {
+				int pidAAnalizar = list_get(pidsEnMemoria, j);
+				if(pidAAnalizar == entrada->pid) {
+					esta = true;
+					tengoQueAgregarlo = false;
+				}
+				j++;
+			}
+
+			if(tengoQueAgregarlo) {
+				list_add(pidsEnMemoria, entrada->pid);
+			}
+		}
+	}
+
+	return pidsEnMemoria;
+}
+
 void bloquearTablaDePaginas() {
 	pthread_mutex_lock(&tablaDePaginasMutex);
 	log_info(logger, "Bloqueo tabla de paginas");

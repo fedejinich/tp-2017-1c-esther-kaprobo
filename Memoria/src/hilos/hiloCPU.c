@@ -7,7 +7,7 @@
 
 #include "hiloCPU.h"
 
-void* hiloServidorCPU(void* arg) {
+/*void* hiloServidorCPU(void* arg) {
 	log_info(logger,"Inicio del hilo CPU");
 	int  socketCliente;
 
@@ -29,7 +29,7 @@ void* hiloServidorCPU(void* arg) {
 		//pthread_create(&conexionCPU, NULL, hiloConexionCPU, (void*)socketClienteTemp);
 		pthread_create(&conexionCPU, NULL, hiloConexionCPU, (void*)socketCliente);
 	}
-}
+}*/
 
 
 void* hiloConexionCPU(void* socket) {
