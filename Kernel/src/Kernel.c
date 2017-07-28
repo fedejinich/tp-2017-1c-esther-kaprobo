@@ -2067,7 +2067,8 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 		}
 	puntero = verificarEspacioLibreHeap(pid, tamanio);
 	if((puntero->pagina==EXIT_FAILURE_CUSTOM) &&(puntero->offset==EXIT_FAILURE_CUSTOM)){
-		finalizarProceso(proceso, ExcepcionDeMemoria);
+		log_warning(logger, "No hay espacio para Heap");
+		enviar(socketCPU, SOLICITAR_HEAP_FALLO, sizeof(int), algo);
 		return;
 	}
 	if(puntero->pagina == -1){
@@ -2077,7 +2078,9 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 		resultado = reservarPaginaHeap(pid,puntero->pagina);
 		puntero->offset = 0;
 		if(resultado <0){
-			finalizarProceso(proceso, ExcepcionDeMemoria);
+
+			enviar(socketCPU, SOLICITAR_HEAP_FALLO, sizeof(int), algo);
+			return;
 		}
 		proceso->sizePaginasHeap++;
 

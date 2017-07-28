@@ -544,7 +544,7 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 	pedido->pid = pid;
 	pedido->tamanio = espacio;
 
-	printf("VOY A PEDID HEAP DEL PID: %d\n", pid);
+	log_info("VOY A PEDID HEAP DEL PID: %d\n", pid);
 
 	enviar(kernel, SOLICITAR_HEAP, sizeof(t_pedidoHeap), pedido);
 	paquete = recibir(kernel);
