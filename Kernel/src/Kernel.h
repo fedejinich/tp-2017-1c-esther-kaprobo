@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/config.h>
-#include <Commons_Kaprobo/Commons_Kaprobo.h>
-
+//#include <Commons_Kaprobo/Commons_Kaprobo.h>
+#include "Commons_Kaprobo_Consola.h"
 
 #include <pthread.h>
 #include <commons/log.h>
@@ -67,6 +67,9 @@ int cantidadDeProgramas  = 0;
 
 //Numero pid a asignar a cada programa, no confundir
 int pidcounter = 1;
+
+//Numero fd a asignar a los archivos
+int fdcounter = 3;
 
 //Logger
 t_log* logger;
@@ -286,10 +289,13 @@ int buscarEntradaEnTablaGlobal(char* path);
 t_entradaTablaProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd);
 t_entradaTablaGlobal* obtenerEntradaTablaGlobalDeArchivos(t_entradaTablaProceso* entradaTablaDelProceso);
 void borrarArchivoDeTabla(int pid, int fd);
+void eliminarArchivoDeTabla(t_entradaTablasArchivosPorProceso* tablaDeUnProceso, t_descriptor_archivo fd);
+
+int* agregarNuevoArchivoATablas(int pid, char* path, char* permisos);
 
 t_entradaTablasArchivosPorProceso* crearTablaDeArchivosDeUnProceso(int pid);
-
-char* armarPathParaEnvio(char* path);
+t_entradaTablasArchivosPorProceso* obtenerTablaDeArchivosDeUnProcesoPorPID(int pid);
+t_entradaTablaProceso* obtenerArchivoDeLaTablaDeUnProcesoPorFD(t_entradaTablasArchivosPorProceso* tabla, t_descriptor_archivo fd);
 
 void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, int size, char* buffer);
 void leerArchivo(un_socket socketActivo, t_paquete* paquete);

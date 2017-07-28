@@ -9,6 +9,7 @@
 #define AUXILIARESPRIMITVAS_H_
 
 #include "CPU.h"
+#include "Commons_Kaprobo_Consola.h"
 
 t_direccion* armarDireccionPrimeraPagina();
 t_direccion* armarDireccionDeArgumento();

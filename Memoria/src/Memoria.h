@@ -3,11 +3,12 @@
 #include <string.h>
 #include <commons/config.h>
 #include <commons/log.h>
+#include <commons/collections/list.h>
 #include <pthread.h>
 #include <signal.h>
-#include <commons/collections/list.h>
 
-#include <Commons_Kaprobo/Commons_Kaprobo.h>
+//#include <Commons_Kaprobo/Commons_Kaprobo.h>
+#include "Commons_Kaprobo_Consola.h"
 #include "estructuras.h"
 #include "hilos/hiloCPU.h"
 #include "hilos/hiloKernel.h"

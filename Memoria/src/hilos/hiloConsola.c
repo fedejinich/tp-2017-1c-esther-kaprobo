@@ -15,11 +15,6 @@ void* hiloConsolaMemoria() {
 	for(;;) {
 		getline(&comando, &size, stdin);
 		//opciones para consola memoria
-		/*if(esDump(comando))
-			dump();
-		else if(string_equals_ignore_case(comando,"size memory"))
-			sizeMemory();
-		else if(string_equals_ignore_case(comando,"retardo"))*/
 		if(esRetardo(comando))
 			retardoUpdate(comando);
 		else if(esRetardoSolo(comando))
@@ -43,6 +38,8 @@ void inicializarVariables() {
 	retardoCommand = "retardo ";
 	sizePIDCommand = malloc(sizeof(string_length("size ")));
 	sizePIDCommand = "size ";
+	dumpPIDCommand = malloc(sizeof(string_length("dump pid ")));
+	dumpPIDCommand = "dump pid ";
 }
 
 bool esRetardo(char* comando) {
@@ -107,7 +104,6 @@ void dumpTabla() {
 		log_info(logDumpTabla, "Frame: %i, PID: %i, Pagina: %i", entrada->frame, entrada->pid, entrada->pagina);
 	}
 
-
 	log_warning(logger, "Dump tabla realizado correctamente.");
 }
 
@@ -130,7 +126,33 @@ void dumpCache() {
 }
 
 void dumpPID(char* comando) {
-	printf("Implemnta dump PID, pajero\n");
+	remove("dumpPID.log");
+	t_log* logDumpPID = log_create("dumpPID.log", "Memoria", false, LOG_LEVEL_TRACE);
+
+	char* pidADumpearString = string_substring(comando, string_length(dumpPIDCommand), string_length(comando));
+
+	log_warning(logger, "Iniciando dump PID %s", pidADumpearString);
+
+	if(isNumber(pidADumpearString)) {
+		int pidADumpear = atoi(pidADumpearString);
+
+		t_list* entradasDePID = getEntradasDePID(pidADumpear);
+		int i;
+		for(i = 0; i < list_size(entradasDePID); i++) {
+			void* bufferDeLectura = malloc(frame_size);
+			int frameADumpear = ((t_entradaTablaDePaginas *) list_get(entradasDePID, i))->frame;
+			int paginaADumpear = ((t_entradaTablaDePaginas *) list_get(entradasDePID, i))->pagina;
+
+			leerFrame(frameADumpear, 0, frame_size, bufferDeLectura);
+
+			log_info(logDumpPID, "Pagina %i, Frame %i, Contenido \n %s", frameADumpear, paginaADumpear, bufferDeLectura);
+
+			free(bufferDeLectura);
+		}
+
+	}
+
+	log_debug(logger, "Dump PID %s realizado correctamente",  pidADumpearString);
 }
 
 int sizeMemory() {

@@ -1,7 +1,7 @@
 #ifndef CONSOLA_H_
 #define CONSOLA_H_
 
-#include <Commons_Kaprobo/Commons_Kaprobo.h>
+//#include <Commons_Kaprobo/Commons_Kaprobo.h>
 #include <pthread.h>
 #include <time.h>
 #include <ctype.h>
@@ -10,6 +10,7 @@
 #include "auxiliaresConsola.h"
 #include "signal.h"
 
+#include "Commons_Kaprobo_Consola.h"
 
 #define ARCHIVOLOG "Consola.log"
 #define MAXPID 50
@@ -49,6 +50,9 @@ pthread_t threadNewProgram;
 int ejecuta;
 int opcion;
 
+
+
+char * leerArchivo(FILE *archivo);
 
 
 #endif

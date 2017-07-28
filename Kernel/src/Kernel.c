@@ -689,6 +689,7 @@ void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
 
 
 void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
+	log_warning(logger, "Se intentara abrir un archivo");
 	char* path = (char*)paquete->data;
 
 	t_paquete* paq2= malloc(sizeof(t_paquete));
@@ -702,18 +703,16 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 
 	log_info(logger, "EL PID: %d, nos solicita abrir el archivo %s, con permisos %s", pid, path, permisos);
 
-
-	liberar_paquete(paq2);
-
-
-
 	if(existeArchivo(path)){
-		agregarNuevoArchivoATablas(pid, path, permisos);
+		int* fdAMandar;
+		fdAMandar = agregarNuevoArchivoATablas(pid, path, permisos);
+		enviar(socketActivo, ABRIR_ARCHIVO, sizeof(int), &fdAMandar);
 	}
 	else{
 		log_info(logger, "Se intentara Crear el archivo");
 
 		if(string_contains(permisos, "c")){
+
 			enviar(fileSystem, CREAR_ARCHIVO, strlen(path) + 1, path);
 
 			pthread_mutex_lock(&mutexServidor);
@@ -723,10 +722,9 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 			if(paqueteResultadoCreacion->codigo_operacion == CREAR_ARCHIVO_OK){
 				log_debug(logger, "Se creo el archivo correctamente");
 
-				agregarNuevoArchivoATablas(pid, path, permisos);
+				int fdAMandar = agregarNuevoArchivoATablas(pid, path, permisos);
 
-				int basura;
-				enviar(socketActivo, ABRIR_ARCHIVO, sizeof(int), basura);
+				enviar(socketActivo, ABRIR_ARCHIVO, sizeof(int), &fdAMandar);
 			}
 			else{
 				log_warning(logger, "No se pudo crear el archivo");
@@ -745,30 +743,35 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 	}
 }
 
-void agregarNuevoArchivoATablas(int pid, char* path, char* permisos){
+int* agregarNuevoArchivoATablas(int pid, char* path, char* permisos){
+	int* retorno;
+	log_warning(logger, "Agrego un nuevo archivo del proceso PID: %i", pid);
 	t_entradaTablaProceso* entradaLocal = malloc(sizeof(t_entradaTablaProceso));
 
+	entradaLocal->fd = fdcounter;
+	fdcounter++;
 	entradaLocal->flags = permisos;
 	entradaLocal->globalFD = chequearTablaGlobal(path);
 	entradaLocal->puntero = 0;
 
 	//Agrego la entrada a la tabla en el indice = pid, que es la tabla correspondiente
-	t_entradaTablasArchivosPorProceso* entradaTablaDelProceso = list_get(tablasArchivosPorProceso, pid);
+	t_entradaTablasArchivosPorProceso* entradaTablaDelProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
 	if(entradaTablaDelProceso == NULL){
 		entradaTablaDelProceso = crearTablaDeArchivosDeUnProceso(pid);
 	}
 
-	//Busco el indice, porque el FD va a tener que coincidir con el indice en la tabla de archivos del proceso
-	int indice = entradaTablaDelProceso->tablaDeUnProceso->elements_count;
-	entradaLocal->fd = indice;
-	list_add_in_index(entradaTablaDelProceso->tablaDeUnProceso, indice, entradaLocal);
+	list_add(entradaTablaDelProceso->tablaDeUnProceso, entradaLocal);
+	retorno = entradaLocal->fd;
+	return retorno;
 }
 
 t_entradaTablasArchivosPorProceso* crearTablaDeArchivosDeUnProceso(int pid){
+	log_warning(logger, "Creo la tabla de archivos para el proceso PID: %i", pid);
 	t_entradaTablasArchivosPorProceso* nuevaTabla = malloc(sizeof(t_entradaTablasArchivosPorProceso));
 	nuevaTabla->pid = pid;
 	nuevaTabla->tablaDeUnProceso = list_create();
-	list_add_in_index(tablasArchivosPorProceso, pid, nuevaTabla);
+	list_add(tablasArchivosPorProceso, nuevaTabla);
+
 	return nuevaTabla;
 }
 
@@ -793,23 +796,13 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 		pthread_mutex_unlock(&mutex_exec);
 
 		int basura;
-
-
 		if(proceso->abortado==false){
-
 			enviar((un_socket)(proceso->socketConsola), IMPRIMIR_CONSOLA, escritura->size, info->data);
-
 			enviar(socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), basura);
-
 		}
 		else{
-
 			enviar(socketActivo, ESCRIBIR_ARCHIVO_FALLO, sizeof(int), (void*)basura);
 		}
-
-
-
-
 	}
 	else{
 		//VER ESCRIBIR ARCHIVO
@@ -822,63 +815,49 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 
 void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, int size, char* buffer){
 
-	log_error(logger, "ESTOY ACA 0");
+	//Obtengo la tabla del proceso PID
+	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = malloc(sizeof(t_entradaTablasArchivosPorProceso));
+	tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
 
-	/*t_entradaTablaProceso* prueba;
-	int b;
-	while(prueba = (t_entradaTablaProceso*)list_get(tablaDeUnProceso, b)){
-		log_error(logger, "GLOBAL FD: %i", prueba->globalFD);
-		b++;
-	}*/
+	if(tablaDeUnProceso == NULL){
+		//FINALIZAR POR ERROR DESCONOCIDO, NO EXISTE/ENCONTRO LA TABLA
+	}
 
-	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = list_get(tablasArchivosPorProceso, pid);
+	log_warning(logger, "YA TENGO LA TABLA DEL PROCESO %i", tablaDeUnProceso->pid);
 
-	log_error(logger, "ESTOY ACA JEJEJEJE");
+	//Busco el archivo en la tabla del proceso
+	log_warning(logger, "CANTIDAD DE ARCHIVOS EN LA TABLA DEL PROCESO: %i", tablaDeUnProceso->tablaDeUnProceso->elements_count);
+	t_entradaTablaProceso* archivo = obtenerArchivoDeLaTablaDeUnProcesoPorFD(tablaDeUnProceso, fd);
 
-	log_error(logger, "PID %i", pid);
-	log_error(logger, "FD %i", fd);
+	log_warning(logger, "TENGO EL ARCHIVO %i", archivo->fd);
 
-	log_error(logger, "ASERE9");
-	int esNull;
-	//esNull = list_is_empty(tablaDeUnProceso->tablaDeUnProceso);
-	esNull = tablaDeUnProceso == NULL;
-	log_error(logger, "JE");
-	log_error(logger, "TABLA PROCESO NULL? %i", esNull);
-
-	log_error(logger, "LIST COUNT %i", tablaDeUnProceso->tablaDeUnProceso->elements_count);
-
-	/*t_entradaTablaProceso* prueba;
-	int a;
-	while(prueba = (t_entradaTablaProceso*)list_get(tablaDeUnProceso, a)){
-		log_error(logger, "GLOBAL FD: %i", prueba->globalFD);
-		a++;
-	}*/
-	log_error(logger, "ESTOY ACA 0.1");
-	log_error(logger, "FD %i", fd);
-	t_entradaTablaProceso* archivo = list_get(tablaDeUnProceso, fd);
-	log_error(logger, "ESTOY ACA 0.2");
 	char* permisos = archivo->flags;
-
-
-
-	log_error(logger, "ESTOY ACA 1");
 
 	//Path donde debe escribirse
 	t_entradaTablaGlobal* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(archivo);
 	char* path = entradaTablaGlobal->path;
 
-	if(strchr(permisos, 'w') != NULL && existeArchivo(path)){
+	log_error(logger, "CHEQUEO PERMISOS ESCRITURA");
 
+	if(strchr(permisos, 'w') != NULL && existeArchivo(path)){
+		log_error(logger, "CON PERMISO");
 		t_pedidoGuardadoDatos* guardadoDatos = malloc(sizeof(t_pedidoGuardadoDatos));
 
 		//Datos Para la escritura
 		guardadoDatos->offset = archivo->puntero;
 		guardadoDatos->size = size;
 
+		log_warning(logger, "ENVIO DATOS PARA ESCRITURA");
 		//Hago 3 envios en orden: Datos para guardado de info, path donde debe guardarse, informacion a guardar
+		log_error(logger, "DATOS GUARDADO - OFFSET: %i", guardadoDatos->offset);
+		log_error(logger, "DATOS GUARDADO - SIZE: %i", guardadoDatos->size);
+		log_error(logger, "PATH: %s", path);
+		log_error(logger, "INFO: %s", buffer);
 		enviar(fileSystem, GUARDAR_DATOS, sizeof(t_pedidoGuardadoDatos), guardadoDatos);
-		enviar(fileSystem, GUARDAR_DATOS, strlen(path) + 1, armarPathParaEnvio(path));
+		enviar(fileSystem, GUARDAR_DATOS, strlen(path) + 1, path);
 		enviar(fileSystem, GUARDAR_DATOS, strlen(buffer) + 1, buffer);
+
+
 
 		//Espero la respuesta del guardado de info
 		pthread_mutex_lock(&mutexServidor);
@@ -887,15 +866,18 @@ void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, i
 
 		//Aviso a CPU del resultado del guardado de info
 		int basura = malloc(sizeof(int));
-		if(paquete->codigo_operacion == ESCRIBIR_ARCHIVO_OK){
+		if(paquete->codigo_operacion == SOLICITUD_GUARDADO_DATOS_OK){
+			log_warning(logger, "ESCRITURA OK");
 			enviar(socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), basura);
 		}
 		else{
+			log_warning(logger, "ESCRITURA FALLO");
 			//???
 		}
 
 	}
 	else{
+		log_error(logger, "SIN PERMISO");
 		finalizarProcesoPorPID(pid, IntentoDeEscrituraSinPermisos);
 	}
 }
@@ -973,7 +955,7 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 	int pid = datos->pid;
 	int fd = datos->fd;
 
-	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = list_get(tablasArchivosPorProceso, pid);
+	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
 	t_entradaTablaProceso* archivo = list_get(tablaDeUnProceso->tablaDeUnProceso, fd);
 
 	char* permisos = archivo->flags;
@@ -990,7 +972,7 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 		obtencionDatos ->size = datos->tamanio;
 
 		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos);
-		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, strlen(path) + 1, armarPathParaEnvio(path));
+		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, strlen(path) + 1, path);
 
 		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paquete = recibir(fileSystem);
@@ -1059,7 +1041,7 @@ void borrarArchivo(int* socketActivo, t_paquete* paquete){
 
 	if(entradaAEliminar->open == 0){
 
-		enviar(socketActivo, BORRAR_ARCHIVO, strlen(path) + 1, armarPathParaEnvio(path));
+		enviar(socketActivo, BORRAR_ARCHIVO, strlen(path) + 1, path);
 
 		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paquete = recibir(fileSystem);
@@ -1074,8 +1056,8 @@ void borrarArchivo(int* socketActivo, t_paquete* paquete){
 }
 
 t_entradaTablaProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd){
-	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = list_get(tablasArchivosPorProceso, pid);
-	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso->tablaDeUnProceso, fd);
+	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
+	t_entradaTablaProceso* entradaTablaDelProceso = obtenerArchivoDeLaTablaDeUnProcesoPorFD(tablaDeUnProceso, fd);
 
 	return entradaTablaDelProceso;
 }
@@ -1085,14 +1067,48 @@ t_entradaTablaGlobal* obtenerEntradaTablaGlobalDeArchivos(t_entradaTablaProceso*
 }
 
 void borrarArchivoDeTabla(int pid, int fd){
-	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = list_get(tablasArchivosPorProceso, pid);
-	list_remove(tablaDeUnProceso, fd);
+	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
+	eliminarArchivoDeTabla(tablaDeUnProceso, fd);
 }
 
-char* armarPathParaEnvio(char* path){
-	char* retorno;
+void eliminarArchivoDeTabla(t_entradaTablasArchivosPorProceso* tablaDeUnProceso, t_descriptor_archivo fd){
+	int i = 0;
+	int aEliminar;
+	t_entradaTablaProceso* archivo = malloc(sizeof(t_entradaTablaProceso));
 
-	return retorno;
+	while(archivo = (t_entradaTablaProceso*)list_get(tablaDeUnProceso->tablaDeUnProceso, i)){
+		if(archivo->fd == fd){
+			aEliminar = i;
+		}
+		i++;
+	}
+	list_remove(tablaDeUnProceso->tablaDeUnProceso, aEliminar);
+}
+
+t_entradaTablasArchivosPorProceso* obtenerTablaDeArchivosDeUnProcesoPorPID(int pid){
+	int i = 0;
+	t_entradaTablasArchivosPorProceso* tabla = malloc(sizeof(t_entradaTablasArchivosPorProceso));
+
+	while(tabla = (t_entradaTablasArchivosPorProceso*)list_get(tablasArchivosPorProceso, i)){
+		if(tabla->pid == pid){
+			return tabla;
+		}
+		i++;
+	}
+}
+
+t_entradaTablaProceso* obtenerArchivoDeLaTablaDeUnProcesoPorFD(t_entradaTablasArchivosPorProceso* tabla, t_descriptor_archivo fd){
+	int i = 0;
+	t_entradaTablaProceso* archivo = malloc(sizeof(t_entradaTablaProceso));
+
+	while(archivo = (t_entradaTablaProceso*)list_get(tabla->tablaDeUnProceso, i)){
+		if(archivo->fd == fd){
+			return archivo;
+		}
+		i++;
+	}
+	log_error(logger, "SALI SIN NADA");
+	return NULL;
 }
 
 void moverCursor(un_socket socketActivo, t_paquete* paqueteRecibido){
@@ -2246,7 +2262,11 @@ int reservarPaginaHeap(int pid,int pagina){
 
 	resultado = respuesta->codigo_operacion;
 
-	if(resultado== ASIGNAR_PAGINAS_FALLO) return -1;
+	if(resultado== ASIGNAR_PAGINAS_FALLO){
+		log_error(logger,"NO se pudo asignar la pagina al PID");
+		return -1;
+
+	}
 
 	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, pagina, 0, sizeof(t_heapMetadata), aux);
 

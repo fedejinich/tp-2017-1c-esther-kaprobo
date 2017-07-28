@@ -622,9 +622,6 @@ t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flag
 	char* permisos = string_new();
 	int pid;
 
-
-	int resultado;
-
 	pid = pcb->pid;
 
 	if(flags.creacion){
@@ -647,22 +644,21 @@ t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flag
 	enviar(kernel,ABRIR_ARCHIVO,strlen(nombreArchi)+1, nombreArchi);
 	enviar(kernel,pid, strlen(permisos)+1, permisos);
 
-
-
-
-
-	resultado = recibir(kernel);
+	log_info(logger, "Espero respuesta del Kernel");
+	t_paquete* paqResultado = recibir(kernel);
+	log_info(logger, "Recibi respuesta del Kernel");
 	//Analizo el resultado
-	if(resultado != ABRIR_ARCHIVO){
+	if(paqResultado->codigo_operacion != ABRIR_ARCHIVO){
 		//Termina el proceso porque no se pudo abrir arhcivo
 		log_info(logger, "Hubo un problema intentando abrir archivo con el PID %d.",pid);
 		abortadoHeap =1;//cambiar despues nombre
 		return 0;
 	}
-	//Deberia recibir de kernel el arch.
-	t_descriptor_archivo* archi;
-	log_info(logger, "Archivo abierto con el PID %d.",pid);
-	return archi;
+	int a = *(int*)paqResultado->data;
+	t_descriptor_archivo fd = a;
+	//Deberia recibir de kernel el arch.'
+	log_warning(logger, "Archivo abierto con el FD %i.", a);
+	return a;
 }
 
 

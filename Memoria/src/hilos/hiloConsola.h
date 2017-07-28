@@ -31,6 +31,7 @@ bool esFlush(char* comando);
 
 char* retardoCommand;
 char* sizePIDCommand;
+char* dumpPIDCommand;
 
 void flush();
 int sizeMemory();
