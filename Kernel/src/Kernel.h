@@ -22,8 +22,8 @@
 #define MAX_CLIENTES 3
 #define TAMANIODEPAGINA 256 //ESTE DATO LO TRAE DE MEMORIA
 #define CONFIG_KERNEL_SOLO "kernel.config"
-#define CONFIG_KERNEL "/configuracion/kernel.config"
-#define CONFIG_PATH "/configuracion/"
+#define CONFIG_KERNEL "../configuracion/kernel.config"
+#define CONFIG_PATH "../configuracion/"
 
 
 /*

@@ -568,6 +568,7 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 	pthread_mutex_lock(&mutex_exec);
 	procesoPideSem = obtenerProcesoSocketCPU(cola_exec, socketActivo);
 	pthread_mutex_unlock(&mutex_exec);
+	eliminarProcesoDeCola(cola_exec, procesoPideSem->pcb->pid);
 	pthread_mutex_lock(&mutex_config);
 
 	log_info(logger, "Proceso %d pide semaforo %s", procesoPideSem->pcb->pid, paqueteRecibido->data);
@@ -629,7 +630,7 @@ void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
-	queue_push(cola_exec, proceso);
+
 	pthread_mutex_unlock(&mutex_exec);
 	pthread_mutex_lock(&mutex_config);
 	log_info(logger, "Proceso %d libera el semaforo %s",proceso->pcb->pid, paqueteRecibido->data);
@@ -797,7 +798,7 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 		t_proceso* proceso;
 		pthread_mutex_lock(&mutex_exec);
 		proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
-		queue_push(cola_exec, proceso);
+
 		pthread_mutex_unlock(&mutex_exec);
 
 		int basura;
@@ -1154,7 +1155,7 @@ void solicitaVariable(un_socket socketActivo, t_paquete* paqueteRecibido){
 	t_proceso* proceso;
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec,socketActivo);
-	queue_push(cola_exec, proceso);
+
 	pthread_mutex_unlock(&mutex_exec);
 	pthread_mutex_lock(&mutex_config);
 	valor = valorVariable(paqueteRecibido->data);
@@ -1214,7 +1215,7 @@ void escribirVariable(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 	pthread_mutex_lock(&mutex_exec);
 	proceso=obtenerProcesoSocketCPU(cola_exec, socketActivo);
-	queue_push(cola_exec, proceso);
+
 	pthread_mutex_unlock(&mutex_exec);
 	pthread_mutex_lock(&mutex_config);
 
@@ -1615,7 +1616,7 @@ t_proceso* obtenerProcesoSocketCPU(t_queue *cola, un_socket socketBuscado){
 
 		if(proceso->socketCPU == socketBuscado){
 
-			return (t_proceso*)list_remove(cola->elements, a);
+			return proceso;
 		}
 
 		a++;
@@ -1804,6 +1805,8 @@ void finalizarProgramaKernel(un_socket socket, t_paquete* paquete, ExitCodes exi
  	proceso= obtenerProcesoSocketCPU(cola_exec, socket);
  	pthread_mutex_unlock(&mutex_exec);
 
+ 	eliminarProcesoDeCola(cola_exec, proceso->pcb->pid);
+
 
  	/*
  	if(proceso==NULL){
@@ -1899,7 +1902,7 @@ void finalizarProcesoPorPID(int pid, int exitCode){
 		if((int)colaDelProceso ==1){
 
 			proceso = obtenerProcesoPorPID(cola_exec, pid);
-			eliminarProcesoDeCola(cola_exec, pid);
+			//eliminarProcesoDeCola(cola_exec, pid);
 
 			if(exitCode == FinalizacionPorConsolaDeKernel){
 
@@ -2043,12 +2046,11 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	t_proceso *proceso;
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketCPU);
-	queue_push(cola_exec, proceso);
+	//queue_push(cola_exec, proceso);
 	pthread_mutex_unlock(&mutex_exec);
 
 	int pid;
 	int tamanio;
-	void* algo = malloc(sizeof(int));
 
 	pedido = paqueteRecibido->data;
 	tamanio = pedido->tamanio;
@@ -2059,7 +2061,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 			log_error(logger, "ERROR, Se intento Reservar mas memoria que el tamanio de una pagina ");
 
 
-			enviar(socketCPU, SOLICITAR_HEAP_FALLO, sizeof(int), algo);
+			enviar(socketCPU, SOLICITAR_HEAP_FALLO, sizeof(int), &pid);
 
 			//finalizarProceso(proceso, IntentoDeReservaDeMemoriaErroneo);
 
@@ -2067,7 +2069,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 		}
 	puntero = verificarEspacioLibreHeap(pid, tamanio);
 	if((puntero->pagina==EXIT_FAILURE_CUSTOM) &&(puntero->offset==EXIT_FAILURE_CUSTOM)){
-		finalizarProceso(proceso, ExcepcionDeMemoria);
+		enviar(socketCPU, SOLICITAR_HEAP_FALLO, sizeof(int), &pid);
 		return;
 	}
 	if(puntero->pagina == -1){
@@ -2098,7 +2100,7 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 	enviar(socketCPU, SOLICITAR_HEAP_OK, sizeof(t_direccion), direccion);
 	free(puntero);
-	free(algo);
+
 
 }
 
@@ -2410,6 +2412,7 @@ void finQuantum(un_socket socketCPU, t_paquete* paqueteRec){
 	t_pcb* temporal;
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketCPU);
+	eliminarProcesoDeCola(cola_exec, proceso->pcb->pid);
 	pthread_mutex_unlock(&mutex_exec);
 	temporal = desserializarPCB(paqueteRec->data);
 	destruirPCB(proceso->pcb);
@@ -2445,6 +2448,8 @@ void deserializarYFinalizar(un_socket socketActivo, t_paquete* paqueteRecibido, 
 
 	pthread_mutex_unlock(&mutex_exec);
 
+	eliminarProcesoDeCola(cola_exec, proceso->pcb->pid);
+
 	temporal = desserializarPCB(paqueteRecibido->data);
 
 	destruirPCB(proceso->pcb);
@@ -2464,6 +2469,7 @@ void cpuCerrada(un_socket socketCPU, t_paquete* paqueteRec){
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketCPU);
 	pthread_mutex_unlock(&mutex_exec);
+	eliminarProcesoDeCola(cola_exec,proceso->pcb->pid);
 	sacarCPUDeListas(socketCPU);
 	temporal = desserializarPCB(paqueteRec->data);
 	destruirPCB(proceso->pcb);

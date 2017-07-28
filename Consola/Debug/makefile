@@ -26,10 +26,10 @@ endif
 all: Consola
 
 dependents:
-	-cd /home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) all
+	-cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) all
 
 # Tool invocations
-Consola: $(OBJS) $(USER_OBJS) /home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so
+Consola: $(OBJS) $(USER_OBJS) /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
 	gcc  -o "Consola" $(OBJS) $(USER_OBJS) $(LIBS)
@@ -38,11 +38,11 @@ Consola: $(OBJS) $(USER_OBJS) /home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/
 
 # Other Targets
 clean:
-	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) Consola
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) Consola
 	-@echo ' '
 
 .PHONY: all clean dependents
 .SECONDARY:
-/home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so:
+/home/utnso/Escritorio/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so:
 
 -include ../makefile.targets

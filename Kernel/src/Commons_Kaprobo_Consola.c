@@ -37,8 +37,8 @@ un_socket conectar_a(char *IP, char* Port) {
 un_socket socket_escucha(char* IP, char* Port) {
 	struct sockaddr_in direccionServidor;
 	direccionServidor.sin_family = AF_INET;
-	//direccionServidor.sin_addr.s_addr = inet_addr(IP);
-	direccionServidor.sin_addr.s_addr = inet_addr(ip_local());
+	direccionServidor.sin_addr.s_addr = inet_addr(IP);
+	//direccionServidor.sin_addr.s_addr = INADDR_ANY;
 	direccionServidor.sin_port = htons(Port);
 
 		int socketEscucha = socket(AF_INET, SOCK_STREAM, 0);
