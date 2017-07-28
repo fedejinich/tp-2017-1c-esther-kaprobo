@@ -463,11 +463,11 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 			sacarCPUDeListas(socketActivo);
 			break;
 		case ABORTADO_CONSOLA:
-			log_info(logger, "CPU nos envia el PCB serializado que se finalizo desde proceso Consola");
+			log_info(logger, "CPU nos envia el PCB serializado que se finalizo ");
 			deserializarYFinalizar(socketActivo, paqueteRecibido, DesconexionDeConsola);
 			break;
 		case ABORTADO_CONSOLA_KERNEL:
-			log_info(logger, "CPU nos envia el PCB serializado que se finalizo desde consola de Kernel");
+			log_info(logger, "CPU nos envia el PCB serializado que se finalizo ");
 			deserializarYFinalizar(socketActivo, paqueteRecibido, FinalizacionPorConsolaDeKernel);
 			break;
 
@@ -663,12 +663,14 @@ void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 				valor_semaforos[i]++;
 			}
+			enviar(socketActivo, LIBERAR_SEMAFORO, sizeof(int), &i);
+			printf("LIBERE SEM\n");
 			pthread_mutex_unlock(&mutex_config);
 			return;
 		}
 	}
 	log_error(logger, "No encontre el semaforo");
-
+	enviar(socketActivo, LIBERAR_SEMAFORO, sizeof(int), &i);
 	pthread_mutex_unlock(&mutex_config);
 	return;
 
@@ -954,7 +956,7 @@ int buscarEntradaEnTablaGlobal(char* path){
 
 
 void leerArchivo(un_socket socketActivo, t_paquete* paquete){
-	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
+	t_envioDeDatosKernelFSLecturaYEscritura* datos= (t_envioDeDatosKernelFSLecturaYEscritura*)paquete->data;
 	int pid = datos->pid;
 	int fd = datos->fd;
 
@@ -971,7 +973,7 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 		t_pedidoGuardadoDatos* obtencionDatos = malloc(sizeof(t_pedidoGuardadoDatos));
 
 		//Datos Para la escritura
-		obtencionDatos ->offset = archivo->puntero;
+		obtencionDatos ->offset = datos->offset;
 		obtencionDatos ->size = datos->tamanio;
 
 		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos);
@@ -991,20 +993,21 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 		else{
 			//DEBERIA ABORTAR? O HACER ESTO DE AVISARLE A CPU
 			//PARA MI DEBERIA ABORTAR
-			int basura;
-			enviar(socketActivo, SOLICITUD_OBTENCION_DATOS_FALLO, sizeof(int), basura);
+			finalizarProcesoPorPID(pid, ErrorSinDefinicion);
+			enviar(socketActivo, SOLICITUD_OBTENCION_DATOS_FALLO, sizeof(int), &pid);
 		}
 	}
 	else{
+		enviar(socketActivo, SOLICITUD_OBTENCION_DATOS_FALLO, sizeof(int), &pid);
 		finalizarProcesoPorPID(pid, IntentoDeLecturaSinPermisos);
 	}
 }
 
-void cerrarArchivo(int* socketActivo, t_paquete* paquete){
+void cerrarArchivo(un_socket socketActivo, t_paquete* paquete){
 	log_warning(logger, "CERRANDO ARCHIVO");
-	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
-	int pid = datos->pid;
-	int fd = datos->fd;
+	t_pedidoGuardadoDatos* datos= (t_pedidoGuardadoDatos*)paquete->data;
+	int pid = datos->offset;
+	int fd = datos->size;
 
 	t_entradaTablaProceso* entradaTablaProceso = obtenerEntradaTablaArchivosDelProceso(pid, fd);
 	t_entradaTablaGlobal* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(entradaTablaProceso);
@@ -1028,7 +1031,7 @@ void cerrarArchivo(int* socketActivo, t_paquete* paquete){
 		log_warning(logger, "Archivo %i eliminado de la tabla de archivos globales", entradaTablaProceso->globalFD);
 	}
 	//int basura;
-	//enviar(socketActivo, CERRAR_ARCHIVO, sizeof(int), basura);
+	enviar(socketActivo, CERRAR_ARCHIVO, sizeof(int), &pid);
 }
 
 void borrarArchivo(int* socketActivo, t_paquete* paquete){
