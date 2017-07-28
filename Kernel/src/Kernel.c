@@ -931,7 +931,7 @@ int chequearTablaGlobal(char* path){
 	else{
 		t_entradaTablaGlobal* entrada = malloc(sizeof(t_entradaTablaGlobal));
 		entrada->path = path;
-		entrada->open = 1;
+		entrada->open = 0;
 		list_add(tablaGlobalDeArchivos, entrada);
 		fd = buscarEntradaEnTablaGlobal(path);
 	}
@@ -1001,6 +1001,7 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 }
 
 void cerrarArchivo(int* socketActivo, t_paquete* paquete){
+	log_warning(logger, "CERRANDO ARCHIVO");
 	t_envioDeDatosKernelFSLecturaYEscritura* datos= paquete->data;
 	int pid = datos->pid;
 	int fd = datos->fd;
@@ -1009,6 +1010,7 @@ void cerrarArchivo(int* socketActivo, t_paquete* paquete){
 	t_entradaTablaGlobal* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(entradaTablaProceso);
 
 	if(entradaTablaGlobal->open > 1){
+		log_warning(logger, "ESTABA ABIERTO MAS DE UNA VEZ");
 		//Borrar la entrada de la tabla del proceso
 		borrarArchivoDeTabla(pid, fd);
 
@@ -1016,6 +1018,7 @@ void cerrarArchivo(int* socketActivo, t_paquete* paquete){
 		entradaTablaGlobal->open--;
 	}
 	else{
+		log_warning(logger, "ESTABA ABIERTO SOLO UNA VEZ");
 		//Borrar la entrada de la tabla del proceso
 		borrarArchivoDeTabla(pid, fd);
 		log_warning(logger, "Archivo %i eliminado de la tabla del proceso %i", fd, pid);
@@ -1024,6 +1027,8 @@ void cerrarArchivo(int* socketActivo, t_paquete* paquete){
 		list_remove(tablaGlobalDeArchivos, entradaTablaProceso->globalFD);
 		log_warning(logger, "Archivo %i eliminado de la tabla de archivos globales", entradaTablaProceso->globalFD);
 	}
+	//int basura;
+	//enviar(socketActivo, CERRAR_ARCHIVO, sizeof(int), basura);
 }
 
 void borrarArchivo(int* socketActivo, t_paquete* paquete){
