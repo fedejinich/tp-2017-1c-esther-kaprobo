@@ -58,6 +58,11 @@ void* solicitarBytesDePagina(int pid, int pagina, int offset, int tamanio) {
 }
 
 int almacenarBytesEnPagina(int pid, int pagina, int offset, int tamanio, void* buffer) {
+	if(pid == 1 && pagina == 411) {
+		dumpTabla();
+		dumpCache();
+	}
+
 	retardo();
 
 	//tamanio--; //por el \0
@@ -140,7 +145,7 @@ int inicializarProceso(int pid, int paginasRequeridas) {
 int finalizarProceso(int pid) {
 	retardo();
 
-	dumpPID(string_itoa(pid));
+	//dumpPID(string_itoa(pid));
 
 	log_warning(logger, "Finalizando proceso. PID %i ...", pid);
 

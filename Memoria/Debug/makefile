@@ -30,7 +30,7 @@ endif
 all: Memoria
 
 dependents:
-	-cd /home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) clean all
+	-cd /home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug && $(MAKE) all
 
 # Tool invocations
 Memoria: $(OBJS) $(USER_OBJS) /home/utnso/so/tp-2017-1c-Kaprobo/Commons_Kaprobo/Debug/libCommons_Kaprobo.so

@@ -115,7 +115,12 @@ void* hiloServidorKernel(void* arg) {
             case ASIGNAR_PAGINAS:
 				paginasRequeridas = ((t_asignarPaginasKernel*)(paqueteRecibido->data))->paginasAsignar;
 				pid = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->pid;
-				asignarPaginasAProceso(pid, paginasRequeridas);
+				int fin = asignarPaginasAProceso(pid, paginasRequeridas);
+
+				if(exito == EXIT_FAILURE_CUSTOM) {
+					enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), &fin);
+					log_error(logger, "El pedido de KERNEL para ASIGNAR PAGINA de PID %i fallo");
+				}
 
 				log_debug(logger, "El pedido de KERNEL para ASIGNAR PAGINAS de PID %i fue completado correctamente", pid);
 
