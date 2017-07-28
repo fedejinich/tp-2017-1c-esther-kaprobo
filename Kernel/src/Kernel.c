@@ -2214,7 +2214,11 @@ int reservarPaginaHeap(int pid,int pagina){
 
 	resultado = respuesta->codigo_operacion;
 
-	if(resultado== ASIGNAR_PAGINAS_FALLO) return -1;
+	if(resultado== ASIGNAR_PAGINAS_FALLO){
+		log_error(logger,"NO se pudo asignar la pagina al PID");
+		return -1;
+
+	}
 
 	int respuesta2 = almacenarEnMemoria(memoria, logger, pid, pagina, 0, sizeof(t_heapMetadata), aux);
 

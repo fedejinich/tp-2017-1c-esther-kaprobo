@@ -46,6 +46,8 @@ int framesOcupados;
 void* memoria;
 t_frame* framePointer;
 
+t_list* ultimasPaginasDePIDs;
+
 
 
 

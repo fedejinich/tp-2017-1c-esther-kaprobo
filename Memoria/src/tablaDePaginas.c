@@ -12,6 +12,7 @@ void inicializarTablaDePaginas() {
 	log_info(logger,"Inicializando tabla de paginas...");
 
 	tablaDePaginas = &memoria[0];
+	ultimasPaginasDePIDs = list_create();
 
 	int nroDeFrameTablaDePaginas;
 	for(nroDeFrameTablaDePaginas = 0; nroDeFrameTablaDePaginas <= frames; nroDeFrameTablaDePaginas++) {
