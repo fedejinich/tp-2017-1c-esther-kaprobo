@@ -247,7 +247,7 @@ bool hayEspacioEnCache(int pid, int pagina) {
 	bool hayEspacio = (cache->elements_count < entradas_cache) && (cantidadEntradasPID < cache_x_proc); //es <= ?
 
 	log_info(logger, "Cantidad de elementos en cache: %i", cache->elements_count);
-	log_info(logger, "Cantidad de elementos de PID %i: %i", cantidadEntradasPID);
+	log_info(logger, "Cantidad de elementos de PID %i: %i", pid, cantidadEntradasPID);
 
 	if(!hayEspacio) {
 		log_warning(logger, "No hay espacio disponible en cache para el PID %i, Pagina %i", pid, pagina);

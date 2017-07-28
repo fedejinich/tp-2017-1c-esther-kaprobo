@@ -42,6 +42,14 @@ void testFuncionHashObtengoPosicionCandidataOk();
 pthread_mutex_t tablaDePaginasMutex;
 pthread_mutex_t cacheMutex;
 
+pthread_t servidor;
+
+un_socket socketServidor;
+un_socket socketCliente;
+un_socket socketCliente2;
+
+void* hiloServidor();
+
 
 
 

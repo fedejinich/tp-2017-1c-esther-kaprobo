@@ -34,6 +34,7 @@ bool existePIDPagina(int pid, int pagina);
 int getFramePrimeraPagina(int pid);
 void* getPaginaByPID(int pid, int pagina);
 int remplazarUltimaPagina(int pid, int ultimaPagina);
+t_list* getAllPIDsEnMemoria();
 
 void bloquearTablaDePaginas();
 void desbloquearTablaDePaginas();
