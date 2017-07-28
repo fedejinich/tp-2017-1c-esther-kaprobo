@@ -1019,7 +1019,7 @@ void borrarArchivo(int* socketActivo, t_paquete* paquete){
 
 t_entradaTablaProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd){
 	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
-	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso->tablaDeUnProceso, fd);
+	t_entradaTablaProceso* entradaTablaDelProceso = obtenerArchivoDeLaTablaDeUnProcesoPorFD(tablaDeUnProceso, fd);
 
 	return entradaTablaDelProceso;
 }
@@ -1030,7 +1030,21 @@ t_entradaTablaGlobal* obtenerEntradaTablaGlobalDeArchivos(t_entradaTablaProceso*
 
 void borrarArchivoDeTabla(int pid, int fd){
 	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
-	list_remove(tablaDeUnProceso, fd);
+	eliminarArchivoDeTabla(tablaDeUnProceso, fd);
+}
+
+void eliminarArchivoDeTabla(t_entradaTablasArchivosPorProceso* tablaDeUnProceso, t_descriptor_archivo fd){
+	int i = 0;
+	int aEliminar;
+	t_entradaTablaProceso* archivo = malloc(sizeof(t_entradaTablaProceso));
+
+	while(archivo = (t_entradaTablaProceso*)list_get(tablaDeUnProceso->tablaDeUnProceso, i)){
+		if(archivo->fd == fd){
+			aEliminar = i;
+		}
+		i++;
+	}
+	list_remove(tablaDeUnProceso->tablaDeUnProceso, aEliminar);
 }
 
 t_entradaTablasArchivosPorProceso* obtenerTablaDeArchivosDeUnProcesoPorPID(int pid){

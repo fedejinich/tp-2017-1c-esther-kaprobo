@@ -289,6 +289,7 @@ int buscarEntradaEnTablaGlobal(char* path);
 t_entradaTablaProceso* obtenerEntradaTablaArchivosDelProceso(int pid, int fd);
 t_entradaTablaGlobal* obtenerEntradaTablaGlobalDeArchivos(t_entradaTablaProceso* entradaTablaDelProceso);
 void borrarArchivoDeTabla(int pid, int fd);
+void eliminarArchivoDeTabla(t_entradaTablasArchivosPorProceso* tablaDeUnProceso, t_descriptor_archivo fd);
 
 int* agregarNuevoArchivoATablas(int pid, char* path, char* permisos);
 
