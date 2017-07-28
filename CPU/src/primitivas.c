@@ -793,13 +793,22 @@ void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion,
 	escribir->fd = descriptor_archivo;
 	escribir->size = tamanio;
 	escribir->info = informacion;
-	char* texto = malloc(tamanio);
-	memcpy(texto, (char*)informacion, tamanio);
+	char* texto = string_new();
+	string_append(&texto, (char*)informacion);
 
+	log_warning(logger, "TEXTO: %s", texto);
+	log_warning(logger, "STR LEN TEXTO: %i", strlen(texto));
+
+
+	log_warning(logger, "Envio datos para escribir");
 	enviar(kernel, ESCRIBIR_ARCHIVO, sizeof(t_escribirArchivo), escribir);
-	enviar(kernel, 1, tamanio, texto);
+	log_warning(logger, "Envio texto a escribir");
+	enviar(kernel, ESCRIBIR_ARCHIVO, strlen(texto)+1, texto);
+
+	log_warning(logger, "Espero respuesta");
 	t_paquete* paquete = recibir(kernel);
 
+	log_warning(logger, "Recibi respuesta");
 	if(paquete->codigo_operacion== ESCRIBIR_ARCHIVO_OK){
 		log_debug(logger, "Se escribio correctamente el archivo");
 	}
@@ -836,7 +845,7 @@ void leerArchivo(t_descriptor_archivo descriptor_archivo, t_puntero informacion,
 
 
 
-	log_info(logger, "Enviando datos al Kernel para leer datos de archivo con el PID %d.",paquete->pid);
+	log_info(logger, "Enviando datos al Kernel para leer datos de archivo con el PID %d, offset %i",paquete->pid, informacion);
 
 
 	enviar(kernel,OBTENER_DATOS,sizeof(t_envioDeDatosKernelFSLecturaYEscritura),paquete);
