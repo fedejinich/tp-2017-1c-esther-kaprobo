@@ -295,7 +295,9 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 		return;
 	}
 
+	pthread_mutex_lock(&mutexServidor);
 	bool resultado_CPU = esperar_handshake(clientes[*nClientes - 1], HandshakeCPUKernel);
+	pthread_mutex_unlock(&mutexServidor);
 
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
 	if(resultado_CPU){
@@ -342,7 +344,9 @@ int nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 		resultado = 0 ;
 	}
 
+	pthread_mutex_lock(&mutexServidor);
 	bool resultado_Consola = esperar_handshake(clientes[*nClientes - 1], HandshakeConsolaKernel);
+	pthread_mutex_unlock(&mutexServidor);
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
 
 	//VER ESTO, que pasa si falla HANDSHAKE, que debo informar a Consola?
