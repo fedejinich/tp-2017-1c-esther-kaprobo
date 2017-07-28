@@ -152,7 +152,9 @@ int main(int argc, char **argv) {
 					log_debug(logger, "Tamanio sentencia: %d", strlen(sentencia));
 
 
+
 					log_debug(logger, "Pid N°: %d, sentencia: %s", pidAux, depurarSentencia(sentencia));
+
 
 					analizadorLinea(depurarSentencia(sentencia),&primitivas, &primitivas_kernel);
 
@@ -419,7 +421,6 @@ char* leer(int pid, int pagina, int offset, int tamanio){
 
 		void* instruccion = solicitarBytesAMemoria(memoria,logger,pid,pagina,offset,tamanio);
 
-		log_warning(logger, "Instruccion recibidaaaaa %s", instruccion);
 
 		if((int)instruccion == EXIT_FAILURE_CUSTOM) return NULL;
 

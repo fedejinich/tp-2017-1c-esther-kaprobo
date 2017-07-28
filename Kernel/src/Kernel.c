@@ -153,7 +153,7 @@ void cargarConfiguracion() {
 	}
 
 	cola_semaforos = nalloc(strlen((char*)sem_inits)*sizeof(char*));
-	for( j=0; j< strlen((char*)sem_inits) / sizeof(char*);j++){
+	for( j=0; j< strlen((char*)sem_ids) / sizeof(char*);j++){
 		cola_semaforos[j] = nalloc(sizeof(t_queue*));
 		cola_semaforos[j] = queue_create();
 	}
@@ -622,7 +622,7 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
-	char* semaforo = paqueteRecibido->data;
+	char* semaforo = (char*)paqueteRecibido->data;
 	t_proceso* proceso;
 	t_proceso* p1;
 
@@ -636,9 +636,14 @@ void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 	int i;
 
+
+
+
 	for(i=0; i< strlen((char*)sem_ids)/sizeof(char*);i++){
+
 		if(strcmp((char*)sem_ids[i],semaforo)==0){
-			if(list_size(cola_semaforos[i]->elements)){
+
+			if((cola_semaforos[i]->elements->elements_count) >0){
 
 
 				p1 = queue_pop(cola_semaforos[i]);
@@ -647,7 +652,7 @@ void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 				queue_push(cola_ready, p1);
 				pthread_mutex_unlock(&mutex_ready);
 
-				int b=0;
+
 
 				eliminarProcesoDeCola(cola_block, p1->pcb->pid);
 
@@ -655,6 +660,7 @@ void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 			}
 			else{
+
 				valor_semaforos[i]++;
 			}
 			pthread_mutex_unlock(&mutex_config);
