@@ -47,12 +47,12 @@ void* hiloServidorKernel(void* arg) {
 				void* buffer = solicitarBytesDePagina(pid, pagina, offset, tamanio);
 
 				if(buffer == EXIT_FAILURE_CUSTOM) {
-					int* fallo = EXIT_FAILURE_CUSTOM;
+					int* fallo = (int*) EXIT_FAILURE_CUSTOM;
 					enviar(socketClienteKernel, SOLICITAR_BYTES_FALLO, sizeof(int), &fallo);
 					log_error(logger, "El pedido de KERNEL para SOLICITAR BYTES de PID %i en pagina %i con offset %i y tamanio %i tuvo un fallo",
 							pid, pagina, offset, tamanio);
 
-					free(buffer);
+					//free(buffer);
 
 					break;
 				}
@@ -117,18 +117,26 @@ void* hiloServidorKernel(void* arg) {
 				pid = ((t_pedidoDePaginasKernel*)(paqueteRecibido->data))->pid;
 				int fin = asignarPaginasAProceso(pid, paginasRequeridas);
 
-				if(exito == EXIT_FAILURE_CUSTOM) {
-					enviar(socketKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), &fin);
-					log_error(logger, "El pedido de KERNEL para ASIGNAR PAGINA de PID %i fallo");
+				if(fin == EXIT_FAILURE_CUSTOM) {
+					int* basura = (int*)EXIT_FAILURE_CUSTOM;
+					enviar(socketClienteKernel, ASIGNAR_PAGINAS_FALLO, sizeof(int), &basura);
+					log_error(logger, "El pedido de KERNEL para ASIGNAR PAGINA de PID %i fallo", pid);
+
+					break;
 				}
+
+				int* okAsignar = (int*) EXIT_SUCCESS_CUSTOM;
+				enviar(socketClienteKernel, ASIGNAR_PAGINAS_OK, sizeof(int), &okAsignar);
+				if(paginasRequeridas > 1)
+					log_debug(logger, "Se asignaron %i paginas mas al proceso. PID: %i", paginasRequeridas, pid);
+				else
+					log_debug(logger, "Se asigno una pagina mas al proceso. PID %i", pid);
 
 				log_debug(logger, "El pedido de KERNEL para ASIGNAR PAGINAS de PID %i fue completado correctamente", pid);
 
 				break;
             default:
-				log_error(logger, "Exit por hilo Kernel");
-				log_error(logger, "Tiro un exit(EXIT_FAILURE_CUSTOM) desde hilo-Kernel");
-            	exit(EXIT_FAILURE_CUSTOM);
+				log_warning(logger, "Ningun codigo de operacion valido HILO KERNEL");
 				break;
         }
     }

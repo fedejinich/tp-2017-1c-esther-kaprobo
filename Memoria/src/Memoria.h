@@ -24,7 +24,6 @@
 #define CUSTOM_ERROR -23
 
 
-
 /*
  * FUNCIONES
  * */
