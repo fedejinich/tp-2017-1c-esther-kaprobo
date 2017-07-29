@@ -476,11 +476,7 @@ void wait_kernel(t_nombre_semaforo identificador_semaforo){
 	nombre_semaforo = identificador_semaforo;
 	//memcpy(nombre_semaforo, identificador_semaforo, strlen(identificador_semaforo));
 
-
 	nombre_semaforo[strlen(identificador_semaforo)] = '\0';
-
-
-
 
 	log_info(logger,"CPU: Pedir semaforo %s de tamanio %d", identificador_semaforo, size);
 
@@ -544,7 +540,7 @@ t_puntero reservarEnHeap(t_valor_variable espacio){
 	pedido->pid = pid;
 	pedido->tamanio = espacio;
 
-	log_info("VOY A PEDID HEAP DEL PID: %d\n", pid);
+	log_info("VOY A PEDIR HEAP DEL PID: %d\n", pid);
 
 	enviar(kernel, SOLICITAR_HEAP, sizeof(t_pedidoHeap), pedido);
 	paquete = recibir(kernel);
@@ -581,9 +577,6 @@ void liberarEnHeap(t_puntero puntero) {
 	t_paquete* paquete;
 	int pagina = puntero / tamanio_pag;
 	int offset = puntero - (pagina*tamanio_pag);
-
-	printf("LIBERA HEAP PAGINA: %d\n", pagina);
-	printf("LIBERA HEAP offset: %d\n", offset);
 
 /*
 	void * resul = solicitarBytesAMemoria(memoria, logger, pcb->pid, pagina, offset, sizeof(t_heapMetadata));
@@ -652,9 +645,8 @@ t_descriptor_archivo abrirArchivo(t_direccion_archivo direccion, t_banderas flag
 	enviar(kernel,ABRIR_ARCHIVO,strlen(nombreArchi)+1, nombreArchi);
 	enviar(kernel,pid, strlen(permisos)+1, permisos);
 
-	log_info(logger, "Espero respuesta del Kernel");
 	t_paquete* paqResultado = recibir(kernel);
-	log_info(logger, "Recibi respuesta del Kernel");
+
 	//Analizo el resultado
 	if(paqResultado->codigo_operacion != ABRIR_ARCHIVO){
 		//Termina el proceso porque no se pudo abrir arhcivo
@@ -709,31 +701,16 @@ void cerrarArchivo(t_descriptor_archivo descriptor_archivo){
 	t_pedidoGuardadoDatos * pedido = malloc(sizeof(t_pedidoGuardadoDatos));
 
 	int pid;
-
-
-
-	//Obtengo el pid
 	pid = pcb->pid;
-
-
-	//Cargo los datos en el paquete
-
-
 
 	pedido->offset = pcb->pid;
 	pedido->size = descriptor_archivo;
-
-	printf("PID: %d\n", pedido->offset);
-	printf("fd: %d\n", pedido->size);
-
-
 
 	//Envio los datos a kernel con el codigo
 	log_info(logger, "Enviando datos al Kernel para cerrar archivo con el PID %d.",pid);
 	enviar(kernel,CERRAR_ARCHIVO,sizeof(t_pedidoGuardadoDatos),pedido);
 	t_paquete* paq = recibir(kernel);
 	log_debug(logger ,"Se cerro el archivo ");
-	//Corto aca o espero el resultado?
 }
 
 /*
@@ -788,13 +765,6 @@ void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion,
 	char* texto = malloc(tamanio +1);
 	texto = (char*)informacion;
 
-	printf("SIZEOF INFO:%d\n", sizeof(informacion));
-
-	printf("FD:%d \n", descriptor_archivo);
-	printf("INFO:%s\n", texto);
-	printf("SIZE: %d\n", tamanio);
-
-
 	t_escribirArchivo* escribir = malloc(sizeof(t_escribirArchivo));
 
 	escribir->pid = pcb->pid;
@@ -802,21 +772,11 @@ void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion,
 	escribir->size = tamanio;
 	escribir->info = informacion;
 
-	//string_append(&texto, (char*)informacion);
-
-	log_warning(logger, "TEXTO: %s", texto);
-	log_warning(logger, "STR LEN TEXTO: %i", strlen(texto));
-
-
-	log_warning(logger, "Envio datos para escribir");
 	enviar(kernel, ESCRIBIR_ARCHIVO, sizeof(t_escribirArchivo), escribir);
-	log_warning(logger, "Envio texto a escribir");
 	enviar(kernel, ESCRIBIR_ARCHIVO, strlen(texto)+1, texto);
 
-	log_warning(logger, "Espero respuesta");
 	t_paquete* paquete = recibir(kernel);
 
-	log_warning(logger, "Recibi respuesta");
 	if(paquete->codigo_operacion== ESCRIBIR_ARCHIVO_OK){
 		log_debug(logger, "Se escribio correctamente el archivo");
 	}
@@ -854,18 +814,12 @@ void leerArchivo(t_descriptor_archivo descriptor_archivo, t_puntero informacion,
 
 	log_info(logger, "Voy a leer pid:%d, FD:%d, Size:%d, offset:%d", paquete->pid, paquete->fd, paquete->tamanio, paquete->offset);
 
-
-
-
 	log_info(logger, "Enviando datos al Kernel para leer datos de archivo con el PID %d, offset %i",paquete->pid, informacion);
-
 
 	enviar(kernel,OBTENER_DATOS,sizeof(t_envioDeDatosKernelFSLecturaYEscritura),paquete);
 
-
-
 	rta = recibir(kernel);
-	//Ver que resultado espera desde kernel.
+
 	if(rta->codigo_operacion ==SOLICITUD_OBTENCION_DATOS_FALLO){
 
 		log_info(logger, "Hubo un problema intentando leer archivo con el PID %d.",pcb->pid);
