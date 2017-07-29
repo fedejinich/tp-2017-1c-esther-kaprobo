@@ -579,6 +579,7 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 	int* valorSemaforo = buscarSemaforo(paqueteRecibido->data);
 	int mandar;
+	printf("VALOR DEL SEMAFORO:%d\n", *valorSemaforo);
 	if(*valorSemaforo<=0){
 		mandar =1;
 		log_info(logger, "KERNEL: Recibi proceso %d mando a bloquear por semaforo %s", procesoPideSem->pcb->pid, paqueteRecibido->data);
@@ -1943,7 +1944,7 @@ void finalizarProcesoPorPID(int pid, int exitCode){
 					proceso=NULL;
 				}
 			}
-			eliminarProcesoDeCola(cola_exec, pid);
+			//eliminarProcesoDeCola(cola_exec, pid);
 
 
 		}
@@ -2474,19 +2475,51 @@ void finQuantum(un_socket socketCPU, t_paquete* paqueteRec){
 
 void deserializarYFinalizar(un_socket socketActivo, t_paquete* paqueteRecibido, ExitCodes code){
 
-	t_proceso* proceso;
+
+	printf("1\n");
 
 	t_pcb* temporal;
+	temporal = desserializarPCB(paqueteRecibido->data);
+	printf("2\n");
+
 
 	pthread_mutex_lock(&mutex_exec);
+	printf("3\n");
+	t_proceso* procesoAux = malloc(sizeof(t_proceso));
+	int indice;
+	printf("4\n");
+	int a = 0;
+	while(a< list_size(cola_exec->elements)){
 
-	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
+		printf("5. %d\n",a);
+		procesoAux = list_get(cola_exec->elements, a);
+
+		if(procesoAux->socketCPU == socketActivo){
+
+			indice = a;
+		}
+
+		a++;
+	}
+
+	printf("LIST SIZE: %d\n", list_size(cola_exec->elements));
+	t_proceso* proceso = malloc(sizeof(t_proceso));
+	printf("MALLOQUIE BIEN PIOLA\n");
+	printf("INDICE: %d\n", indice);
+	printf("6\n");
+	proceso = list_remove(cola_exec->elements,indice);
+
+
+
+	printf("\n\n SAQUE PROCESO DE CPU PID:%d", proceso->pcb->pid);
 
 	pthread_mutex_unlock(&mutex_exec);
 
-	eliminarProcesoDeCola(cola_exec, proceso->pcb->pid);
+	//eliminarProcesoDeCola(cola_exec, proceso->pcb->pid);
 
-	temporal = desserializarPCB(paqueteRecibido->data);
+
+
+
 
 	destruirPCB(proceso->pcb);
 	proceso->pcb = temporal;

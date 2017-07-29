@@ -1,6 +1,7 @@
 #!/usr/bin/ansisop
 
 begin 
-	wait  mutexArch
+	wait  a
+	wait c
 
 end
