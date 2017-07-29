@@ -172,7 +172,6 @@ int* convertirConfigEnInt(char** valores_iniciales){
 	int *resul;
 
 	a = (strlen((char*) valores_iniciales))/sizeof(char*);
-	printf("A:%d\n", a);
 
 
 
@@ -196,7 +195,7 @@ int* convertirConfigEnInt(char** valores_iniciales){
 
 	for (i=0; i< cantidadSemaforos;i++){
 		resul[i] = atoi(valores_iniciales[i]);
-		printf("RESUL[i]: %d, J:%d\n", resul[i],i);
+
 	}
 
 	return resul;
@@ -543,6 +542,7 @@ int nuevoProgramaAnsisop(un_socket socket, t_paquete* paquete){
 		t_proceso* proceso = queue_pop(cola_new);
 		sem_wait(&sem_new);
 		pthread_mutex_unlock(&mutex_new);
+		cantidadDeProgramas++;
 		finalizarProceso(proceso, ErrorSinDefinicion);
 
 		return -1;
@@ -607,7 +607,7 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 	int* valorSemaforo = buscarSemaforo(paqueteRecibido->data);
 	int mandar;
-	printf("VALOR DEL SEMAFORO:%d\n", *valorSemaforo);
+
 	if(*valorSemaforo<=0){
 		mandar =1;
 		log_info(logger, "KERNEL: Recibi proceso %d mando a bloquear por semaforo %s", procesoPideSem->pcb->pid, paqueteRecibido->data);
@@ -698,7 +698,7 @@ void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 				valor_semaforos[i]++;
 			}
 			enviar(socketActivo, LIBERAR_SEMAFORO, sizeof(int), &i);
-			printf("LIBERE SEM\n");
+
 			pthread_mutex_unlock(&mutex_config);
 			return;
 		}
@@ -823,10 +823,6 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 	t_paquete* info = recibir(socketActivo);
 	pthread_mutex_unlock(&mutexServidor);
 
-	printf("PID:%d\n", escritura->pid);
-	printf("SIZE:%d\n", escritura->size);
-	printf("FD:%d\n", escritura->fd);
-	printf("DATA:%s\n", (char*)info->data);
 
 	if(escritura->fd==1){
 		log_info(logger,"KERNEL: Proceso %d nos solicita imprimir texto por Consola", escritura->pid);
@@ -859,11 +855,7 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 
 void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, int size, char* buffer){
 
-	printf("escribir Archivo \n");
-	printf("PID:%d\n", pid);
-	printf("FD:%d\n", fd);
-	printf("SIZE:&d\n", size);
-	printf("BUFFER:%s\n",buffer);
+
 
 	//Obtengo la tabla del proceso PID
 	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = malloc(sizeof(t_entradaTablasArchivosPorProceso));
@@ -1938,7 +1930,9 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 		log_debug(logger, "Se finalizo PID en CONSOLA");
 	}
 
+	pthread_mutex_lock(&mutexGradoMultiprogramacion);
 	cantidadDeProgramas--;
+	pthread_mutex_unlock(&mutexGradoMultiprogramacion);
 	return;
 
 }
@@ -1952,7 +1946,7 @@ sleep(1);
 	t_proceso* proceso;
 	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
 	if(colaDelProceso == NULL){
-		printf("Deberia entrar aca\n");
+
 
 		proceso = verSiEstaBloqueado(pid);
 	}
@@ -2002,16 +1996,15 @@ sleep(1);
 
 t_proceso* verSiEstaBloqueado(int pid){
 	int i;
-	printf("entre\n");
-	printf("CA%d\n", cantidadSemaforos);
+
 	t_proceso* proc = malloc(sizeof(t_proceso));
 	for (i=0; i < cantidadSemaforos; i++){
-		printf("entre aca\n");
+
 		proc = (t_proceso*)list_get(cola_semaforos[i]->elements,i);
-		printf("ACA2\n");
+
 
 		if(proc!=NULL){
-			printf("!=NULL\n");
+
 			if((proc->pcb->pid) == pid){
 				log_debug(logger, "El proceso se encontraba bloqueado por Semaforo");
 				proc = (t_proceso*)list_remove(cola_semaforos[i]->elements,i);
@@ -2513,22 +2506,21 @@ void finQuantum(un_socket socketCPU, t_paquete* paqueteRec){
 void deserializarYFinalizar(un_socket socketActivo, t_paquete* paqueteRecibido, ExitCodes code){
 
 
-	printf("1\n");
 
 	t_pcb* temporal;
 	temporal = desserializarPCB(paqueteRecibido->data);
-	printf("2\n");
+
 
 
 	pthread_mutex_lock(&mutex_exec);
-	printf("3\n");
+
 	t_proceso* procesoAux = malloc(sizeof(t_proceso));
 	int indice;
-	printf("4\n");
+
 	int a = 0;
 	while(a< list_size(cola_exec->elements)){
 
-		printf("5. %d\n",a);
+
 		procesoAux = list_get(cola_exec->elements, a);
 
 		if(procesoAux->socketCPU == socketActivo){
@@ -2539,16 +2531,14 @@ void deserializarYFinalizar(un_socket socketActivo, t_paquete* paqueteRecibido, 
 		a++;
 	}
 
-	printf("LIST SIZE: %d\n", list_size(cola_exec->elements));
+
 	t_proceso* proceso = malloc(sizeof(t_proceso));
-	printf("MALLOQUIE BIEN PIOLA\n");
-	printf("INDICE: %d\n", indice);
-	printf("6\n");
+
 	proceso = list_remove(cola_exec->elements,indice);
 
 
 
-	printf("\n\n SAQUE PROCESO DE CPU PID:%d", proceso->pcb->pid);
+
 
 	pthread_mutex_unlock(&mutex_exec);
 

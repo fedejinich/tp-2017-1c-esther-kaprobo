@@ -35,7 +35,7 @@ libCommons_Kaprobo.so: $(OBJS) $(USER_OBJS)
 
 # Other Targets
 clean:
-	-$(RM) $(LIBRARIES)$(OBJS)$(C_DEPS) libCommons_Kaprobo.so
+	-$(RM) $(OBJS)$(C_DEPS)$(LIBRARIES) libCommons_Kaprobo.so
 	-@echo ' '
 
 .PHONY: all clean dependents
