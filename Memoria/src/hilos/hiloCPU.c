@@ -61,7 +61,7 @@ void* hiloConexionCPU(void* socket) {
 					enviar(socket, SOLICITAR_BYTES_FALLO, sizeof(int), &fallo);
 					log_error(logger, "El pedido de CPU para SOLICITAR BYTES de PID %i en pagina %i con offset %i y tamanio %i tuvo un fallo",
 												pid, pagina, offset, tamanio);
-					free(buffer);
+					//free(buffer);
 
 					break;
 				}
