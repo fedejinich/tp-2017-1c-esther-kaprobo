@@ -51,6 +51,22 @@ typedef struct __attribute__((packed))t_entradaTablaProceso{
 	int puntero;
 }t_entradaTablaProceso;
 
+typedef struct __attribute__((packed))t_estadisticas{
+	int cantidadRafagasEjecutadas;
+	int cantidadDeAlocarEnOperaciones;
+	int cantidadDeAlocarEnBytes;
+	int cantidadDeLiberarEnOperaciones;
+	int cantidadDeLiberarEnBytes;
+	int cantidadDeSysCalls;
+}t_estadisticas;
+
+typedef struct __attribute__((packed))t_entradaListadoEstadisticas{
+	int pid;
+	t_list* estadisticas;
+}t_entradaListadoEstadisticas;
+
+t_list* listadoEstadisticas;
+
 /*
 typedef struct __attribute__((packed))t_tablaDeArchivosDeUnProceso{
 	char* flags;
@@ -139,7 +155,7 @@ t_queue * cola_exit;
 int cant_new, cant_ready, cant_exec, cant_block, cant_exit = 0;
 
 
-
+t_entradaListadoEstadisticas* buscarEstadisticas(int pid);
 
 
 t_queue * cola_CPU_libres;

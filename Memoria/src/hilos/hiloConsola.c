@@ -106,10 +106,26 @@ void dumpTabla() {
 
 	log_warning(logger, "Iniciando dump tabla...");
 	log_info(logDumpTabla, "Cantidad de filas: %i", tablaDePaginasSize());
+	log_info(logDumpTabla, "PROCESOS ACTIVOS:");
 
 	int i;
+	for(i = 0; i < tablaDePaginasSize(); i++) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		if(entrada->pid > -1) {
+			printf("PID %i, Pagina %i\n", entrada->pid, entrada->pagina);
+			log_info(logDumpTabla, "PID %i, Pagina %i\n", entrada->pid, entrada->pagina);
+		}
+	}
+
+	printf("\n----------------------------------------\n");
+	log_info(logDumpTabla, "-------------------------------------------------------------");
+
+	printf("TABLA DE PAGINAS \n");
+	log_info(logDumpTabla,"TABLA DE PAGINAS");
+
 	for(i = 0; i <= tablaDePaginasSize(); i++) {
 		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		printf("Frame: %i, PID: %i, Pagina: %i\n", entrada->frame, entrada->pid, entrada->pagina);
 		log_info(logDumpTabla, "Frame: %i, PID: %i, Pagina: %i", entrada->frame, entrada->pid, entrada->pagina);
 	}
 
@@ -128,7 +144,10 @@ void dumpCache() {
 	int i;
 	for(i = 0; i < list_size(cache); i++) {
 		t_entradaCache* entrada = list_get(cache, i);
-		log_info(logDumpCache, "Entrada Cache. PID %i Pagina %i Contador %i", entrada->pid, entrada->pagina, entrada->cantidadDeLecturasSinUsar);
+		printf("Entrada Cache. PID %i Pagina %i Contador %i Contenido %s",
+				entrada->pid, entrada->pagina, entrada->cantidadDeLecturasSinUsar, entrada->contenido);
+		log_info(logDumpCache, "Entrada Cache. PID %i Pagina %i Contador %i Contenido %s",
+				entrada->pid, entrada->pagina, entrada->cantidadDeLecturasSinUsar, entrada->contenido);
 	}
 
 	log_warning(logger, "Dump cache realizado correctamente");
@@ -154,7 +173,8 @@ void dumpPID(char* comando) {
 
 			leerFrame(frameADumpear, 0, frame_size, bufferDeLectura);
 
-			log_info(logDumpPID, "Pagina %i, Frame %i, Contenido \n %s", frameADumpear, paginaADumpear, bufferDeLectura);
+			printf("Pagina %i, Frame %i, Contenido %s\n", frameADumpear, paginaADumpear, bufferDeLectura);
+			log_info(logDumpPID, "Pagina %i, Frame %i, Contenido %s", frameADumpear, paginaADumpear, bufferDeLectura);
 
 			free(bufferDeLectura);
 		}
@@ -165,22 +185,24 @@ void dumpPID(char* comando) {
 }
 
 void dumpAll() {
+	log_warning(logger, "Iniciando dump");
+
 	remove("dumpAll.log");
 	t_log* logDumpAll = log_create("dumpAll.log", "Memoria", false, LOG_LEVEL_TRACE);
 
 	int i;
-	for(i = 0; i < list_size(tablaDePaginas); i++) {
-		t_entradaTablaDePaginas* entrada = list_get(tablaDePaginas, i);
-		log_info(logDumpAll, " PID = %i", entrada->pid);
-		if(entrada->pid != -1) {
+	for(i = 0; i < tablaDePaginasSize(); i++) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		if(entrada->pid > -1) {
 			void* buffer = malloc(frame_size);
 			leerFrame(entrada->frame, 0, frame_size, buffer);
-			log_info(logDumpAll, "Frame %i, PID %i, Pagina %i, Contenido:\n %s", entrada->frame, entrada->pid, entrada->pagina, buffer);
-
+			printf("Frame %i, PID %i, Pagina %i, Contenido: %s\n", entrada->frame, entrada->pid, entrada->pagina, buffer);
+			log_info(logDumpAll, "Frame %i, PID %i, Pagina %i, Contenido: %s", entrada->frame, entrada->pid, entrada->pagina, buffer);
 		}
 	}
 
 
+	log_warning(logger, "Dump realizado correctamente");
 }
 
 int sizeMemory() {

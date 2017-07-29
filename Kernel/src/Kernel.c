@@ -79,7 +79,8 @@ void inicializar(){
 
 	listaAdminHeap = list_create();
 	tablaGlobalDeArchivos = list_create();
-	tablasArchivosPorProceso = list_create();;
+	tablasArchivosPorProceso = list_create();
+	listadoEstadisticas = list_create();
 }
 
 void cargarConfiguracion() {
@@ -496,6 +497,11 @@ int nuevoProgramaAnsisop(un_socket socket, t_paquete* paquete){
 	proceso = crearPrograma(socket, paquete);
 	proceso->socketCPU = -1;
 
+	t_entradaListadoEstadisticas* nuevaEntrada = malloc(sizeof(t_entradaListadoEstadisticas));
+	nuevaEntrada->pid = proceso->pcb->pid;
+	nuevaEntrada->estadisticas = list_create();
+	list_add(listadoEstadisticas, nuevaEntrada);
+
 	log_info(logger, "KERNEL: Creando proceso %d", proceso->pcb->pid);
 
 
@@ -572,11 +578,16 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 	t_proceso* procesoPideSem = malloc(sizeof(t_proceso));
 	t_paquete* paqueteNuevo = malloc(sizeof(t_paquete));
 	t_pcb* pcb_temporal;
+
 	pthread_mutex_lock(&mutex_exec);
 	procesoPideSem = obtenerProcesoSocketCPU(cola_exec, socketActivo);
 	pthread_mutex_unlock(&mutex_exec);
 	eliminarProcesoDeCola(cola_exec, procesoPideSem->pcb->pid);
 	pthread_mutex_lock(&mutex_config);
+
+	t_entradaListadoEstadisticas* estadisticasDelProceso = buscarEstadisticas(procesoPideSem->pcb->pid);
+	t_estadisticas* est = estadisticasDelProceso->estadisticas;
+	est->cantidadDeSysCalls++;
 
 	log_info(logger, "Proceso %d pide semaforo %s", procesoPideSem->pcb->pid, paqueteRecibido->data);
 
@@ -624,7 +635,6 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 		enviar(socketActivo, PEDIDO_SEMAFORO_OK, sizeof(int), &mandar);
 
 	}
-
 	pthread_mutex_unlock(&mutex_config);
 }
 
@@ -634,9 +644,12 @@ void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 	t_proceso* proceso;
 	t_proceso* p1;
 
-
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
+
+	t_entradaListadoEstadisticas* estadisticasDelProceso = buscarEstadisticas(proceso->pcb->pid);
+	t_estadisticas* est = estadisticasDelProceso->estadisticas;
+	est->cantidadDeSysCalls++;
 
 	pthread_mutex_unlock(&mutex_exec);
 	pthread_mutex_lock(&mutex_config);
@@ -950,9 +963,11 @@ int chequearTablaGlobal(char* path){
 	int fd;
 	int indiceEntrada = buscarEntradaEnTablaGlobal(path);
 	if(indiceEntrada != -1){
+		log_warning(logger, "ESTABA EN LA TABLA GLOBAL");
 		fd = indiceEntrada;
 	}
 	else{
+		log_warning(logger, "NO ESTABA EN LA TABLA GLOBAL, LO AGREGA");
 		t_entradaTablaGlobal* entrada = malloc(sizeof(t_entradaTablaGlobal));
 		entrada->path = path;
 		entrada->open = 0;
@@ -963,10 +978,10 @@ int chequearTablaGlobal(char* path){
 }
 
 int buscarEntradaEnTablaGlobal(char* path){
-	int a;
+	int a = 0;
 	t_entradaTablaGlobal* entrada;
 	while(entrada = (t_entradaTablaGlobal*)list_get(tablaGlobalDeArchivos, a)){
-		if (entrada->path == path){
+		if (strcmp (entrada->path, path) == 0){
 			entrada->open++;
 			return a;
 		}
@@ -1139,6 +1154,7 @@ t_entradaTablasArchivosPorProceso* obtenerTablaDeArchivosDeUnProcesoPorPID(int p
 		}
 		i++;
 	}
+	return NULL;
 }
 
 t_entradaTablaProceso* obtenerArchivoDeLaTablaDeUnProcesoPorFD(t_entradaTablasArchivosPorProceso* tabla, t_descriptor_archivo fd){
@@ -1173,6 +1189,10 @@ void solicitaVariable(un_socket socketActivo, t_paquete* paqueteRecibido){
 	t_proceso* proceso;
 	pthread_mutex_lock(&mutex_exec);
 	proceso = obtenerProcesoSocketCPU(cola_exec,socketActivo);
+
+	t_entradaListadoEstadisticas* estadisticasDelProceso = buscarEstadisticas(proceso->pcb->pid);
+	t_estadisticas* est = estadisticasDelProceso->estadisticas;
+	est->cantidadDeSysCalls++;
 
 	pthread_mutex_unlock(&mutex_exec);
 	pthread_mutex_lock(&mutex_config);
@@ -1235,6 +1255,11 @@ void escribirVariable(un_socket socketActivo, t_paquete* paqueteRecibido){
 	proceso=obtenerProcesoSocketCPU(cola_exec, socketActivo);
 
 	pthread_mutex_unlock(&mutex_exec);
+
+	t_entradaListadoEstadisticas* estadisticasDelProceso = buscarEstadisticas(proceso->pcb->pid);
+	t_estadisticas* est = estadisticasDelProceso->estadisticas;
+	est->cantidadDeSysCalls++;
+
 	pthread_mutex_lock(&mutex_config);
 
 	for(i=0; i<strlen((char*)shared_vars)/sizeof(char*);i++){
@@ -1591,6 +1616,10 @@ void planificadorCortoPlazo(){
 
 void mandarAEjecutar(t_proceso* proceso, int socket){
 
+	t_entradaListadoEstadisticas* estadisticasDelProceso = buscarEstadisticas(proceso->pcb->pid);
+	t_estadisticas* est = estadisticasDelProceso->estadisticas;
+	est->cantidadRafagasEjecutadas += quantum;
+
 	t_pcb* pcbSerializado;
 
 	pcbSerializado = (t_pcb*)serializarPCB(proceso->pcb);
@@ -1759,7 +1788,11 @@ void mostrarUnaListaDeProcesos(t_queue* colaAMostrar){
 	int i = 0;
 	t_proceso*proceso;
 	while(proceso = (t_proceso*)list_get(colaAMostrar->elements, i)){
-		printf("PID: %d\n", proceso->pcb->pid);
+		printf("PID: %d", proceso->pcb->pid);
+		if(proceso->pcb->sizeContextoActual == 0){
+			printf(" - Exit Code: %d", proceso->pcb->exitCode);
+		}
+		printf("\n");
 		i++;
 	}
 	if(i == 0){
@@ -1769,9 +1802,39 @@ void mostrarUnaListaDeProcesos(t_queue* colaAMostrar){
 }
 
 void mostrarInformacionDeProceso(int pid){
-	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
-	t_proceso* proceso = obtenerProcesoPorPID(colaDelProceso, pid);
-	//TODO mostrar info
+	t_entradaListadoEstadisticas* estadisticasDelProceso = buscarEstadisticas(pid);
+	t_estadisticas* estadisticasDeUnProceso = estadisticasDelProceso->estadisticas;
+
+	printf("\n\n");
+	printf("Estadisticas del proceso %i", pid);
+	printf("\n\n");
+	printf("Cantidad de rafagas ejecutadas: %i\n", estadisticasDeUnProceso->cantidadRafagasEjecutadas);
+	printf("Cantidad de sys calls ejecutadas: %i\n", estadisticasDeUnProceso->cantidadDeSysCalls);
+	mostrarTablaLocalDeArchivos(pid);
+	printf("Cantidad de alocar realizados en operaciones (heap): %i\n", estadisticasDeUnProceso->cantidadDeAlocarEnOperaciones);
+	printf("Cantidad de alocar realizados en bytes (heap): %i\n", estadisticasDeUnProceso->cantidadDeAlocarEnBytes);
+	printf("Cantidad de liberar realizados en operaciones (heap): %i\n", estadisticasDeUnProceso->cantidadDeLiberarEnOperaciones);
+	printf("Cantidad de liberar realizados en bytes (heap): %i\n", estadisticasDeUnProceso->cantidadDeLiberarEnBytes);
+}
+
+void mostrarTablaLocalDeArchivos(int pid){
+	printf("\n\n");
+	printf("Tabla Local de Archivos del proceso %i\n", pid);
+	t_entradaTablasArchivosPorProceso* tabla = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
+	if(tabla){
+		int i = 0;
+		t_entradaTablaProceso* archivo;
+		printf(" FD | Flags | Global FD | Puntero\n");
+		archivo = (t_entradaTablaProceso*)list_get(tablaGlobalDeArchivos, i);
+		while(archivo = (t_entradaTablaProceso*)list_get(tabla, i)){
+			printf(" %i  |   %s   |     %i     | %i \n", archivo->fd, archivo->flags, archivo->globalFD, archivo->puntero);
+			i++;
+		}
+	}
+	else{
+		printf("No hay archivos en la tabla local del archivo %i\n", pid);
+	}
+	printf("\n");
 }
 
 void mostrarTablaGlobalDeArchivos(){
@@ -1859,33 +1922,41 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 	t_adminHeap* aux = malloc(sizeof(t_adminHeap));
 
 	int sizeAux = list_size(listaAdminHeap);
-	while(i<sizeAux){
-		if(list_size(listaAdminHeap)==0){
+	while(i < sizeAux){
+		log_warning(logger, "if(list_size(listaAdminHeap): %i == 0", list_size(listaAdminHeap));
+		if(list_size(listaAdminHeap) == 0){
 			i++;
-		}
-		else{
+		} else {
 
+			log_warning(logger, "list_get(listaAdminHeap, %i)", i);
 			aux = list_get(listaAdminHeap, i);
 
-			if( aux->pid  == (proceso->pcb->pid)){
-				log_debug(logger, "Se elimina el registro en heap de pagina %d del PID %d ", aux->pagina, aux->pid);
-				t_adminHeap* aux2 = malloc(sizeof(t_adminHeap));
-				aux2 = list_remove(listaAdminHeap, i);
-				free(aux2);
 
+			if(aux != NULL) {
+				log_warning(logger, "aux->pid: %i == (proceso->pcb->pid): %i", aux->pid, proceso->pcb->pid);
+				if(aux->pid  == (proceso->pcb->pid)){
+					//t_adminHeap* aux2 = malloc(sizeof(t_adminHeap));
+					/*aux2 =*/ list_remove_and_destroy_element(listaAdminHeap, i, free);
+					log_debug(logger, "Se elimina el registro en heap de pagina %d del PID %d ", aux->pagina, aux->pid);
+					//free(aux2);
+					/* VER ESTO
+					i++;
+					/* VER ESTO*/
+				} else {
+					i++;
+				}
 
 			}
-
-			else
-				i++;
 		}
-
+		i++;
 	}
 
+	log_warning(logger, "Antes mutex");
 	pthread_mutex_lock(&mutex_exit);
 	destruirCONTEXTO(proceso->pcb);
 	queue_push(cola_exit, proceso);
 	pthread_mutex_unlock(&mutex_exit);
+	log_warning(logger, "Post mutex");
 
 	if(proceso->socketCPU >0){
 		queue_push(cola_CPU_libres, (void*)proceso->socketCPU);
@@ -2078,6 +2149,12 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 	tamanio = pedido->tamanio;
 	pid = pedido->pid;
 
+	t_entradaListadoEstadisticas* estadisticasDelProceso = buscarEstadisticas(pid);
+	t_estadisticas* estadisticasDeUnProceso = estadisticasDelProceso->estadisticas;
+	estadisticasDeUnProceso->cantidadDeSysCalls++;
+	estadisticasDeUnProceso->cantidadDeAlocarEnOperaciones++;
+	estadisticasDeUnProceso->cantidadDeAlocarEnBytes += tamanio;
+
 	log_info(logger,"PROCESO %d nos pide HEAP\n\n", pid);
 	if(tamanio > TAMPAG - sizeof(t_heapMetadata)*2){
 			log_error(logger, "ERROR, Se intento Reservar mas memoria que el tamanio de una pagina ");
@@ -2139,6 +2216,11 @@ void procesoLiberaHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 
 	libera = (t_liberarHeap*)(paqueteRecibido->data);
 	codigosKernelCPU codigo = liberarBloqueHeap(libera->pid, libera->nroPagina, libera->offset);
+
+	t_entradaListadoEstadisticas* estadisticasDelProceso = buscarEstadisticas(libera->pid);
+	t_estadisticas* estadisticasDeUnProceso = estadisticasDelProceso->estadisticas;
+	estadisticasDeUnProceso->cantidadDeSysCalls++;
+
 	void* algo = malloc(sizeof(int));
 
 	enviar(socketCPU, codigo, sizeof(int), algo);
@@ -2158,7 +2240,10 @@ codigosKernelCPU liberarBloqueHeap(int pid, int pagina, int offset){
 
 	bloque = (t_heapMetadata*)solicitarBytesAMemoria(memoria, logger, pid, pagina, offset, sizeof(t_heapMetadata));
 
-
+	t_entradaListadoEstadisticas* estadisticasDelProceso = buscarEstadisticas(pid);
+	t_estadisticas* estadisticasDeUnProceso = estadisticasDelProceso->estadisticas;
+	estadisticasDeUnProceso->cantidadDeLiberarEnOperaciones++;
+	estadisticasDeUnProceso->cantidadDeLiberarEnBytes += bloque->size;
 
 	bloque->uso = 0;
 
@@ -2535,6 +2620,18 @@ void sacarCPUDeListas(un_socket cpu){
 
 }
 
+
+t_entradaListadoEstadisticas* buscarEstadisticas(int pid){
+	int a = 0;
+	t_entradaListadoEstadisticas* entrada;
+	while(entrada = (t_entradaListadoEstadisticas*)list_get(listadoEstadisticas, a)){
+		if(entrada->pid == pid){
+			return entrada;
+		}
+		a++;
+	}
+	return -1;
+}
 
 
 
