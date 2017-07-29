@@ -1845,32 +1845,39 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 	t_adminHeap* aux = malloc(sizeof(t_adminHeap));
 
 	int sizeAux = list_size(listaAdminHeap);
-	while(i<sizeAux){
-		if(list_size(listaAdminHeap)==0){
+	while(i < sizeAux){
+		log_warning(logger, "if(list_size(listaAdminHeap): %i == 0", list_size(listaAdminHeap));
+		if(list_size(listaAdminHeap) == 0){
 			i++;
-		}
-		else{
+		} else {
 
+			log_warning(logger, "list_get(listaAdminHeap, %i)", i);
 			aux = list_get(listaAdminHeap, i);
 
-			if( aux->pid  == (proceso->pcb->pid)){
-				log_debug(logger, "Se elimina el registro en heap de pagina %d del PID %d ", aux->pagina, aux->pid);
-				t_adminHeap* aux2 = malloc(sizeof(t_adminHeap));
-				aux2 = list_remove(listaAdminHeap, i);
-				free(aux2);
-
+			if(aux != NULL) {
+				log_warning(logger, "aux->pid: %i == (proceso->pcb->pid): %i", aux->pid, proceso->pcb->pid);
+				if(aux->pid  == (proceso->pcb->pid)){
+					//t_adminHeap* aux2 = malloc(sizeof(t_adminHeap));
+					/*aux2 =*/ list_remove_and_destroy_element(listaAdminHeap, i, free);
+					log_debug(logger, "Se elimina el registro en heap de pagina %d del PID %d ", aux->pagina, aux->pid);
+					//free(aux2);
+					/* VER ESTO
+					i++;
+					/* VER ESTO*/
+				} else {
+					i++;
+				}
 			}
-
-			else
-				i++;
 		}
-
+		i++;
 	}
 
+	log_warning(logger, "Antes mutex");
 	pthread_mutex_lock(&mutex_exit);
 	destruirCONTEXTO(proceso->pcb);
 	queue_push(cola_exit, proceso);
 	pthread_mutex_unlock(&mutex_exit);
+	log_warning(logger, "Post mutex");
 
 	if(proceso->socketCPU >0){
 		queue_push(cola_CPU_libres, (void*)proceso->socketCPU);
