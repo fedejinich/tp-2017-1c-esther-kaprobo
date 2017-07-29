@@ -31,6 +31,10 @@ void* hiloServidorKernel(un_socket socketTemp) {
     socketClienteKernel = socketTemp;
     while (1) {
     	paqueteRecibido = recibir(socketClienteKernel);
+    	if(paqueteRecibido->codigo_operacion==-1){
+    		log_error(logger, "KERNEL SE DESCONECTO, ROMPO TODO");
+    		pthread_exit(PTHREAD_CANCELED);
+    	}
 
         char * codigoDeOperacion = getCodigoDeOperacion(paqueteRecibido->codigo_operacion);
 

@@ -1,6 +1,12 @@
 begin
 
-	signal mutexArch
+	variables a,b,c
+	alocar c 5
+	abrir a CE /prueba.txt
+	b=77
+	escribir a b 5
+	leef a c 5
+ 
 	
 end
 

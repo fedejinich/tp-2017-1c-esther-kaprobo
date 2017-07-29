@@ -361,6 +361,8 @@ void obtenerDatos(t_paquete* paquete){
 
 	char* path = generarPathArchivo((char*)paq->data);
 
+	log_info(logger, "voy a leer path:%s, offset:%d, size:%d", path, pedido->offset, pedido->size);
+
 	if(!existeArchivo(path)){
 		int a=1;
 		log_error(logger, "NO EXISTE EL ARCHIVO");
@@ -368,16 +370,25 @@ void obtenerDatos(t_paquete* paquete){
 		return;
 	}
 
+	printf("1\n");
+
 	char* buffer = malloc(sizeof(pedido->size));
 
 	t_config* c = config_create(path);
 	char** bloques = config_get_array_value(c, "BLOQUES");
+
+	printf("2\n");
+
+
+
 
 	int offsetBloque, bytesLeidos = 0, restoBloque;
 
 	offsetBloque = (pedido->offset % config->TAMANIO_BLOQUES);
 	int numBloque = (pedido->offset / config->TAMANIO_BLOQUES);
 	int j = numBloque;
+
+	printf("\n\n A VER :%s\n\n", bloques[numBloque]);
 
 	int bloque = atoi(bloques[numBloque]);
 

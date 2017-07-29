@@ -579,6 +579,7 @@ void pideSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 
 	int* valorSemaforo = buscarSemaforo(paqueteRecibido->data);
 	int mandar;
+	printf("VALOR DEL SEMAFORO:%d\n", *valorSemaforo);
 	if(*valorSemaforo<=0){
 		mandar =1;
 		log_info(logger, "KERNEL: Recibi proceso %d mando a bloquear por semaforo %s", procesoPideSem->pcb->pid, paqueteRecibido->data);
@@ -794,6 +795,11 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 	t_paquete* info = recibir(socketActivo);
 	pthread_mutex_unlock(&mutexServidor);
 
+	printf("PID:%d\n", escritura->pid);
+	printf("SIZE:%d\n", escritura->size);
+	printf("FD:%d\n", escritura->fd);
+	printf("DATA:%s\n", (char*)info->data);
+
 	if(escritura->fd==1){
 		log_info(logger,"KERNEL: Proceso %d nos solicita imprimir texto por Consola", escritura->pid);
 
@@ -816,7 +822,7 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 	}
 	else{
 		//VER ESCRIBIR ARCHIVO
-		escribirArchivo(socketActivo, escritura->pid, escritura->fd, escritura->size, info->data);
+		escribirArchivo(socketActivo, escritura->pid, escritura->fd, escritura->size, (char*)info->data);
 	}
 
 
@@ -824,6 +830,12 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 }
 
 void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, int size, char* buffer){
+
+	printf("escribir Archivo \n");
+	printf("PID:%d\n", pid);
+	printf("FD:%d\n", fd);
+	printf("SIZE:&d\n", size);
+	printf("BUFFER:%s\n",buffer);
 
 	//Obtengo la tabla del proceso PID
 	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = malloc(sizeof(t_entradaTablasArchivosPorProceso));
@@ -968,6 +980,10 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 	int pid = datos->pid;
 	int fd = datos->fd;
 
+	log_info(logger, "Me piden leer pid:%d, fd:%d, size:%d, offset:%d", datos->pid,datos->fd,datos->tamanio,datos->offset);
+
+
+
 	//Obtengo la tabla del proceso PID
 	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = malloc(sizeof(t_entradaTablasArchivosPorProceso));
 	tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
@@ -988,12 +1004,12 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 	t_entradaTablaGlobal* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(archivo);
 	char* path = entradaTablaGlobal->path;
 
-	if(strchr(permisos, 'r') != NULL && existeArchivo(path)){
+	if(string_contains(permisos,"r")  && existeArchivo(path)){
 		t_pedidoGuardadoDatos* obtencionDatos = malloc(sizeof(t_pedidoGuardadoDatos));
 
 		//Datos Para la escritura
-		obtencionDatos ->offset = datos->offset;
-		obtencionDatos ->size = datos->tamanio;
+		obtencionDatos->offset = 0;
+		obtencionDatos->size = datos->tamanio;
 
 		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos);
 		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, strlen(path) + 1, path);
@@ -1854,6 +1870,7 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 			log_warning(logger, "list_get(listaAdminHeap, %i)", i);
 			aux = list_get(listaAdminHeap, i);
 
+
 			if(aux != NULL) {
 				log_warning(logger, "aux->pid: %i == (proceso->pcb->pid): %i", aux->pid, proceso->pcb->pid);
 				if(aux->pid  == (proceso->pcb->pid)){
@@ -1867,6 +1884,7 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 				} else {
 					i++;
 				}
+
 			}
 		}
 		i++;
@@ -1913,7 +1931,7 @@ void finalizarProcesoPorPID(int pid, int exitCode){
 		if((int)colaDelProceso ==1){
 
 			proceso = obtenerProcesoPorPID(cola_exec, pid);
-			//eliminarProcesoDeCola(cola_exec, pid);
+
 
 			if(exitCode == FinalizacionPorConsolaDeKernel){
 
@@ -1926,6 +1944,7 @@ void finalizarProcesoPorPID(int pid, int exitCode){
 					proceso=NULL;
 				}
 			}
+			//eliminarProcesoDeCola(cola_exec, pid);
 
 
 		}
@@ -2456,19 +2475,51 @@ void finQuantum(un_socket socketCPU, t_paquete* paqueteRec){
 
 void deserializarYFinalizar(un_socket socketActivo, t_paquete* paqueteRecibido, ExitCodes code){
 
-	t_proceso* proceso;
+
+	printf("1\n");
 
 	t_pcb* temporal;
+	temporal = desserializarPCB(paqueteRecibido->data);
+	printf("2\n");
+
 
 	pthread_mutex_lock(&mutex_exec);
+	printf("3\n");
+	t_proceso* procesoAux = malloc(sizeof(t_proceso));
+	int indice;
+	printf("4\n");
+	int a = 0;
+	while(a< list_size(cola_exec->elements)){
 
-	proceso = obtenerProcesoSocketCPU(cola_exec, socketActivo);
+		printf("5. %d\n",a);
+		procesoAux = list_get(cola_exec->elements, a);
+
+		if(procesoAux->socketCPU == socketActivo){
+
+			indice = a;
+		}
+
+		a++;
+	}
+
+	printf("LIST SIZE: %d\n", list_size(cola_exec->elements));
+	t_proceso* proceso = malloc(sizeof(t_proceso));
+	printf("MALLOQUIE BIEN PIOLA\n");
+	printf("INDICE: %d\n", indice);
+	printf("6\n");
+	proceso = list_remove(cola_exec->elements,indice);
+
+
+
+	printf("\n\n SAQUE PROCESO DE CPU PID:%d", proceso->pcb->pid);
 
 	pthread_mutex_unlock(&mutex_exec);
 
-	eliminarProcesoDeCola(cola_exec, proceso->pcb->pid);
+	//eliminarProcesoDeCola(cola_exec, proceso->pcb->pid);
 
-	temporal = desserializarPCB(paqueteRecibido->data);
+
+
+
 
 	destruirPCB(proceso->pcb);
 	proceso->pcb = temporal;
