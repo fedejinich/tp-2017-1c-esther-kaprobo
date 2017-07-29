@@ -1,7 +1,7 @@
 #!/usr/bin/ansisop
 
 begin 
-	wait  a
+	wait  m
 	wait c
 
 end
