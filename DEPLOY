@@ -1,26 +1,46 @@
-Cambiar paths configuracion
+
+
+
 cambiar creacion servidores
 
 
+sudo mkdir /home/utnso/Escritorio
 
+cd /home/utnso/Escritorio
 
 sudo git clone --recursive https://github.com/sisoputnfrba/tp-2017-1c-Kaprobo.git
 
-cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/so-commons
+cd tp-2017-1c-Kaprobo/so-commons-library
 
+sudo make install
+
+cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/ansisop-parser/parser
+
+sudo make install
+
+
+
+CARGAR ARCHIVOS CONFIGURACION CON IP CORRESPONDIENTES
+
+compiladores
 
 
 CONSOLA
+cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Consola
 sudo gcc src/*.c -o Consola -lpthread -lm -lcommons -lparser-ansisop -w -g
 
 KERNEL
+cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Kernel
 sudo gcc src/*.c -o Kernel -lpthread -lm -lcommons -lparser-ansisop -w -g
 
 Memoria
+cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/Memoria
 sudo gcc src/*.c src/cache/*.c src/funcionesAuxiliares/*.c src/funcionHash/*.c src/hilos/*.c -o Memoria -lpthread -lm -lcommons -lparser-ansisop -w -g
 
 File
+cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/File_System
 sudo gcc src/*.c -o File_System -lpthread -lm -lcommons -lparser-ansisop -w -g
 
 CPU
+cd /home/utnso/Escritorio/tp-2017-1c-Kaprobo/CPU
 sudo gcc src/*.c -o CPU -lpthread -lm -lcommons -lparser-ansisop -w -g
