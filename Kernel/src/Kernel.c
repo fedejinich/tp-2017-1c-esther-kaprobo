@@ -797,6 +797,11 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 	t_paquete* info = recibir(socketActivo);
 	pthread_mutex_unlock(&mutexServidor);
 
+	printf("PID:%d\n", escritura->pid);
+	printf("SIZE:%d\n", escritura->size);
+	printf("FD:%d\n", escritura->fd);
+	printf("DATA:%s\n", (char*)info->data);
+
 	if(escritura->fd==1){
 		log_info(logger,"KERNEL: Proceso %d nos solicita imprimir texto por Consola", escritura->pid);
 
@@ -819,7 +824,7 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 	}
 	else{
 		//VER ESCRIBIR ARCHIVO
-		escribirArchivo(socketActivo, escritura->pid, escritura->fd, escritura->size, info->data);
+		escribirArchivo(socketActivo, escritura->pid, escritura->fd, escritura->size, (char*)info->data);
 	}
 
 
@@ -827,6 +832,12 @@ void solicitudDeEscrituraArchivo(un_socket socketActivo, t_paquete* paqueteRecib
 }
 
 void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, int size, char* buffer){
+
+	printf("escribir Archivo \n");
+	printf("PID:%d\n", pid);
+	printf("FD:%d\n", fd);
+	printf("SIZE:&d\n", size);
+	printf("BUFFER:%s\n",buffer);
 
 	//Obtengo la tabla del proceso PID
 	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = malloc(sizeof(t_entradaTablasArchivosPorProceso));
@@ -1862,6 +1873,7 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 				aux2 = list_remove(listaAdminHeap, i);
 				free(aux2);
 
+
 			}
 
 			else
@@ -1909,7 +1921,7 @@ void finalizarProcesoPorPID(int pid, int exitCode){
 		if((int)colaDelProceso ==1){
 
 			proceso = obtenerProcesoPorPID(cola_exec, pid);
-			//eliminarProcesoDeCola(cola_exec, pid);
+
 
 			if(exitCode == FinalizacionPorConsolaDeKernel){;
 				log_warning(logger, "Finalizo por consola Kernel");
@@ -1924,6 +1936,7 @@ void finalizarProcesoPorPID(int pid, int exitCode){
 					proceso=NULL;
 				}
 			}
+			eliminarProcesoDeCola(cola_exec, pid);
 
 
 		}
