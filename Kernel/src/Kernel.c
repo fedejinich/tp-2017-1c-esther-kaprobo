@@ -939,9 +939,11 @@ int chequearTablaGlobal(char* path){
 	int fd;
 	int indiceEntrada = buscarEntradaEnTablaGlobal(path);
 	if(indiceEntrada != -1){
+		log_warning(logger, "ESTABA EN LA TABLA GLOBAL");
 		fd = indiceEntrada;
 	}
 	else{
+		log_warning(logger, "NO ESTABA EN LA TABLA GLOBAL, LO AGREGA");
 		t_entradaTablaGlobal* entrada = malloc(sizeof(t_entradaTablaGlobal));
 		entrada->path = path;
 		entrada->open = 0;
@@ -952,10 +954,10 @@ int chequearTablaGlobal(char* path){
 }
 
 int buscarEntradaEnTablaGlobal(char* path){
-	int a;
+	int a = 0;
 	t_entradaTablaGlobal* entrada;
 	while(entrada = (t_entradaTablaGlobal*)list_get(tablaGlobalDeArchivos, a)){
-		if (entrada->path == path){
+		if (strcmp (entrada->path, path) == 0){
 			entrada->open++;
 			return a;
 		}
