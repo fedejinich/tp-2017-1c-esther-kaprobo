@@ -728,7 +728,7 @@ void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
 
 
 void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
-	log_warning(logger, "Se intentara abrir un archivo");
+	log_info(logger, "Se intentara abrir un archivo");
 	char* path = (char*)paquete->data;
 
 	t_paquete* paq2= malloc(sizeof(t_paquete));
@@ -784,7 +784,7 @@ void abrirArchivo(un_socket socketActivo, t_paquete* paquete){
 
 int* agregarNuevoArchivoATablas(int pid, char* path, char* permisos){
 	int* retorno;
-	log_warning(logger, "Agrego un nuevo archivo del proceso PID: %i", pid);
+	log_info(logger, "Agrego un nuevo archivo del proceso PID: %i", pid);
 	t_entradaTablaProceso* entradaLocal = malloc(sizeof(t_entradaTablaProceso));
 
 	entradaLocal->fd = fdcounter;
@@ -805,7 +805,7 @@ int* agregarNuevoArchivoATablas(int pid, char* path, char* permisos){
 }
 
 t_entradaTablasArchivosPorProceso* crearTablaDeArchivosDeUnProceso(int pid){
-	log_warning(logger, "Creo la tabla de archivos para el proceso PID: %i", pid);
+	log_info(logger, "Creo la tabla de archivos para el proceso PID: %i", pid);
 	t_entradaTablasArchivosPorProceso* nuevaTabla = malloc(sizeof(t_entradaTablasArchivosPorProceso));
 	nuevaTabla->pid = pid;
 	nuevaTabla->tablaDeUnProceso = list_create();
@@ -865,13 +865,13 @@ void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, i
 		//FINALIZAR POR ERROR DESCONOCIDO, NO EXISTE/ENCONTRO LA TABLA
 	}
 
-	log_warning(logger, "YA TENGO LA TABLA DEL PROCESO %i", tablaDeUnProceso->pid);
+	log_debug(logger, "YA TENGO LA TABLA DEL PROCESO %i", tablaDeUnProceso->pid);
 
 	//Busco el archivo en la tabla del proceso
-	log_warning(logger, "CANTIDAD DE ARCHIVOS EN LA TABLA DEL PROCESO: %i", tablaDeUnProceso->tablaDeUnProceso->elements_count);
+	log_debug(logger, "CANTIDAD DE ARCHIVOS EN LA TABLA DEL PROCESO: %i", tablaDeUnProceso->tablaDeUnProceso->elements_count);
 	t_entradaTablaProceso* archivo = obtenerArchivoDeLaTablaDeUnProcesoPorFD(tablaDeUnProceso, fd);
 
-	log_warning(logger, "TENGO EL ARCHIVO %i", archivo->fd);
+	log_debug(logger, "TENGO EL ARCHIVO %i", archivo->fd);
 
 	char* permisos = archivo->flags;
 
@@ -1901,12 +1901,12 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 		i++;
 	}
 
-	log_warning(logger, "Antes mutex");
+
 	pthread_mutex_lock(&mutex_exit);
 	destruirCONTEXTO(proceso->pcb);
 	queue_push(cola_exit, proceso);
 	pthread_mutex_unlock(&mutex_exit);
-	log_warning(logger, "Post mutex");
+
 
 	if(proceso->socketCPU >0){
 		queue_push(cola_CPU_libres, (void*)proceso->socketCPU);
@@ -1933,7 +1933,9 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 
 void finalizarProcesoPorPID(int pid, int exitCode){
 
-sleep(1);
+
+
+//sleep(1);
 	t_proceso* proceso;
 	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
 	if(colaDelProceso == NULL){
@@ -1954,6 +1956,7 @@ sleep(1);
 			}
 			else{
 				if(exitCode == DesconexionDeConsola){
+
 					enviar(proceso->socketCPU, ABORTADO_CONSOLA, sizeof(int),&proceso->pcb->pid);
 					proceso=NULL;
 				}
@@ -2496,7 +2499,7 @@ void finQuantum(un_socket socketCPU, t_paquete* paqueteRec){
 
 void deserializarYFinalizar(un_socket socketActivo, t_paquete* paqueteRecibido, ExitCodes code){
 
-
+printf("ENTRE A DESERIALIZAR Y FINALIZAR\n");
 
 	t_pcb* temporal;
 	temporal = desserializarPCB(paqueteRecibido->data);
