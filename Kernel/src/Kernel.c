@@ -884,23 +884,18 @@ void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, i
 	t_entradaTablaGlobal* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(archivo);
 	char* path = entradaTablaGlobal->path;
 
-	log_error(logger, "CHEQUEO PERMISOS ESCRITURA");
+	log_info(logger, "CHEQUEO PERMISOS ESCRITURA");
 
 	if(strchr(permisos, 'w') != NULL && existeArchivo(path)){
-		log_error(logger, "CON PERMISO");
+		log_info(logger, "CON PERMISO");
 		t_pedidoGuardadoDatos* guardadoDatos = malloc(sizeof(t_pedidoGuardadoDatos));
 
 		//Datos Para la escritura
 		guardadoDatos->offset = archivo->puntero;
 		guardadoDatos->size = size;
 
-		log_warning(logger, "ENVIO DATOS PARA ESCRITURA");
+		log_info(logger, "ENVIO DATOS PARA ESCRITURA");
 		//Hago 3 envios en orden: Datos para guardado de info, path donde debe guardarse, informacion a guardar
-		log_error(logger, "DATOS GUARDADO - OFFSET: %i", guardadoDatos->offset);
-		log_error(logger, "DATOS GUARDADO - SIZE: %i", guardadoDatos->size);
-		log_error(logger, "PATH: %s", path);
-		log_error(logger, "INFO LEN: %i", strlen(buffer));
-		log_error(logger, "INFO: %s", buffer);
 		enviar(fileSystem, GUARDAR_DATOS, sizeof(t_pedidoGuardadoDatos), guardadoDatos);
 		enviar(fileSystem, GUARDAR_DATOS, strlen(path) + 1, path);
 		enviar(fileSystem, GUARDAR_DATOS, strlen(buffer) + 1, buffer);
@@ -911,23 +906,19 @@ void escribirArchivo(un_socket socketActivo, int pid, t_descriptor_archivo fd, i
 		pthread_mutex_lock(&mutexServidor);
 		t_paquete* paquete = recibir(fileSystem);
 		pthread_mutex_unlock(&mutexServidor);
-		log_error(logger, "ACA 1");
 		//Aviso a CPU del resultado del guardado de info
 		int* basura = 1;
 		if(paquete->codigo_operacion == SOLICITUD_GUARDADO_DATOS_OK){
-			log_error(logger, "ACA 2");
 			log_warning(logger, "ESCRITURA OK");
 			enviar(socketActivo, ESCRIBIR_ARCHIVO_OK, sizeof(int), &basura);
 		}
 		else{
-			log_error(logger, "ACA 3");
 			log_warning(logger, "ESCRITURA FALLO");
-			//???
+			finalizarProcesoPorPID(pid, ErrorSinDefinicion);
 		}
-		log_error(logger, "ACA 4");
 	}
 	else{
-		log_error(logger, "SIN PERMISO");
+		log_info(logger, "SIN PERMISO");
 		finalizarProcesoPorPID(pid, IntentoDeEscrituraSinPermisos);
 	}
 }
