@@ -1188,8 +1188,8 @@ t_entradaTablaProceso* obtenerArchivoDeLaTablaDeUnProcesoPorFD(t_entradaTablasAr
 void moverCursor(un_socket socketActivo, t_paquete* paqueteRecibido){
 	t_moverCursor* mover = malloc(sizeof(t_moverCursor));
 	mover = (t_moverCursor*)paqueteRecibido->data;
-	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = list_get(tablasArchivosPorProceso, mover->pid);
-	t_entradaTablaProceso* entradaTablaDelProceso = list_get(tablaDeUnProceso->tablaDeUnProceso, mover->fd);
+	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(mover->pid);
+	t_entradaTablaProceso* entradaTablaDelProceso = obtenerArchivoDeLaTablaDeUnProcesoPorFD(tablaDeUnProceso, mover->fd);
 
 	entradaTablaDelProceso->puntero = mover->posicion;
 
