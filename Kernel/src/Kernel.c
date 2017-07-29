@@ -11,6 +11,8 @@
 #include "Kernel.h"
 
 
+int cantidadSemaforos = 0;
+
 int main(int argc, char **argv) {
 	pthread_create(&hiloNotify, NULL, verNotify, NULL);
 	pthread_create(&hiloPCP, NULL, planificadorCortoPlazo, NULL);
@@ -174,11 +176,12 @@ int* convertirConfigEnInt(char** valores_iniciales){
 
 
 
-	int contador=0;
+
+
 	int w;
 
-	while(w = valores_iniciales[contador]){
-		contador++;
+	while(w = valores_iniciales[cantidadSemaforos]){
+		cantidadSemaforos++;
 	}
 
 
@@ -191,7 +194,7 @@ int* convertirConfigEnInt(char** valores_iniciales){
 
 	resul=nalloc(((strlen((char*)valores_iniciales))/sizeof(char*))* sizeof(int));
 
-	for (i=0; i< contador;i++){
+	for (i=0; i< cantidadSemaforos;i++){
 		resul[i] = atoi(valores_iniciales[i]);
 		printf("RESUL[i]: %d, J:%d\n", resul[i],i);
 	}
@@ -710,7 +713,7 @@ void liberarSemaforo(un_socket socketActivo, t_paquete* paqueteRecibido){
 void bloqueoSemaforo(t_proceso* proceso, char* semaforo){
  	int i;
 
- 	for(i=0; i < strlen((char*)sem_ids)/sizeof(char*);i++){
+ 	for(i=0; i < cantidadSemaforos;i++){
  		if(strcmp((char*)sem_ids[i], semaforo) == 0){
 
  			queue_push(cola_semaforos[i], proceso);
@@ -1945,10 +1948,11 @@ void finalizarProceso(t_proceso* proceso, ExitCodes exitCode){
 
 void finalizarProcesoPorPID(int pid, int exitCode){
 
-
+sleep(1);
 	t_proceso* proceso;
 	t_queue* colaDelProceso = buscarProcesoEnLasColas(pid);
 	if(colaDelProceso == NULL){
+		printf("Deberia entrar aca\n");
 
 		proceso = verSiEstaBloqueado(pid);
 	}
@@ -1998,10 +2002,16 @@ void finalizarProcesoPorPID(int pid, int exitCode){
 
 t_proceso* verSiEstaBloqueado(int pid){
 	int i;
-	t_proceso* proc;
-	for (i=0; i < strlen((char*)sem_ids)/sizeof(char*); i++){
-			proc = (t_proceso*)list_get(cola_semaforos[i]->elements,i);
+	printf("entre\n");
+	printf("CA%d\n", cantidadSemaforos);
+	t_proceso* proc = malloc(sizeof(t_proceso));
+	for (i=0; i < cantidadSemaforos; i++){
+		printf("entre aca\n");
+		proc = (t_proceso*)list_get(cola_semaforos[i]->elements,i);
+		printf("ACA2\n");
 
+		if(proc!=NULL){
+			printf("!=NULL\n");
 			if((proc->pcb->pid) == pid){
 				log_debug(logger, "El proceso se encontraba bloqueado por Semaforo");
 				proc = (t_proceso*)list_remove(cola_semaforos[i]->elements,i);
@@ -2009,7 +2019,9 @@ t_proceso* verSiEstaBloqueado(int pid){
 
 				return proc;
 			}
+
 		}
+	}
 	return NULL;
 
 }
