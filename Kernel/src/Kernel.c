@@ -295,7 +295,9 @@ void nuevoClienteCPU (int servidor, int *clientes, int *nClientes)
 		return;
 	}
 
+	pthread_mutex_lock(&mutexServidor);
 	bool resultado_CPU = esperar_handshake(clientes[*nClientes - 1], HandshakeCPUKernel);
+	pthread_mutex_unlock(&mutexServidor);
 
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
 	if(resultado_CPU){
@@ -342,7 +344,9 @@ int nuevoClienteConsola (int servidor, int *clientes, int *nClientes)
 		resultado = 0 ;
 	}
 
+	pthread_mutex_lock(&mutexServidor);
 	bool resultado_Consola = esperar_handshake(clientes[*nClientes - 1], HandshakeConsolaKernel);
+	pthread_mutex_unlock(&mutexServidor);
 	/* Escribe en pantalla que ha aceptado al cliente y vuelve */
 
 	//VER ESTO, que pasa si falla HANDSHAKE, que debo informar a Consola?
@@ -2069,7 +2073,12 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 		}
 	puntero = verificarEspacioLibreHeap(pid, tamanio);
 	if((puntero->pagina==EXIT_FAILURE_CUSTOM) &&(puntero->offset==EXIT_FAILURE_CUSTOM)){
+
 		enviar(socketCPU, SOLICITAR_HEAP_FALLO, sizeof(int), &pid);
+
+		log_warning(logger, "No hay espacio para Heap");
+
+
 		return;
 	}
 	if(puntero->pagina == -1){
@@ -2079,7 +2088,9 @@ void reservarHeap(un_socket socketCPU, t_paquete * paqueteRecibido){
 		resultado = reservarPaginaHeap(pid,puntero->pagina);
 		puntero->offset = 0;
 		if(resultado <0){
-			finalizarProceso(proceso, ExcepcionDeMemoria);
+
+			enviar(socketCPU, SOLICITAR_HEAP_FALLO, sizeof(int), &pid);
+			return;
 		}
 		proceso->sizePaginasHeap++;
 
