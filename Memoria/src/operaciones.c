@@ -159,6 +159,15 @@ int finalizarProceso(int pid) {
 
 	log_info(logger, "Finalizando proceso de memoria principal. PID %i ...", pid);
 
+	int i;
+	for(i = 0; i <= tablaDePaginasSize(); i++) {
+		t_entradaTablaDePaginas* entrada = getEntradaTablaDePaginas(i);
+		if(entrada->pid == pid) {
+			escribirTablaDePaginas(entrada->frame, -1,-1);
+			log_info(logger, "Liberada de tabla de paginas, PID %i Pagina %i", pid, entrada->pagina);
+		}
+	}
+/*
 	t_list* entradasDePID = getEntradasDePID(pid);
 
 	if(entradasDePID == EXIT_FAILURE_CUSTOM) {
@@ -167,14 +176,14 @@ int finalizarProceso(int pid) {
 	}
 
 	int i;
-	for(i = 0; i < entradasDePID->elements_count; i++) {
+	for(i = 0; i <= entradasDePID->elements_count; i++) {
 		t_entradaTablaDePaginas* entrada = list_get(entradasDePID, i);
 
 		log_info(logger, "Eliminando de tabla de paginas PID %i, Pagina %i", entrada->pid, entrada->pagina);
 
 		escribirTablaDePaginas(entrada->frame, -1, -1);
 
-	}
+	}*/
 
 	log_debug(logger, "Proceso finalizado. PID %i", pid);
 	return EXIT_SUCCESS_CUSTOM;
