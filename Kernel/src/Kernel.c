@@ -165,12 +165,37 @@ void cargarConfiguracion() {
 
 
 int* convertirConfigEnInt(char** valores_iniciales){
-	int i;
+	int i,b;
+	int a = 0;
 	int *resul;
-	resul=nalloc(((strlen((char*)valores_iniciales))/sizeof(char*))* sizeof(int));
-	for (i=0; i< (strlen((char*) valores_iniciales))/sizeof(char*);i++){
-		resul[i] = atoi(valores_iniciales[i]);
+
+	a = (strlen((char*) valores_iniciales))/sizeof(char*);
+	printf("A:%d\n", a);
+
+
+
+	int contador=0;
+	int w;
+
+	while(w = valores_iniciales[contador]){
+		contador++;
 	}
+
+
+
+
+
+
+
+
+
+	resul=nalloc(((strlen((char*)valores_iniciales))/sizeof(char*))* sizeof(int));
+
+	for (i=0; i< contador;i++){
+		resul[i] = atoi(valores_iniciales[i]);
+		printf("RESUL[i]: %d, J:%d\n", resul[i],i);
+	}
+
 	return resul;
 }
 
