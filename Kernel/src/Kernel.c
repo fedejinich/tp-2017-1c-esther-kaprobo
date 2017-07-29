@@ -979,6 +979,10 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 	int pid = datos->pid;
 	int fd = datos->fd;
 
+	log_info(logger, "Me piden leer pid:%d, fd:%d, size:%d, offset:%d", datos->pid,datos->fd,datos->tamanio,datos->offset);
+
+
+
 	//Obtengo la tabla del proceso PID
 	t_entradaTablasArchivosPorProceso* tablaDeUnProceso = malloc(sizeof(t_entradaTablasArchivosPorProceso));
 	tablaDeUnProceso = obtenerTablaDeArchivosDeUnProcesoPorPID(pid);
@@ -999,12 +1003,12 @@ void leerArchivo(un_socket socketActivo, t_paquete* paquete){
 	t_entradaTablaGlobal* entradaTablaGlobal = obtenerEntradaTablaGlobalDeArchivos(archivo);
 	char* path = entradaTablaGlobal->path;
 
-	if(strchr(permisos, 'r') != NULL && existeArchivo(path)){
+	if(string_contains(permisos,"r")  && existeArchivo(path)){
 		t_pedidoGuardadoDatos* obtencionDatos = malloc(sizeof(t_pedidoGuardadoDatos));
 
 		//Datos Para la escritura
-		obtencionDatos ->offset = datos->offset;
-		obtencionDatos ->size = datos->tamanio;
+		obtencionDatos->offset = 0;
+		obtencionDatos->size = datos->tamanio;
 
 		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, sizeof(t_pedidoGuardadoDatos), obtencionDatos);
 		enviar(fileSystem, SOLICITUD_OBTENCION_DATOS, strlen(path) + 1, path);

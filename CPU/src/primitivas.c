@@ -842,6 +842,7 @@ void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion,
 */
 void leerArchivo(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio){
 	//Defino variables locales
+	log_info(logger, "Primitiva Leer archivo");
 	t_envioDeDatosKernelFSLecturaYEscritura* paquete = malloc(sizeof(t_envioDeDatosKernelFSLecturaYEscritura));
 
 	t_paquete* rta;
@@ -850,6 +851,9 @@ void leerArchivo(t_descriptor_archivo descriptor_archivo, t_puntero informacion,
 	paquete->fd = descriptor_archivo;
 	paquete->tamanio = tamanio;
 	paquete->offset = informacion;
+
+	log_info(logger, "Voy a leer pid:%d, FD:%d, Size:%d, offset:%d", paquete->pid, paquete->fd, paquete->tamanio, paquete->offset);
+
 
 
 
@@ -871,7 +875,6 @@ void leerArchivo(t_descriptor_archivo descriptor_archivo, t_puntero informacion,
 
 	}
 
-	char* datosLeidos = (char*)rta->data;
-	log_info(logger, "La informacion leida es: %s.",datosLeidos);
+
 }
 
