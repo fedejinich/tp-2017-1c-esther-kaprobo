@@ -785,6 +785,14 @@ void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posic
 void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion, t_valor_variable tamanio){
 	log_debug(logger, "Primitiva escribir Archivo");
 	log_debug(logger, "FD: %d, info: %s", descriptor_archivo, (char*)informacion);
+	char* texto = malloc(tamanio +1);
+	texto = (char*)informacion;
+
+	printf("SIZEOF INFO:%d\n", sizeof(informacion));
+
+	printf("FD:%d \n", descriptor_archivo);
+	printf("INFO:%s\n", texto);
+	printf("SIZE: %d\n", tamanio);
 
 
 	t_escribirArchivo* escribir = malloc(sizeof(t_escribirArchivo));
@@ -793,8 +801,8 @@ void escribirArchivo(t_descriptor_archivo descriptor_archivo, void* informacion,
 	escribir->fd = descriptor_archivo;
 	escribir->size = tamanio;
 	escribir->info = informacion;
-	char* texto = string_new();
-	string_append(&texto, (char*)informacion);
+
+	//string_append(&texto, (char*)informacion);
 
 	log_warning(logger, "TEXTO: %s", texto);
 	log_warning(logger, "STR LEN TEXTO: %i", strlen(texto));

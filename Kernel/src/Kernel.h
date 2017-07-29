@@ -19,7 +19,7 @@
 
 
 //DEFINE
-#define MAX_CLIENTES 3
+#define MAX_CLIENTES 50
 #define TAMANIODEPAGINA 256 //ESTE DATO LO TRAE DE MEMORIA
 #define CONFIG_KERNEL_SOLO "kernel.config"
 #define CONFIG_KERNEL "../configuracion/kernel.config"

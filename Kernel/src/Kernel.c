@@ -205,9 +205,9 @@ void mostrarConfiguracion(){
 
 void prepararSocketsServidores(){
 	socketCPU = socket_escucha("127.0.0.1",puerto_cpu);
-	listen(socketCPU,1);
+	listen(socketCPU,1024);
 	socketConsola = socket_escucha("127.0.0.1",puerto_prog);
-	listen(socketConsola,1);
+	listen(socketConsola,1024);
 
 	log_info(logger, "Sockets escuchando");
 }
@@ -254,15 +254,18 @@ void manejarSockets(){
 			if(paqueteRecibido->codigo_operacion > -1){
 				log_info(logger, "Me envio datos el socket %i", socketCliente[i]);
 				 procesarPaqueteRecibido(paqueteRecibido, socketCliente[i]);
+				 return;
 			}
 			else {
 				log_warning(logger, "El cliente %d se desconecto",i+1);
 				socketCliente[i] = -1;
+				return;
 			}
 
 		}
 		else log_info(logger, "No hubo cambios en cliente %d, continua",i+1);
 	}
+	return;
 }
 
 void verSiHayNuevosClientes(){
@@ -440,7 +443,7 @@ void procesarPaqueteRecibido(t_paquete* paqueteRecibido, un_socket socketActivo)
 
 			log_info(logger, "Se finalizo PID: %d desde Consola",*(int*)paqueteRecibido->data );
 			finalizarProcesoPorPID(*(int*)paqueteRecibido->data, DesconexionDeConsola);
-			//VER AVISAR A CPU Y MEMORIA?
+
 			break;
 
 		case ABORTADO_STACKOVERFLOW:
@@ -1908,13 +1911,15 @@ void finalizarProcesoPorPID(int pid, int exitCode){
 			proceso = obtenerProcesoPorPID(cola_exec, pid);
 			//eliminarProcesoDeCola(cola_exec, pid);
 
-			if(exitCode == FinalizacionPorConsolaDeKernel){
+			if(exitCode == FinalizacionPorConsolaDeKernel){;
+				log_warning(logger, "Finalizo por consola Kernel");
 
 				enviar(proceso->socketCPU, ABORTADO_CONSOLA_KERNEL, sizeof(int),&proceso->pcb->pid);
 				proceso = NULL;
 			}
 			else{
 				if(exitCode == DesconexionDeConsola){
+					log_warning(logger, "Finalizo por proceso Consola");
 					enviar(proceso->socketCPU, ABORTADO_CONSOLA, sizeof(int),&proceso->pcb->pid);
 					proceso=NULL;
 				}
