@@ -1750,7 +1750,11 @@ void mostrarUnaListaDeProcesos(t_queue* colaAMostrar){
 	int i = 0;
 	t_proceso*proceso;
 	while(proceso = (t_proceso*)list_get(colaAMostrar->elements, i)){
-		printf("PID: %d\n", proceso->pcb->pid);
+		printf("PID: %d", proceso->pcb->pid);
+		if(proceso->pcb->sizeContextoActual == 0){
+			printf(" - Exit Code: %d", proceso->pcb->exitCode);
+		}
+		printf("\n");
 		i++;
 	}
 	if(i == 0){
